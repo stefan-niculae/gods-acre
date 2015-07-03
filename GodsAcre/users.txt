@@ -1,0 +1,7 @@
+django
+cimitir_admin
+cimitir_admin_pw
+
+postgres
+cimitir_dba
+cimitir_dba_pw
