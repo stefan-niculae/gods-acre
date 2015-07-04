@@ -44,4 +44,13 @@ def maintentance(request):
 
 
 def administration(request):
-    return render(request, name_to_template('administration'))
+    table_headers = ['#', 'Parcela', 'Rand', 'Coloana']  # todo ?change coloana to loc
+    row1 = ['1', '1a', '1', '1bis']
+    row2 = ['2', '2a', '100', '3']
+    row3 = ['3', '5a', '67', '1B']
+    table_rows = [row1, row2, row3]
+    context = {
+        'table_headers': table_headers,
+        'table_rows': table_rows,
+    }
+    return render(request, name_to_template('administration'), context)

@@ -2,12 +2,12 @@ li a {
     color: green;
 }
 
-@font-face {
-    font-family: "tomb";
-    src: url("../fonts/tomb.tff");
+table.db {
+    width: 85%;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-header {
-    font-family: "tomb";
-    font-weight: bold;
+.db-add-row input {
+    width: 100%;
 }
