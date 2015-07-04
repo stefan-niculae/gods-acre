@@ -1,0 +1,13 @@
+li a {
+    color: green;
+}
+
+@font-face {
+    font-family: "tomb";
+    src: url("../fonts/tomb.tff");
+}
+
+header {
+    font-family: "tomb";
+    font-weight: bold;
+}

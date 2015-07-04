@@ -1,12 +1,39 @@
 from django.db import models
-from django.utils import timezone
+
+
+#
+# Utils
+#
+
+
+# TODO can't i make this an abstract class that inherits models.Model?
+def fields_and_values(model):
+    res = '('
+    for f in model._meta.fields:
+        res += f.name + ' '
+        try:
+            value = str(getattr(model, f.name))
+        except:
+            value = '-'
+
+        res += value
+        res += '; '
+    res += ')'
+    return res
 
 
 # Abstract class for deeds, receipts & autorizations
 class NrYear(models.Model):
     # TODO each class that derives this has a unique nr/date combination
     number = models.IntegerField()
-    date = models.DateField(default=timezone.now())
+    date = models.DateField()   # TODO make this default to today
+
+    def __str__(self):
+        return '{0}/{1}'.format(self.number, self.date.year)
+
+#
+# Actual Models
+#
 
 
 # Loc de veci
@@ -14,6 +41,9 @@ class Spot(models.Model):
     parcel = models.CharField(max_length=10)    # parcela
     row = models.CharField(max_length=10)       # rand
     column = models.CharField(max_length=10)    # coloana (loc)
+
+    def __str__(self):
+        return fields_and_values(self)
 
 
 #
@@ -35,6 +65,9 @@ class Owner(models.Model):
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
 
+    def __str__(self):
+        return fields_and_values(self)
+
 
 #
 # Construction part
@@ -49,6 +82,9 @@ class ConstructionAuthorization(NrYear):
 class ConstructionCompany(models.Model):
     name = models.CharField(max_length=50)
 
+    def __str__(self):
+        return fields_and_values(self)
+
 
 class Construction(models.Model):
     BORDER = 'brdr'
@@ -62,6 +98,9 @@ class Construction(models.Model):
     # TODO owner builder and construction company can't BOTH be null, or BOTH not null
     owner_builder = models.ForeignKey(Owner, null=True)
     construction_company = models.ForeignKey(ConstructionCompany, null=True)
+
+    def __str__(self):
+        return fields_and_values(self)
 
 
 #
@@ -84,6 +123,9 @@ class Operation(models.Model):
     last_name = models.CharField(max_length=25)
     notes = models.CharField(max_length=250)
 
+    def __str__(self):
+        return fields_and_values(self)
+
 
 #
 # Maintenance part
@@ -102,6 +144,9 @@ class MaintenenceLevel(models.Model):
     )
     description = models.CharField(max_length=4, choices=MAINTENENCE_LEVELS, default=KEPT)
 
+    def __str__(self):
+        return fields_and_values(self)
+
 
 #
 # Contributions part
@@ -113,9 +158,13 @@ class ContributionReceipt(NrYear):
         # TODO summation of all yearly payments that have this as the receipt
         return value
 
+
 # Plata pe an
 class YearlyPayment(models.Model):
     spot = models.ForeignKey(Spot)
     receipt = models.ForeignKey(ContributionReceipt)
     year = models.IntegerField()
     value = models.IntegerField()
+
+    def __str__(self):
+        return fields_and_values(self)

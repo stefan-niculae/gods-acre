@@ -69,6 +69,7 @@ TEMPLATES = [
     },
 ]
 
+
 WSGI_APPLICATION = 'GodsAcre.wsgi.application'
 
 
@@ -78,7 +79,7 @@ WSGI_APPLICATION = 'GodsAcre.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'Cemetery',
+        'NAME': 'cemetery',
         'USER': 'cemetery_dba',
         'PASSWORD': 'cemetery_dba_pw',
         'HOST': '127.0.0.1',
@@ -105,3 +106,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 
 STATIC_URL = '/static/'
+
+#STATIC_ROOT = os.path.join(BASE_DIR, '/CemeteryAdministration/static')
+
+# https://www.turnkeylinux.org/blog/django-navbar
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.core.context_processors.request',
+)

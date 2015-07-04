@@ -1,0 +1,13 @@
+{% extends "CemeteryAdministration/base.html" %}
+
+{% block title %}God's Acre{% endblock %}
+
+{% block content %}
+    <header>gestionare cimitir</header>
+
+     <ul>
+         {% for link in links %}
+            <li><a href="{% url link.url %}">{{ link.name }}</a></li>
+         {% endfor %}
+     </ul>
+{% endblock %}

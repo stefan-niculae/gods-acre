@@ -17,5 +17,7 @@ from django.conf.urls import include, url
 from django.contrib import admin
 
 urlpatterns = [
+    # readd namespacing if the site grows to use more apps
+    url(r'', include('CemeteryAdministration.urls', namespace='CemeteryAdministration')),
     url(r'^admin/', include(admin.site.urls)),
 ]
