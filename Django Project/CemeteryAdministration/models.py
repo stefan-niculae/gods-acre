@@ -1,4 +1,5 @@
 from django.db import models
+from datetime import date
 
 
 #
@@ -33,7 +34,7 @@ def fields_and_values(model):
 class NrYear(models.Model):
     # TODO each class that derives this has a unique nr/date combination
     number = models.IntegerField()
-    date = models.DateField()   # TODO make this default to today
+    date = models.DateField(default=date.today)
 
     def __str__(self):
         return '{0}/{1}'.format(self.number, self.date.year)
@@ -131,21 +132,23 @@ class Construction(models.Model):
 # Operatie
 class Operation(models.Model):
     spot = models.ForeignKey(Spot)
+    date = models.DateField(default=date.today)
 
     BURIAL = 'bral'
     EXHUMATION = 'exhm'
     OPERATION_TYPES = (
-        (BURIAL, 'bordura'),
-        (EXHUMATION, 'cavou'),
+        (BURIAL, 'inhumare'),
+        (EXHUMATION, 'dezhumare'),
     )
     type = models.CharField(max_length=4, choices=OPERATION_TYPES, default=BURIAL)
 
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
-    notes = models.CharField(max_length=250)
+    note = models.CharField(max_length=250, null=True, blank=True)
 
     def __str__(self):
         return fields_and_values(self)
+    #todo add constraint how many can be buried at once
 
 
 #

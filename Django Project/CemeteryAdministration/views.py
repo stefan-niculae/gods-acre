@@ -14,6 +14,70 @@ def index(request):
     return render(request, name_to_template('index'))
 
 
+#
+# Table helpers
+#
+
+class Table:
+    def __init__(self, yr, rws):
+        self.year = yr
+        self.rows = rws
+
+
+class TableHeader:
+    def __init__(self, name, width):
+        self.name = name
+        self.width = width
+
+
+def spot_headers(iw=1, pw=1, rw=1, cw=1):
+    return [TableHeader('#', iw), TableHeader('Parcelă', pw), TableHeader('Rând', rw), TableHeader('Loc', cw)]
+
+
+def person_headers(fw=2, lw=2):
+    return [TableHeader('Prenume', fw), TableHeader('Nume', lw)]
+
+
+#
+# Form helpers
+#
+
+def years_form(request):
+    form = YearsForm(request.GET)
+    if form.is_valid():
+        return form
+    # if the data is empty/invalid, return an empty form
+    else:
+        return YearsForm()
+
+
+def fuzzy_year(yr):
+    """
+    :param yr: number representing year
+    :return: formal year (ex 15 => 2015, 94 => 1994)
+    """
+    threshold = 50
+    # 15 => 2015
+    if yr <= threshold:
+        return 2000 + yr
+    # 94 => 1994
+    if threshold < yr < 100:
+        return 1900 + yr
+    return yr
+
+
+def years_list(form):
+    if form.is_valid():
+        yrs_str = form.cleaned_data['ani']
+        # extract the numbers from the string containing spaces, commas and apostrophes
+        yrs_list = list(map(int, re.findall('\d+', yrs_str)))
+        # convert each 15 to 2015 and so on
+        return list(map(fuzzy_year, yrs_list))
+    else:
+        # by default, show only the current year
+        return[date.today().year]
+
+
 def general_register(request):
     return render(request, name_to_template('general_register'))
 
@@ -35,15 +99,34 @@ def constructions(request):
 
 
 def operations(request):
-    return render(request, name_to_template('operations'))
+
+    table_headers = spot_headers() + person_headers(3, 3) + [TableHeader('Tip', 1), TableHeader('Notă', 1)]
+    max_data_widths = list(map(lambda x: x.width * 10, table_headers))
+
+    form = years_form(request)
+    years = years_list(form)
+
+    tables = []
+    for year in years:
+        opers = Operation.objects.filter(date__year=year)
+        rows = []
+        for o in opers:
+            rows.append(o.spot.identif() +
+                        [o.first_name, o.last_name, o.get_type_display(), o.note])
+        tables.append(Table(year, rows))
+
+    context = {
+        'title': 'Operații',
+        'table_headers': table_headers,
+        'tables': tables,
+        'years_form': form,
+        'max_data_widths': max_data_widths,
+    }
+    return render(request, name_to_template('operations'), context)
 
 
 def revenue(request):
     return render(request, name_to_template('revenue'))
-
-
-spot_headers = ['#', 'Parcelă', 'Rând', 'Loc']
-person_headers = ['Nume', 'Prenume']
 
 
 def maintentance(request):
@@ -55,43 +138,18 @@ def maintentance(request):
         owners = d.owner_set.all()
         return owners[0].identif()
 
-    # todo add popup explaining this behaviour
-    def fuzzy_year(yr):
-        """
-        :param yr: number representing year
-        :return: formal year (ex 15 => 2015, 94 => 1994)
-        """
-        year_breakpoint = 50
-        # 15 => 2015
-        if yr <= year_breakpoint:
-            return 2000 + yr
-        # 94 => 1994
-        if year_breakpoint < yr < 100:
-            return 1900 + yr
-        return yr
-
-    class Table:
-        def __init__(self, yr, rws):
-            self.year = yr
-            self.rows = rws
-
     # the same headers for every table
-    table_headers = spot_headers + person_headers + ['Nivel Întreținere']
+    table_headers = spot_headers() + person_headers(3, 3) + [TableHeader('Nivel Întreținere', 2)]
+    # data is allowed as much as ten times the column width
+    max_data_widths = list(map(lambda x: x.width * 10, table_headers))
 
-    form = YearsForm(request.GET)
-    if form.is_valid():
-        years_str = form.cleaned_data['ani']
-        # extract the numbers from the string containing spaces, commas and apostrophes
-        years_list = list(map(int, re.findall('\d+', years_str)))
-        # converting each 15 to 2015 and so on
-        years_list = list(map(fuzzy_year, years_list))
-    else:
-        # by default, show only the current year
-        years_list = [date.today().year]
+
+    form = years_form(request)
+    years = years_list(form)
 
     # build a table for each year in the list
     tables = []
-    for year in years_list:
+    for year in years:
         maintentances = MaintenanceLevel.objects.filter(year=year)
         rows = []
         for m in maintentances:
@@ -104,7 +162,8 @@ def maintentance(request):
         'title': 'Întreținere',
         'table_headers': table_headers,
         'tables': tables,
-        'years_form': YearsForm(),
+        'years_form': form,
+        'max_data_widths': max_data_widths,
     }
     return render(request, name_to_template('maintenance'), context)
 

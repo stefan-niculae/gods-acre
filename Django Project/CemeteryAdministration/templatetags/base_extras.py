@@ -13,3 +13,7 @@ def active_page(request, view_name):
         return "active" if resolve(request.path_info).url_name == view_name else ""
     except Resolver404:
         return ""
+
+@register.filter(name='zip')
+def zip_lists(a, b):
+  return zip(a, b)

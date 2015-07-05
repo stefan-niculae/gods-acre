@@ -1,6 +1,7 @@
 {% extends "CemeteryAdministration/base.html" %}
 
 {% load bootstrap_tags %}
+{% load base_extras %}
 
 {% block content %}
 
@@ -21,19 +22,27 @@
 
         {% if table.rows %} <!-- if there are records -->
 
-        <table class="table table-striped table-hover db">
+        <!--todo pagination-->
+        <table class="table table-striped table-hover sortable">
             <thead>
-                <tr>
+                <tr class="row">
                     {% for table_header in table_headers %}
-                    <th>{{ table_header }}</th>
+                    <th class="col-md-{{ table_header.width }}">{{ table_header.name }}</th>
                     {% endfor %}
                 </tr>
             </thead>
             <tbody>
                 {% for row in table.rows %}
-                <tr>
-                    {% for data in row %}
-                    <td>{{ data }}</td>
+                <tr class="row">
+                    {% for data, max_width in row|zip:max_data_widths %}
+                    <td>
+                        {% if data|length > max_width %}
+                            <a href="#" data-toggle="popover" data-placement="left" data-content="{{ data }}">
+                                {{ data|truncatechars:max_width }}</a>
+                        {% else %}
+                            {{ data }}
+                        {% endif %}
+                    </td>
                     {% endfor %}
                 </tr>
                 {% endfor %}

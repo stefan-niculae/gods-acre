@@ -15,5 +15,5 @@ urlpatterns = [
     url(r'^oper/?$', views.operations, name='operations'),
     url(r'^incas/?$', views.revenue, name='revenue'),
     url(r'^intret/?$', views.maintentance, name='maintenance'),
-    url(r'^gest/?$', views.administration, name='administration'),
+    url(r'^admin/?$', views.administration, name='administration'),
 ]
