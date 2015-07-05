@@ -5,9 +5,12 @@ import re
 from datetime import date
 
 
-def name_to_template(name):
+def name_to_template(name, html=True):
     app_name = 'CemeteryAdministration'
-    return '{0}/{1}.html'.format(app_name, name)
+    if html:
+        return '{0}/{1}.html'.format(app_name, name)
+    else:
+        return '{0}:{1}'.format(app_name, name)
 
 
 def index(request):
@@ -121,6 +124,7 @@ def operations(request):
         'tables': tables,
         'years_form': form,
         'max_data_widths': max_data_widths,
+        'template_name': name_to_template('operations', html=False),
     }
     return render(request, name_to_template('operations'), context)
 
@@ -143,7 +147,6 @@ def maintentance(request):
     # data is allowed as much as ten times the column width
     max_data_widths = list(map(lambda x: x.width * 10, table_headers))
 
-
     form = years_form(request)
     years = years_list(form)
 
@@ -164,6 +167,7 @@ def maintentance(request):
         'tables': tables,
         'years_form': form,
         'max_data_widths': max_data_widths,
+        'template_name': name_to_template('maintenance', html=False),
     }
     return render(request, name_to_template('maintenance'), context)
 

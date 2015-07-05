@@ -6,7 +6,7 @@
 {% block content %}
 
     <section class="year-search hidden-print">
-        <form action="{% url 'CemeteryAdministration:maintenance' %}" method="get">
+        <form action="{% url template_name %}" method="get">
             <div class="input-group">
                 {{ years_form|as_bootstrap }}
                 <div class="input-group-btn">
