@@ -1,0 +1,11 @@
+python3 manage.py shell
+
+from CemeteryAdministration.models import *
+m = MaintenanceLevel.objects.all()
+m0 = m[0]
+m15 = MaintenanceLevel.objects.filter(year=2015)
+s0 = m0.spot
+deeds = s0.ownership_deeds.all().order_by('-date')
+d = deeds[0]
+owners = d.owner_set.all()
+

@@ -1,0 +1,6 @@
+// spot.id, year (xx => 20xx), description (i=intretinut, n=neintretinut)
+// year < 50 => 20xx; 50 <= year < 100 => 19xx
+15 1 i
+14 1 i
+15 2 n
+14 2 i

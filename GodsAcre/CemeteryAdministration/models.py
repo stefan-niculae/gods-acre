@@ -8,17 +8,24 @@ from django.db import models
 
 # TODO can't i make this an abstract class that inherits models.Model?
 def fields_and_values(model):
-    res = '('
-    for f in model._meta.fields:
-        res += f.name + ' '
+    res = ''
+    fields = model._meta.fields
+
+    for idx, f in enumerate(fields):
+        if f.name == 'id':
+            res += '#'
+        else:
+            res += f.name + ' '
+
         try:
             value = str(getattr(model, f.name))
         except:
             value = '-'
 
         res += value
-        res += '; '
-    res += ')'
+        if idx < len(fields) - 1:
+            res += '; '
+
     return res
 
 
@@ -43,7 +50,13 @@ class Spot(models.Model):
     column = models.CharField(max_length=10)    # coloana (loc)
 
     def __str__(self):
-        return fields_and_values(self)
+        return '#{0} p{1}r{2}c{3}'.format(self.id, self.parcel, self.row, self.column)
+
+    def identif(self):
+        """
+        :return: identifing data about this spot, as a list
+        """
+        return [self.id, self.parcel, self.row, self.column]
 
 
 #
@@ -52,21 +65,29 @@ class Spot(models.Model):
 
 # Act de concesiune
 class OwnershipDeed(NrYear):
-    spots = models.ManyToManyField(Spot)
+    spots = models.ManyToManyField(Spot, related_name='ownership_deeds')
 
 
 # Chitanta concesiune
 class OwnershipReceipt(NrYear):
+    ownership_deed = models.ForeignKey(OwnershipDeed)
     value = models.FloatField()
 
 
 # Concesionar
 class Owner(models.Model):
+    ownership_deed = models.ForeignKey(OwnershipDeed)
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
 
     def __str__(self):
         return fields_and_values(self)
+
+    def identif(self):
+        """
+        :return: identifing data about this person, as a list
+        """
+        return [self.first_name, self.last_name]
 
 
 #
@@ -132,9 +153,9 @@ class Operation(models.Model):
 #
 
 # Intretinere
-class MaintenenceLevel(models.Model):
+class MaintenanceLevel(models.Model):
     spot = models.ForeignKey(Spot)
-    year = models.IntegerField()
+    year = models.IntegerField()  # add constraint over ?1950, under curr_year + 1
 
     KEPT = 'kept'
     UNKEPT = 'ukpt'
@@ -145,7 +166,12 @@ class MaintenenceLevel(models.Model):
     description = models.CharField(max_length=4, choices=MAINTENENCE_LEVELS, default=KEPT)
 
     def __str__(self):
-        return fields_and_values(self)
+        return '\'{0}:{1}{2}'.format(int(self.year) % 100,
+                                     self.spot.id,
+                                     '+' if self.description == self.KEPT else '-')
+
+    class Meta:
+        unique_together = ('spot', 'year')
 
 
 #

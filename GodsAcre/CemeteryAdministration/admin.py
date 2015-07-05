@@ -10,7 +10,7 @@ selected_models = [
     ConstructionCompany,
     Construction,
     Operation,
-    MaintenenceLevel,
+    MaintenanceLevel,
     ContributionReceipt,
     YearlyPayment,
 ]

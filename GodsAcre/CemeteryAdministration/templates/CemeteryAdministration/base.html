@@ -19,7 +19,7 @@
 
         {% load base_extras %}
 
-        <title> {% block title %} titlu {% endblock %} </title>
+        <title> {% block title %} {{ title|default:"Title" }} {% endblock %} </title>
     </head>
 
     <body>
@@ -45,20 +45,20 @@
                         <li class="{% active_page request 'general_register' %}">
                             <a href="{% url 'CemeteryAdministration:general_register' %}">Registru General</a></li>
                         <li class="{% active_page request 'spot' %}">
-                            <a href="{% url 'CemeteryAdministration:spot' %}">Fisa Individuala</a></li>
+                            <a href="{% url 'CemeteryAdministration:spot' %}">Fișă Individuală</a></li>
                         <li role="separator" class="divider-vertical"></li>
 
 
                         <li class="{% active_page request 'ownerships' %}">
                             <a href="{% url 'CemeteryAdministration:ownerships' %}">Concesiuni</a></li>
                         <li class="{% active_page request 'constructions' %}">
-                            <a href="{% url 'CemeteryAdministration:constructions' %}">Constructii</a></li>
+                            <a href="{% url 'CemeteryAdministration:constructions' %}">Construcții</a></li>
                         <li class="{% active_page request 'operations' %}">
-                            <a href="{% url 'CemeteryAdministration:operations' %}">Operatii</a></li>
+                            <a href="{% url 'CemeteryAdministration:operations' %}">Operații</a></li>
                         <li class="{% active_page request 'revenue' %}">
-                            <a href="{% url 'CemeteryAdministration:revenue' %}">Incasari</a></li>
+                            <a href="{% url 'CemeteryAdministration:revenue' %}">Încasări</a></li>
                         <li class="{% active_page request 'maintenance' %}">
-                            <a href="{% url 'CemeteryAdministration:maintenance' %}">Intretinere</a></li>
+                            <a href="{% url 'CemeteryAdministration:maintenance' %}">Întreținere</a></li>
                         <li role="separator" class="divider-vertical"></li>
 
                         <!--todo maybe add dropup http://getbootstrap.com/components/#btn-dropdowns-dropup-->
@@ -103,13 +103,14 @@
             </div><!-- /.container-fluid -->
         </nav>
 
-        <section id="content">
+        <section id="content" class="container">
+            <h1>{{ title|default:"Title" }}</h1>
             {% block content %} {% endblock %}
         </section>
 
-        <footer class="footer">
+        <footer class="footer hidden-print">
             <div class="container">
-                <p class="text-muted">Stefan Niculae | stefanconturi@gmail.com | © GPL 2015</p>
+                <p class="text-muted">Ștefan Niculae | stefanconturi@gmail.com | © GPL 2015</p>
             </div>
         </footer>
 

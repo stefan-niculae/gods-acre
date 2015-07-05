@@ -1,0 +1,5 @@
+// ownership_deed.id, first_name (list of names), last_name
+1 ana anghelescu
+2 bogdan bob bradulescu
+3 cristi craciun
+// todo add another owner to deed #1

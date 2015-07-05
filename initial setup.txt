@@ -1,0 +1,4 @@
+easy_install pip
+pip install virtualenvwrapper
+virtualenv gods-acre
+source gods-acre/bin/activate

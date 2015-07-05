@@ -1,0 +1,45 @@
+{% extends "CemeteryAdministration/base.html" %}
+
+{% load bootstrap_tags %}
+
+{% block content %}
+
+    <section class="year-search hidden-print">
+        <form action="{% url 'CemeteryAdministration:maintenance' %}" method="get">
+            {{ years_form|as_bootstrap }}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Caută</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="tables">
+        <h2 class="page-header">{{ year }}</h2>
+
+        <table class="table table-striped table-hover db">
+            <thead>
+                <tr>
+                    <!-- Spot identification -->
+                    <th>#</th>
+                    <th>Parcelă</th>
+                    <th>Rând</th>
+                    <th>Loc</th>  <!--coloana-->
+
+                    {% for table_header in table_headers %}
+                    <th>{{ table_header }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for table_row in table_rows %}
+                <tr>
+                    {% for table_data in table_row %}
+                    <td>{{ table_data }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+{% endblock %}
