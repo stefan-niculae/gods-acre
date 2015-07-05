@@ -38,7 +38,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'CemeteryAdministration',
-    'django-forms-bootstrap',
+    'django_forms_bootstrap',
 )
 
 MIDDLEWARE_CLASSES = (
