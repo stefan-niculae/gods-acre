@@ -1,5 +1,6 @@
 python3 manage.py shell
 
+# views.maintenance.maintenance_to_owner
 from CemeteryAdministration.models import *
 m = MaintenanceLevel.objects.all()
 m0 = m[0]
@@ -9,3 +10,17 @@ deeds = s0.ownership_deeds.all().order_by('-date')
 d = deeds[0]
 owners = d.owner_set.all()
 
+# views.maintenance.fuzzy_year
+import re
+years_str = ' \'14, 2012 ,93 , \' 94  1969  '
+years_list = list(map(int, re.findall('\d+', years_str)))
+def fuzzy_year(yr):
+    year_breakpoint = 50
+    # 15 => 2015
+    if yr <= year_breakpoint:
+        return 2000 + yr
+    # 94 => 1994
+    if year_breakpoint < yr < 100:
+        return 1900 + yr
+    return yr
+years_list = list(map(fuzzy_year, years_list))

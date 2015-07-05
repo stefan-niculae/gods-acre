@@ -17,9 +17,13 @@
 
         <link rel="shortcut icon" href="{% static 'CemeteryAdministration/images/favicon.ico' %}">
 
+        <script src="{% static 'CemeteryAdministration/js/jquery.js' %}"></script>
+        <script src="{% static 'CemeteryAdministration/js/bootstrap.js' %}"></script>
+        <script src="{% static 'CemeteryAdministration/js/script.js' %}"></script>
+
         {% load base_extras %}
 
-        <title> {% block title %} {{ title|default:"Title" }} {% endblock %} </title>
+        <title> {% block title %} {{ title|title|default:"Title" }} {% endblock %} </title>
     </head>
 
     <body>
@@ -104,7 +108,7 @@
         </nav>
 
         <section id="content" class="container">
-            <h1>{{ title|default:"Title" }}</h1>
+            <h1>{{ title|title|default:"Title" }}</h1>
             {% block content %} {% endblock %}
         </section>
 
