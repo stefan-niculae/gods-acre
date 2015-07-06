@@ -14,6 +14,10 @@ def active_page(request, view_name):
     except Resolver404:
         return ""
 
+
 @register.filter(name='zip')
 def zip_lists(a, b):
-  return zip(a, b)
+    """
+    the lists a and b can be now traversed simultaneously
+    """
+    return zip(a, b)

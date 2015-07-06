@@ -6,6 +6,10 @@ from datetime import date
 
 
 def name_to_template(name, html=True):
+    """
+    :param html: whether to use the html formatting (/ and .html at the end)
+    :return: string containing formatted template
+    """
     app_name = 'CemeteryAdministration'
     if html:
         return '{0}/{1}.html'.format(app_name, name)
@@ -46,6 +50,9 @@ def person_headers(fw=2, lw=2):
 #
 
 def years_form(request):
+    """
+    :return: empty form if invalid or filled form if it was filled
+    """
     form = YearsForm(request.GET)
     if form.is_valid():
         return form
@@ -70,6 +77,9 @@ def fuzzy_year(yr):
 
 
 def years_list(form):
+    """
+    :return: years extracted from the form
+    """
     if form.is_valid():
         yrs_str = form.cleaned_data['ani']
         # extract the numbers from the string containing spaces, commas and apostrophes
@@ -78,7 +88,7 @@ def years_list(form):
         return list(map(fuzzy_year, yrs_list))
     else:
         # by default, show only the current year
-        return[date.today().year]
+        return [date.today().year]
 
 
 def general_register(request):
@@ -101,32 +111,58 @@ def constructions(request):
     return render(request, name_to_template('constructions'))
 
 
-def operations(request):
+def annual_table(request, title, name, table_headers, entites_filter, entity_data):
+    """
+    :param request: http request
+    :param title: external page title and header
+    :param name: internal page name
+    :param table_headers: list containing TableHeaders (not including spot headers)
+    :param entites_filter: function that takes year as an argument
+    :param entity_data: function that takes an entity and returns list of data about it (not including spot identifiers)
+    :return: render of the completed template
+    """
 
-    table_headers = spot_headers() + person_headers(3, 3) + [TableHeader('Tip', 1), TableHeader('Notă', 1)]
+    table_headers = spot_headers() + table_headers
+
+    # data is allowed as much as ten times the column width
     max_data_widths = list(map(lambda x: x.width * 10, table_headers))
 
+    # show the form and/or extract the years from it
     form = years_form(request)
     years = years_list(form)
 
+    # build a table for each year in the list
     tables = []
     for year in years:
-        opers = Operation.objects.filter(date__year=year)
+        # get the entities corresponding to that year
+        entities = entites_filter(year)
         rows = []
-        for o in opers:
-            rows.append(o.spot.identif() +
-                        [o.first_name, o.last_name, o.get_type_display(), o.note])
+        for entity in entities:
+            # show the data for each entitiy
+            rows.append(entity.spot.identif() +
+                        entity_data(entity))
         tables.append(Table(year, rows))
 
     context = {
-        'title': 'Operații',
-        'table_headers': table_headers,
-        'tables': tables,
+        'template_name': name_to_template(name, html=False),
+        'title': title,
         'years_form': form,
         'max_data_widths': max_data_widths,
-        'template_name': name_to_template('operations', html=False),
+        'table_headers': table_headers,
+        'tables': tables
     }
-    return render(request, name_to_template('operations'), context)
+    return render(request, name_to_template(name, html=True), context)
+
+
+def operations(request):
+    return annual_table(
+        request=request,
+        name='operations',
+        title='Operații',
+        table_headers=person_headers(3, 3) + [TableHeader('Tip', 1), TableHeader('Notă', 1)],
+        entites_filter=lambda year: Operation.objects.filter(date__year=year),
+        entity_data=lambda o: [o.first_name, o.last_name, o.get_type_display(), o.note]
+    )
 
 
 def revenue(request):
@@ -142,34 +178,14 @@ def maintentance(request):
         owners = d.owner_set.all()
         return owners[0].identif()
 
-    # the same headers for every table
-    table_headers = spot_headers() + person_headers(3, 3) + [TableHeader('Nivel Întreținere', 2)]
-    # data is allowed as much as ten times the column width
-    max_data_widths = list(map(lambda x: x.width * 10, table_headers))
-
-    form = years_form(request)
-    years = years_list(form)
-
-    # build a table for each year in the list
-    tables = []
-    for year in years:
-        maintentances = MaintenanceLevel.objects.filter(year=year)
-        rows = []
-        for m in maintentances:
-            rows.append(m.spot.identif() +
-                        maintenance_to_owner(m) +
-                        [m.get_description_display()])
-        tables.append(Table(year, rows))
-
-    context = {
-        'title': 'Întreținere',
-        'table_headers': table_headers,
-        'tables': tables,
-        'years_form': form,
-        'max_data_widths': max_data_widths,
-        'template_name': name_to_template('maintenance', html=False),
-    }
-    return render(request, name_to_template('maintenance'), context)
+    return annual_table(
+        request=request,
+        name='maintenance',
+        title='Întreținere',
+        table_headers=person_headers(3, 3) + [TableHeader('Nivel Întreținere', 2)],
+        entites_filter=lambda year: MaintenanceLevel.objects.filter(year=year),
+        entity_data=lambda m: maintenance_to_owner(m) + [m.get_description_display()]
+    )
 
 
 def administration(request):

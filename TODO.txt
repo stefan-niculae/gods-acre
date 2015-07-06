@@ -1,0 +1,2 @@
+glyphicon glyphicon-chevron-up for sorttable
+top nav fix on resize
