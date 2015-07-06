@@ -1,3 +1,5 @@
+exista elemente distinctive intre tabelele anuale?
+
 intretinere:
 un loc poate avea mai multi concesionari, cum afisam asta?
 - pe acelasi rand cu ...
@@ -6,3 +8,16 @@ un loc poate avea mai multi concesionari, cum afisam asta?
 
 operatie:
 cati pot fi ingropati odata pe un loc?
+
+incasari:
+in fiecare an sa fie pe fiecare loc de veci cat a produs?
+cum e treaba cu doar cele care s-au platit/nu s-au platit?
+sa adaugam lista cu plati care sunt pe aceeasi chitanta?
+
+constructii:
+adaugam si codul constructiei (ca sa poata fi recunoscut din campul de list) constructii care impart aut. asta ar insemna sa poti cauta constructii si dupa id (asta ar putea fi la administrare)
+la constructor, la regie proprie sa scrie si numele sau doar textul 'regie proprie'?
+
+concesiuni:
+un act nu are o singura chitanta?
+un act poate fi dat pe mai multe locuri, pe care il alegem sa il reprezinte in tabel?

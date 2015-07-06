@@ -103,14 +103,6 @@ def spot_detail(request, spot_id):
     return render(request, name_to_template('spot_detail'), {'spot_id': spot_id, })
 
 
-def ownerships(request):
-    return render(request, name_to_template('ownerships'))
-
-
-def constructions(request):
-    return render(request, name_to_template('constructions'))
-
-
 def annual_table(request, title, name, table_headers, entites_filter, entity_data):
     """
     :param request: http request
@@ -139,7 +131,8 @@ def annual_table(request, title, name, table_headers, entites_filter, entity_dat
         rows = []
         for entity in entities:
             # show the data for each entitiy
-            rows.append(entity.spot.identif() +
+            spot = entity.spot if hasattr(entity, 'spot') else entity.remote_spot()
+            rows.append(spot.identif() +
                         entity_data(entity))
         tables.append(Table(year, rows))
 
@@ -152,6 +145,62 @@ def annual_table(request, title, name, table_headers, entites_filter, entity_dat
         'tables': tables
     }
     return render(request, name_to_template(name, html=True), context)
+
+
+def ownerships(request):
+    def get_owner(d):
+        owner = d.owners.all()[0]
+        return owner.identif()
+
+    def other_spots_on_deed(d):
+        others = list(d.spots.all())
+        others.remove(d.remote_spot())
+        return '; '.join(list(map(str, others)))
+
+    return annual_table(
+        request=request,
+        name='ownerships',
+        title='Concesiuni',
+        table_headers=person_headers(2, 2) + [TableHeader('Act', 1), TableHeader('Chitanță', 1),
+                                              TableHeader('Pe Același Act', 2)],
+        entites_filter=lambda year: OwnershipDeed.objects.filter(date__year=year),
+        #fixme which owner should be put here?
+        entity_data=lambda d: get_owner(d) + [d, d.receipt, other_spots_on_deed(d)]
+    )
+
+
+def constructions(request):
+    def constructor_display(construction):
+        if construction.owner_builder is not None:
+            # FIXME this actually gets italicized in js + css (do this in template language at least)
+            return '*' + construction.owner_builder.full_name()
+        else:
+            return construction.construction_company.name
+
+    def other_constructions_on_auth(c):
+        # take only constructions on the same authorization that are different from this one
+        others = list(c.construction_authorization.constructions.all())
+        if c in others:
+            others.remove(c)
+
+        # semicolon separated constructions (condensed info of them)
+        return '; '.join(list(map(condensed_info, others)))
+
+    def condensed_info(c):
+        return '{0} pe {1}'.format(c.get_type_display(), c.remote_spot())
+
+    return annual_table(
+        request=request,
+        name='constructions',
+        title='Construcții',
+        table_headers=[TableHeader('Tip', 1), TableHeader('Constructor', 3), TableHeader('Autorizațe', 1),
+                       TableHeader('Pe Aceeași Autorizațe', 3)],
+        entites_filter=lambda year: Construction.objects.filter(construction_authorization__date__year=year),
+        # todo o autorizatie poate fi pe mai multe locuri
+        # pe care o alegem sa reprezinte constructia?
+        entity_data=lambda c: [c.get_type_display(), constructor_display(c), c.construction_authorization,
+                               other_constructions_on_auth(c)],
+    )
 
 
 def operations(request):
@@ -177,7 +226,7 @@ def revenue(request):
 
 
 def maintentance(request):
-    # TODO ownerS!!! there can be more owners
+    # FIXME ownerS!!! there can be more owners
     def maintenance_to_owner(maintenance):
         spot = maintenance.spot
         deeds = spot.ownership_deeds.all().order_by('-date')  # most recent first

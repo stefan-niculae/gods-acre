@@ -25,7 +25,16 @@ def fuzzy_year(yr):
     return yr
 years_list = list(map(fuzzy_year, years_list))
 
-# vews.revenue.receipt_of_payment
-# ... wtf
+# vews.constructions
+from CemeteryAdministration.models import *
+year = 2015
+c1 = Construction.objects.get(pk=1)
+c1.construction_authorization.date.year
+
+
+
+
+
+
 
 

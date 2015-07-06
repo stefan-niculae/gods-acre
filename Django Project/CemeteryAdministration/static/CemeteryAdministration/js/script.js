@@ -9,7 +9,8 @@ function main() {
     // Enable popovers
     $('[data-toggle="popover"]').popover();
     dismissPopoversOnOusideClick();
-    
+ 
+    ownerBuiltItalics();
 }
 
 function dismissPopoversOnOusideClick() {
@@ -27,5 +28,16 @@ function dismissPopoversOnOusideClick() {
             $('[data-toggle="popover"]').popover('hide');
         }
         */
+    });
+}
+
+// TODO move this to a separate js that executes only on this page
+function ownerBuiltItalics() {
+    $('td').each(function() {
+        // HACK
+        if ($(this).text().trim().substring(0, 1) == '*') {
+            $(this).text($(this).text().replace('\*', ''));
+            $(this).addClass('italic');
+        }
     });
 }

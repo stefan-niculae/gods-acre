@@ -51,7 +51,7 @@ class Spot(models.Model):
     column = models.CharField(max_length=10)    # coloana (loc)
 
     def __str__(self):
-        return '#{0} p{1}r{2}c{3}'.format(self.id, self.parcel, self.row, self.column)
+        return '#{0}P{1}R{2}L{3}'.format(self.id, self.parcel, self.row, self.column)
 
     def identif(self):
         """
@@ -68,16 +68,20 @@ class Spot(models.Model):
 class OwnershipDeed(NrYear):
     spots = models.ManyToManyField(Spot, related_name='ownership_deeds')
 
+    def remote_spot(self):
+        # todo a deed can have multiple spots!!!! which one do we chose?
+        return self.spots.all()[0]
+
 
 # Chitanta concesiune
 class OwnershipReceipt(NrYear):
-    ownership_deed = models.ForeignKey(OwnershipDeed)
+    ownership_deed = models.OneToOneField(OwnershipDeed, related_name='receipt')
     value = models.FloatField()
 
 
 # Concesionar
 class Owner(models.Model):
-    ownership_deed = models.ForeignKey(OwnershipDeed)
+    ownership_deed = models.ForeignKey(OwnershipDeed, related_name='owners')
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
 
@@ -89,6 +93,9 @@ class Owner(models.Model):
         :return: identifing data about this person, as a list
         """
         return [self.first_name, self.last_name]
+
+    def full_name(self):
+        return self.first_name + ' ' + self.last_name
 
 
 #
@@ -112,17 +119,25 @@ class Construction(models.Model):
     BORDER = 'brdr'
     TOMB = 'tomb'
     CONSTRUCTION_TYPES = (
-        (BORDER, 'bordura'),
+        (BORDER, 'bordură'),
         (TOMB, 'cavou'),
     )
     type = models.CharField(max_length=4, choices=CONSTRUCTION_TYPES, default=BORDER)
 
     # TODO owner builder and construction company can't BOTH be null, or BOTH not null
-    owner_builder = models.ForeignKey(Owner, null=True)
-    construction_company = models.ForeignKey(ConstructionCompany, null=True)
+
+    # todo add constraint owner_builder must be one of the owners
+    owner_builder = models.ForeignKey(Owner, null=True, blank=True)
+    construction_company = models.ForeignKey(ConstructionCompany, null=True, blank=True)
+    construction_authorization = models.ForeignKey(ConstructionAuthorization, related_name='constructions')
 
     def __str__(self):
         return fields_and_values(self)
+
+    def remote_spot(self):
+        spots = self.construction_authorization.spots.all()
+        # todo an auth can be given to multiple fields, which one do we chose to represent the construction in the table?
+        return spots[0]
 
 
 #
@@ -137,7 +152,7 @@ class Operation(models.Model):
     BURIAL = 'bral'
     EXHUMATION = 'exhm'
     OPERATION_TYPES = (
-        (BURIAL, 'inhumare'),
+        (BURIAL, 'înhumare'),
         (EXHUMATION, 'dezhumare'),
     )
     type = models.CharField(max_length=4, choices=OPERATION_TYPES, default=BURIAL)
@@ -163,8 +178,8 @@ class MaintenanceLevel(models.Model):
     KEPT = 'kept'
     UNKEPT = 'ukpt'
     MAINTENENCE_LEVELS = (
-        (KEPT, 'intretinut'),
-        (UNKEPT, 'neintretinut'),
+        (KEPT, 'întreținut'),
+        (UNKEPT, 'neîntreținut'),
     )
     description = models.CharField(max_length=4, choices=MAINTENENCE_LEVELS, default=KEPT)
 
