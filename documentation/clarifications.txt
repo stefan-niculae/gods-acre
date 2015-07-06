@@ -1,0 +1,8 @@
+intretinere:
+un loc poate avea mai multi concesionari, cum afisam asta?
+- pe acelasi rand cu ...
+- pe acelasi rand, celule merguite
+- rand duplicat, fiecare cu cate un concesionar diferit
+
+operatie:
+cati pot fi ingropati odata pe un loc?

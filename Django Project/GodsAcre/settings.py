@@ -92,9 +92,9 @@ DATABASES = {
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'  # todo change language code to ?eu-ro
+LANGUAGE_CODE = 'en-us'  # fixme change language code to ?eu-ro
 
-TIME_ZONE = 'UTC'  # todo change timezone to ?utc+2
+TIME_ZONE = 'UTC'  # fixme change timezone to ?utc+2
 
 USE_I18N = True
 

@@ -166,7 +166,14 @@ def operations(request):
 
 
 def revenue(request):
-    return render(request, name_to_template('revenue'))
+    return annual_table(
+        request=request,
+        name='revenue',
+        title='Încasări',
+        table_headers=[TableHeader('Valoare Contribuție', 4), TableHeader('Chitanță', 4)],
+        entites_filter=lambda year: YearlyPayment.objects.filter(year=year),
+        entity_data=lambda p: [p.value, p.receipt]
+    )
 
 
 def maintentance(request):
@@ -189,6 +196,7 @@ def maintentance(request):
 
 
 def administration(request):
+    # todo administration
     table_headers = ['#', 'Parcela', 'Rand', 'Loc']
     row1 = ['1', '1a', '1', '1bis']
     row2 = ['2', '2a', '100', '3']

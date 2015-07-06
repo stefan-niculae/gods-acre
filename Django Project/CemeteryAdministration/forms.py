@@ -6,6 +6,7 @@ class YearsForm(forms.Form):
     used in the annual tables
     inline, fills a horizontal line
     """
+    # TODO add label to the left
     ani = forms.CharField(label='Ani:', min_length=1, max_length=100,
                           widget=forms.TextInput(attrs={'placeholder': 'Unul sau mai mulți ani',
                                                         'pattern': '^\s*\'?\s*\d+(\s*,?\s*\'?\s*\d+)*\s*$',

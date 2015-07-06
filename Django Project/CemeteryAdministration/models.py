@@ -34,7 +34,7 @@ def fields_and_values(model):
 class NrYear(models.Model):
     # TODO each class that derives this has a unique nr/date combination
     number = models.IntegerField()
-    date = models.DateField(default=date.today)
+    date = models.DateField(default=date.today)  # todo date must be less or equal to now
 
     def __str__(self):
         return '{0}/{1}'.format(self.number, self.date.year)
@@ -132,7 +132,7 @@ class Construction(models.Model):
 # Operatie
 class Operation(models.Model):
     spot = models.ForeignKey(Spot)
-    date = models.DateField(default=date.today)
+    date = models.DateField(default=date.today)  # todo date ?must be less or equal to now
 
     BURIAL = 'bral'
     EXHUMATION = 'exhm'
@@ -182,10 +182,10 @@ class MaintenanceLevel(models.Model):
 #
 
 class ContributionReceipt(NrYear):
+    # todo add constraint a single receipt with the same nr/year per spot
     def total_value(self):
-        value = 0
         # TODO summation of all yearly payments that have this as the receipt
-        return value
+        pass
 
 
 # Plata pe an

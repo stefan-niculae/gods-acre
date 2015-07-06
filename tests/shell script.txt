@@ -24,3 +24,8 @@ def fuzzy_year(yr):
         return 1900 + yr
     return yr
 years_list = list(map(fuzzy_year, years_list))
+
+# vews.revenue.receipt_of_payment
+# ... wtf
+
+
