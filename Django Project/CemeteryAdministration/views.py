@@ -221,7 +221,7 @@ def revenue(request):
         title='Încasări',
         table_headers=[TableHeader('Valoare Contribuție', 4), TableHeader('Chitanță', 4)],
         entites_filter=lambda year: YearlyPayment.objects.filter(year=year),
-        entity_data=lambda p: [p.value, p.receipt]
+        entity_data=lambda p: [p.value, str(p.receipt)]
     )
 
 
@@ -231,7 +231,7 @@ def maintentance(request):
         spot = maintenance.spot
         deeds = spot.ownership_deeds.all().order_by('-date')  # most recent first
         d = deeds[0]
-        owners = d.owner_set.all()
+        owners = d.owners.all() # this was d.owner_set.all()
         return owners[0].identif()
 
     return annual_table(

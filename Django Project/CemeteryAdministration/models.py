@@ -39,6 +39,7 @@ class NrYear(models.Model):
     def __str__(self):
         return '{0}/{1}'.format(self.number, self.date.year)
 
+
 #
 # Actual Models
 #
