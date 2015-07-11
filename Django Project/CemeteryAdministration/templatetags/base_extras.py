@@ -21,3 +21,7 @@ def zip_lists(a, b):
     the lists a and b can be now traversed simultaneously
     """
     return zip(a, b)
+
+@register.filter
+def contains(word, letter):
+    return letter in str(word)

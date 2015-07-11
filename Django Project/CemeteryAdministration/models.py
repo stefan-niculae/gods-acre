@@ -20,7 +20,7 @@ def fields_and_values(model):
 
         try:
             value = str(getattr(model, f.name))
-        except:
+        except AttributeError:
             value = '-'
 
         res += value
@@ -32,9 +32,9 @@ def fields_and_values(model):
 
 # Abstract class for deeds, receipts & autorizations
 class NrYear(models.Model):
-    # TODO each class that derives this has a unique nr/date combination
+    # todo constraint each class that derives this has a unique nr/date combination
     number = models.IntegerField()
-    date = models.DateField(default=date.today)  # todo date must be less or equal to now
+    date = models.DateField(default=date.today)  # todo warn if date too far from current year
 
     def __str__(self):
         return '{0}/{1}'.format(self.number, self.date.year)
@@ -45,14 +45,13 @@ class NrYear(models.Model):
 #
 
 
-# Loc de veci
 class Spot(models.Model):
-    parcel = models.CharField(max_length=10)    # parcela
-    row = models.CharField(max_length=10)       # rand
-    column = models.CharField(max_length=10)    # coloana (loc)
+    parcel = models.CharField(max_length=10)
+    row = models.CharField(max_length=10)
+    column = models.CharField(max_length=10)
 
     def __str__(self):
-        return '#{0}P{1}R{2}L{3}'.format(self.id, self.parcel, self.row, self.column)
+        return '#{0} P{1} R{2} C{3}'.format(self.id, self.parcel, self.row, self.column)
 
     def identif(self):
         """
@@ -65,26 +64,27 @@ class Spot(models.Model):
 # Ownership part
 #
 
-# Act de concesiune
 class OwnershipDeed(NrYear):
+    # todo make it not possible to enter a deed without an owner having it as the deed
     spots = models.ManyToManyField(Spot, related_name='ownership_deeds')
+    # todo warn if the most recent deed on this spot has the same owner as the one entered
 
     def remote_spot(self):
         # todo a deed can have multiple spots!!!! which one do we chose?
         return self.spots.all()[0]
 
 
-# Chitanta concesiune
 class OwnershipReceipt(NrYear):
-    ownership_deed = models.OneToOneField(OwnershipDeed, related_name='receipt')
+    # todo constraint can't give a receipt for two deeds on the same spot
+    # todo warn if the deed's date is too far away from the receipt's date
+    ownership_deed = models.ForeignKey(OwnershipDeed, related_name='receipts')
     value = models.FloatField()
 
 
-# Concesionar
 class Owner(models.Model):
-    ownership_deed = models.ForeignKey(OwnershipDeed, related_name='owners')
-    first_name = models.CharField(max_length=25)
-    last_name = models.CharField(max_length=25)
+    ownership_deeds = models.ManyToManyField(OwnershipDeed, related_name='owners')
+    first_name = models.CharField(max_length=25)  # todo input only letters
+    last_name = models.CharField(max_length=25)   # todo input only letters
 
     def __str__(self):
         return fields_and_values(self)
@@ -103,12 +103,11 @@ class Owner(models.Model):
 # Construction part
 #
 
-# Autorizatie de constructie
 class ConstructionAuthorization(NrYear):
+    # todo constraint authorization date after deed date
     spots = models.ManyToManyField(Spot)
 
 
-# Firma de constructii
 class ConstructionCompany(models.Model):
     name = models.CharField(max_length=50)
 
@@ -117,6 +116,7 @@ class ConstructionCompany(models.Model):
 
 
 class Construction(models.Model):
+    # todo warn if there is already a border/tomb on the same spot
     BORDER = 'brdr'
     TOMB = 'tomb'
     CONSTRUCTION_TYPES = (
@@ -145,10 +145,9 @@ class Construction(models.Model):
 # Operations part
 #
 
-# Operatie
 class Operation(models.Model):
-    spot = models.ForeignKey(Spot)
-    date = models.DateField(default=date.today)  # todo date ?must be less or equal to now
+    spot = models.ForeignKey(Spot)  # todo show how many there are buried when adding a new operation
+    date = models.DateField(default=date.today)  # todo warn if date is in the future
 
     BURIAL = 'bral'
     EXHUMATION = 'exhm'
@@ -158,23 +157,21 @@ class Operation(models.Model):
     )
     type = models.CharField(max_length=4, choices=OPERATION_TYPES, default=BURIAL)
 
-    first_name = models.CharField(max_length=25)
+    first_name = models.CharField(max_length=25)  # todo warn if there is an exhumation of a person that wasn't buried on that spot
     last_name = models.CharField(max_length=25)
     note = models.CharField(max_length=250, null=True, blank=True)
 
     def __str__(self):
         return fields_and_values(self)
-    #todo add constraint how many can be buried at once
 
 
 #
 # Maintenance part
 #
 
-# Intretinere
 class MaintenanceLevel(models.Model):
     spot = models.ForeignKey(Spot)
-    year = models.IntegerField()  # add constraint over ?1950, under curr_year + 1
+    year = models.IntegerField()  # todo warn if year > 1950 or year < current year + 1
 
     KEPT = 'kept'
     UNKEPT = 'ukpt'
@@ -198,14 +195,14 @@ class MaintenanceLevel(models.Model):
 #
 
 class ContributionReceipt(NrYear):
-    # todo add constraint a single receipt with the same nr/year per spot
-    def total_value(self):
-        # TODO summation of all yearly payments that have this as the receipt
-        pass
+    # todo add constraint: a single receipt with the same nr/year per spot
+    # todo add constraint: date afte deed date
+    pass
 
 
-# Plata pe an
 class YearlyPayment(models.Model):
+    # todo add constraint: only one payment per year per spot
+    # todo add constraint: year after or equal to deed date
     spot = models.ForeignKey(Spot)
     receipt = models.ForeignKey(ContributionReceipt)
     year = models.IntegerField()

@@ -4,13 +4,19 @@ function main() {
     // Enable tooltips
     $('[data-toggle="tooltip"]').tooltip({
         placement: 'bottom',
-    }); 
+    });
+    $('[data-toggle="tooltip-top"]').tooltip({
+        placement: 'top',
+    });
     
     // Enable popovers
     $('[data-toggle="popover"]').popover();
+    
     dismissPopoversOnOusideClick();
- 
-    ownerBuiltItalics();
+    
+    $('.navbar-toggle ').on('click', function() {
+        console.log('clicked navbar toogle');
+    });
 }
 
 function dismissPopoversOnOusideClick() {
@@ -28,16 +34,5 @@ function dismissPopoversOnOusideClick() {
             $('[data-toggle="popover"]').popover('hide');
         }
         */
-    });
-}
-
-// TODO move this to a separate js that executes only on this page
-function ownerBuiltItalics() {
-    $('td').each(function() {
-        // HACK
-        if ($(this).text().trim().substring(0, 1) == '*') {
-            $(this).text($(this).text().replace('\*', ''));
-            $(this).addClass('italic');
-        }
     });
 }

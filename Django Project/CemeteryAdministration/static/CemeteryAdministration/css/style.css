@@ -20,3 +20,14 @@ label[for="id_ani"] {
 .italic {
     font-style: italic;
 }
+
+td div {
+    display: inline;
+}
+
+.field-left {
+    float: left;
+}
+.field-right {
+    float: right;
+}

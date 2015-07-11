@@ -28,6 +28,7 @@
             <thead>
                 <tr class="row">
                     {% for table_header in table_headers %}
+                    <!--todo tables that don't break so early-->
                     <th class="col-md-{{ table_header.width }}">{{ table_header.name }}</th>
                     {% endfor %}
                 </tr>
@@ -36,7 +37,9 @@
                 {% for row in table.rows %}
                 <tr class="row">
                     {% for data, max_width in row|zip:max_data_widths %}
-                    <td>
+                    <td class="{% if data|contains:'.' %}
+                               italic
+                               {% endif %}">
                         {% if data|length > max_width %}
                             <a href="#" data-toggle="popover" data-placement="left" data-content="{{ data }}">
                                 {{ data|truncatechars:max_width }}</a>

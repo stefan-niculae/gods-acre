@@ -3,5 +3,95 @@
 {% block title %}Registru General{% endblock %}
 
 {% block content %}
-    registru general
+    <table class="table table-striped table-hover sortable">
+        <thead>
+            <tr class="row">
+                <th class="col-lg-1" data-toggle="tooltip-top" data-container="body" title="Cod, parcelă, rând, loc">Loc veci</th>
+                <th class="col-lg-3" data-toggle="tooltip-top" data-container="body" title="Nume, telefon">Concesionari</th>
+                <th class="col-lg-1" data-toggle="tooltip-top" data-container="body" title="Act de concesiune (nr/an), * împarte actul cu alte locuri">Act</th>
+                <th class="col-lg-1" data-toggle="tooltip-top" data-container="body" title="Chitanță concesiune (nr/an)">Chitanță</th>
+                <th class="col-lg-2" data-toggle="tooltip-top" data-container="body" title="Nume, înhumare/dezhumare, an">Înhumări</th>
+                <th class="col-lg-2" data-toggle="tooltip-top" data-container="body" title="Tip, autorizație (nr/an)">Construcții</th>
+                <th class="col-lg-1" data-toggle="tooltip-top" data-container="body" title="Până în ce an este plătit">Plată</th>
+                <th class="col-lg-1" data-toggle="tooltip-top" data-container="body" title="Anii în care nu a fost întreținut (15 reprezintă 2015, 94 reprezintă 1994)">Neîntreținut</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="row">
+                <td class="" contenteditable="true">1 A 10 2b</td>
+                <td class="">
+                    <div class="field-right italic">723 456 789</div>
+                    <div class="field-left">Ana Popescu</div><br>
+                    <div class="field-left">Ionel Popescu</div>
+                </td>
+                <td class="">150/2010*</td>
+                <td class="">30/2010</td>
+                <td class="">
+                    <div class="field-left">Dumitru Dragomir</div>
+                    <div class="field-right italic">î2015</div>
+                    <br>
+                    <div class="field-left">Alexandru Popa</div>
+                    <div class="field-right italic">d2015</div>
+                </td>
+                <td class="">
+                    <div class="field-left">bordură</div>
+                    <div class="field-right italic">14/2011</div>
+                    <br>
+                    <div class="field-left">cavou</div>
+                    <div class="field-right italic">14/2011</div>
+                </td>
+                <td class="">2013</td>
+                <td class="">
+                    14 15 16 17<br>
+                    94 95 00 05
+                </td>
+            </tr>
+            <tr class="row">
+                <td class="">21 B 10 11</td>
+                <td class="">
+                    <div class="field-right italic">765 432 108</div>
+                    <div class="field-left">George Alexandrescu</div><br>
+                </td>
+                <td class="">7/2005</td>
+                <td class="">21/2005</td>
+                <td class="">
+                    <div class="field-left">Adrian Coman</div>
+                    <div class="field-right italic">î2007</div>
+                </td>
+                <td class="">
+                    <div class="field-left">bordură</div>
+                    <div class="field-right italic">512/2006</div>
+                </td>
+                <td class="">2010</td>
+                <td class="">
+                    2015<br>
+                </td>
+            </tr>
+            <tr class="row">
+                <td class="">501 A 31 14</td>
+                <td class="">
+                    <div class="field-right italic">777 555 222</div>
+                    <div class="field-left">Ana Anghelescu</div><br>
+                </td>
+                <td class="">326/1990</td>
+                <td class="">350/1990</td>
+                <td class="">
+                    <div class="field-left">Mircea Voinescu</div>
+                    <div class="field-right italic">î1991</div>
+                </td>
+                <td class="">
+                    <div class="field-left">bordură</div>
+                    <div class="field-right italic">17/1998</div>
+                    <br>
+                    <div class="field-left">cavou</div>
+                    <div class="field-right italic">211/1998</div>
+                </td>
+                <td class="">1999</td>
+                <td class="">
+                    2015<br>
+                    2014<br>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 {% endblock %}
