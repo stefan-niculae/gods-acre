@@ -12,7 +12,7 @@ function main() {
     // Enable popovers
     $('[data-toggle="popover"]').popover();
     
-    dismissPopoversOnOusideClick();
+//    dismissPopoversOnOusideClick();
     
     $('.navbar-toggle ').on('click', function() {
         console.log('clicked navbar toogle');

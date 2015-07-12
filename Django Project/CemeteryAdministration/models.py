@@ -49,6 +49,7 @@ class Spot(models.Model):
     parcel = models.CharField(max_length=10)
     row = models.CharField(max_length=10)
     column = models.CharField(max_length=10)
+    note = models.CharField(max_length=250, null=True, blank=True)
 
     def __str__(self):
         return '#{0} P{1} R{2} C{3}'.format(self.id, self.parcel, self.row, self.column)
@@ -58,6 +59,9 @@ class Spot(models.Model):
         :return: identifing data about this spot, as a list
         """
         return [self.id, self.parcel, self.row, self.column]
+
+    def most_recent_deed_up_to(self, year):
+        return self.ownership_deeds.filter(date__lte=date(year, 12, 31)).order_by('-date')[0]
 
 
 #
@@ -85,6 +89,7 @@ class Owner(models.Model):
     ownership_deeds = models.ManyToManyField(OwnershipDeed, related_name='owners')
     first_name = models.CharField(max_length=25)  # todo input only letters
     last_name = models.CharField(max_length=25)   # todo input only letters
+    phone = models.CharField(max_length=15, null=True, blank=True)  # todo regex validation for this
 
     def __str__(self):
         return fields_and_values(self)
@@ -98,6 +103,9 @@ class Owner(models.Model):
     def full_name(self):
         return self.first_name + ' ' + self.last_name
 
+    def phone_display(self):
+        return '0{0} {1} {2}'.format(self.phone[0:3], self.phone[3:6], self.phone[6:9])
+
 
 #
 # Construction part
@@ -105,7 +113,8 @@ class Owner(models.Model):
 
 class ConstructionAuthorization(NrYear):
     # todo constraint authorization date after deed date
-    spots = models.ManyToManyField(Spot)
+    # todo constraint can't have more than one authorization per year per spot
+    spots = models.ManyToManyField(Spot, related_name='construction_authorizations')
 
 
 class ConstructionCompany(models.Model):
@@ -125,10 +134,10 @@ class Construction(models.Model):
     )
     type = models.CharField(max_length=4, choices=CONSTRUCTION_TYPES, default=BORDER)
 
-    # TODO owner builder and construction company can't BOTH be null, or BOTH not null
+    # TODO add constraint owner builder and construction company can't BOTH be null, or BOTH not null
 
     # todo add constraint owner_builder must be one of the owners
-    owner_builder = models.ForeignKey(Owner, null=True, blank=True)
+    owner_builder = models.ForeignKey(Owner, null=True, blank=True)  # todo (also add a preference to show 'Regie Proprie' or the actual name of the builder)
     construction_company = models.ForeignKey(ConstructionCompany, null=True, blank=True)
     construction_authorization = models.ForeignKey(ConstructionAuthorization, related_name='constructions')
 
@@ -139,6 +148,12 @@ class Construction(models.Model):
         spots = self.construction_authorization.spots.all()
         # todo an auth can be given to multiple fields, which one do we chose to represent the construction in the table?
         return spots[0]
+
+    def constructor(self):
+        if self.owner_builder is not None:
+            return self.owner_builder.full_name()
+        else:
+            return self.construction_company.name
 
 
 #

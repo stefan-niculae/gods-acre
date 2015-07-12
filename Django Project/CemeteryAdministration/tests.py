@@ -240,7 +240,7 @@ class OperationsTest(TestCase):
 
         self.assertListEqual(tables[0].rows,
                              [
-                                 [self.spot1.id, '1p', '1r', '1c', 'a', 'aa', 'înhumare', None],
+                                 [self.spot1.id, '1p', '1r', '1c', 'a', 'aa', 'înhumare', 2001, None],
                              ])
 
     def test2_exhumation_with_and_without_note(self):
@@ -261,8 +261,8 @@ class OperationsTest(TestCase):
 
         self.assertListEqual(tables[0].rows,
                              [
-                                 [self.spot1.id, '1p', '1r', '1c', 'b', 'bb', 'dezhumare', None],
-                                 [self.spot2.id, '2p', '2r', '2c', 'c', 'cc', 'dezhumare', 'n']
+                                 [self.spot1.id, '1p', '1r', '1c', 'b', 'bb', 'dezhumare', 2002, None],
+                                 [self.spot2.id, '2p', '2r', '2c', 'c', 'cc', 'dezhumare', 2002, 'n']
                              ])
 
 
@@ -564,6 +564,33 @@ class MaintenanceTest(TestCase):
                                  [self.spot2.id, '2p', '2r', '2c', 'new n', 'întreținut'],
                              ])
 
+    def test11_new_owner(self):
+        maintenance16 = MaintenanceLevel.objects.create(spot=self.spot1,
+                                                        year=2011,
+                                                        description='kept')
+        deed16 = OwnershipDeed.objects.create(number=16,
+                                              date=date(2111, 1, 1))
+        deed16.spots = [self.spot1]
+
+        deed17 = OwnershipDeed.objects.create(number=17,
+                                              date=date(2011, 1, 1))
+        deed17.spots = [self.spot1]
+
+        owner15 = Owner.objects.create(first_name='viitor',
+                                       last_name='v')
+        owner15.ownership_deeds = [deed16]
+        owner16 = Owner.objects.create(first_name='prezent',
+                                       last_name='p')
+        owner16.ownership_deeds = [deed17]
+
+        response = self.client.get(reverse(revpath(self.view_name)), {'ani': '11'})
+        tables = response.context['tables']
+
+        self.assertListEqual(tables[0].rows,
+                             [
+                                 [self.spot1.id, '1p', '1r', '1c', 'prezent p', 'întreținut']
+                             ])
+
 
 class OwnershipsTest(TestCase):
     view_name = 'ownerships'
@@ -667,29 +694,137 @@ class ConstructionsTest(TestCase):
         self.spot2 = Spot.objects.create(parcel='2p',
                                          row='2r',
                                          column='2c')
+        self.spot3 = Spot.objects.create(parcel='3p',
+                                         row='3r',
+                                         column='3c')
 
-    # todo more
-    def test1_different_spot_same_auth_two_constructions(self):
+    def test1_one_constr_same_auth_same_spot(self):
         authorization1 = ConstructionAuthorization.objects.create(number=1,
                                                                   date=date(2001, 1, 1))
-        authorization1.spots = [self.spot1, self.spot2]
+        authorization1.spots = [self.spot1]
 
-        owner1 = Owner.objects.create(first_name='ana',
-                                      last_name='a')
-
-        company1 = ConstructionCompany.objects.create(name='compA s.r.l.')
+        company1 = ConstructionCompany.objects.create(name='compA')
 
         construction1 = Construction.objects.create(type='brdr',
                                                     construction_company=company1,
                                                     construction_authorization=authorization1)
-        construction1 = Construction.objects.create(type='brdr',
-                                                    construction_company=company1,
-                                                    construction_authorization=authorization1)
 
-        response = self.client.get(reverse(revpath(self.view_name)), {'ani': '2 22'})
+        response = self.client.get(reverse(revpath(self.view_name)), {'ani': '1'})
         tables = response.context['tables']
 
         self.assertListEqual(tables[0].rows,
                              [
-                                 [self.spot1.id, '1p', '1r', '1c', 'ana a', '1/2002'],
+                                 [self.spot1.id, '1p', '1r', '1c', 'bordură', 'compA', '1/2001', ''],
+                             ])
+
+    def test2_two_constr_same_same_auth_same_spot(self):
+        authorization2 = ConstructionAuthorization.objects.create(number=2,
+                                                                  date=date(2002, 1, 1))
+        authorization2.spots = [self.spot1]
+
+        company2 = ConstructionCompany.objects.create(name='compA')
+
+        construction2 = Construction.objects.create(type='brdr',
+                                                    construction_company=company2,
+                                                    construction_authorization=authorization2)
+        construction3 = Construction.objects.create(type='tomb',
+                                                    construction_company=company2,
+                                                    construction_authorization=authorization2)
+
+        response = self.client.get(reverse(revpath(self.view_name)), {'ani': '2'})
+        tables = response.context['tables']
+
+        self.assertListEqual(tables[0].rows,
+                             [
+                                 [self.spot1.id, '1p', '1r', '1c', 'bordură, cavou', 'compA', '2/2002', ''],
+                             ])
+
+    def test3_one_constr_one_auth_two_spots(self):
+        authorization3 = ConstructionAuthorization.objects.create(number=3,
+                                                                  date=date(2003, 1, 1))
+        authorization3.spots = [self.spot1, self.spot2]
+
+        company3 = ConstructionCompany.objects.create(name='compA')
+
+        construction4 = Construction.objects.create(type='tomb',
+                                                    construction_company=company3,
+                                                    construction_authorization=authorization3)
+
+        response = self.client.get(reverse(revpath(self.view_name)), {'ani': '3'})
+        tables = response.context['tables']
+
+        self.assertListEqual(tables[0].rows,
+                             [
+                                 [self.spot1.id, '1p', '1r', '1c', 'cavou', 'compA', '3/2003', '#{0} P2p R2r C2c'.format(self.spot2.id)],
+                                 [self.spot2.id, '2p', '2r', '2c', 'cavou', 'compA', '3/2003', '#{0} P1p R1r C1c'.format(self.spot1.id)]
+                             ])
+
+    def test4_one_constr_one_auth_three_spots(self):
+        authorization4 = ConstructionAuthorization.objects.create(number=4,
+                                                                  date=date(2004, 1, 1))
+        authorization4.spots = [self.spot1, self.spot2, self.spot3]
+
+        company4 = ConstructionCompany.objects.create(name='compA')
+
+        construction5 = Construction.objects.create(type='tomb',
+                                                    construction_company=company4,
+                                                    construction_authorization=authorization4)
+
+        response = self.client.get(reverse(revpath(self.view_name)), {'ani': '4'})
+        tables = response.context['tables']
+
+        self.maxDiff=None
+        self.assertListEqual(tables[0].rows,
+                             [
+                                 [self.spot1.id, '1p', '1r', '1c', 'cavou', 'compA', '4/2004', '#{0} P2p R2r C2c, #{1} P3p R3r C3c'.format(self.spot2.id, self.spot3.id)],
+                                 [self.spot2.id, '2p', '2r', '2c', 'cavou', 'compA', '4/2004', '#{0} P1p R1r C1c, #{1} P3p R3r C3c'.format(self.spot1.id, self.spot3.id)],
+                                 [self.spot3.id, '3p', '3r', '3c', 'cavou', 'compA', '4/2004', '#{0} P1p R1r C1c, #{1} P2p R2r C2c'.format(self.spot1.id, self.spot2.id)],
+                             ])
+
+    def test5_two_constructions_one_owner_built_one_firm_built(self):
+        authorization5 = ConstructionAuthorization.objects.create(number=5,
+                                                                  date=date(2005, 1, 1))
+        authorization5.spots = [self.spot1]
+
+        company5 = ConstructionCompany.objects.create(name='compA')
+
+        owner1 = Owner.objects.create(first_name='constructor',
+                                      last_name='singur')
+
+        construction6 = Construction.objects.create(type='brdr',
+                                                    construction_company=company5,
+                                                    construction_authorization=authorization5)
+        construction7 = Construction.objects.create(type='tomb',
+                                                    owner_builder=owner1,
+                                                    construction_authorization=authorization5)
+
+        response = self.client.get(reverse(revpath(self.view_name)), {'ani': '5'})
+        tables = response.context['tables']
+
+        self.assertListEqual(tables[0].rows,
+                             [
+                                 [self.spot1.id, '1p', '1r', '1c', 'bordură, cavou', 'compA, constructor singur', '5/2005', ''],
+                             ])
+
+    def test6_two_spots_two_constructions_same_auth_same_firm(self):
+        authorization6 = ConstructionAuthorization.objects.create(number=6,
+                                                                  date=date(2006, 1, 1))
+        authorization6.spots = [self.spot1, self.spot2]
+
+        company7 = ConstructionCompany.objects.create(name='compA')
+
+        construction8 = Construction.objects.create(type='brdr',
+                                                    construction_company=company7,
+                                                    construction_authorization=authorization6)
+        construction9 = Construction.objects.create(type='tomb',
+                                                    construction_company=company7,
+                                                    construction_authorization=authorization6)
+
+        response = self.client.get(reverse(revpath(self.view_name)), {'ani': '6'})
+        tables = response.context['tables']
+
+        self.assertListEqual(tables[0].rows,
+                             [
+                                 [self.spot1.id, '1p', '1r', '1c', 'bordură, cavou', 'compA', '6/2006', '#{0} P2p R2r C2c'.format(self.spot2.id)],
+                                 [self.spot2.id, '2p', '2r', '2c', 'bordură, cavou', 'compA', '6/2006', '#{0} P1p R1r C1c'.format(self.spot1.id)]
                              ])

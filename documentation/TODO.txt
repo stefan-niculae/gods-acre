@@ -5,11 +5,7 @@ telefon la concesionar (sa se vada la concesiuni)
 OUTPUT:
 incasari: sa se poata apasa sa vezi DOAR tabele cu plata zero sau cu plata nenula!
 tables: glyphicon glyphicon-chevron-up for sorttable
-??? la concesioanri, daca au mai multi acelasi nume de familie, sa scrie doar prenumele? NU!
 ??? cum sa afisam parcela cu P R L sau cu - sau doar spatiu? cu P=!
-??? la constructii sa scrie numele concesionarului care a construit sau doar regie proprie? doar regie proprie!
-??? la contributii, sa fie si un total/platit pana in anul? doar platit pana in!
-
 !!! la constructii, nu numele ci doar /regie proprie/
 
 INPUT:

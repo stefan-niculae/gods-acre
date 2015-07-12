@@ -3,6 +3,10 @@ from .models import *
 from .forms import YearsForm
 import re
 from datetime import date
+import operator
+
+
+#TODO remove str(...) from here and instead, call str as as mapping in tests
 
 
 def name_to_template(name, html=True):
@@ -18,13 +22,13 @@ def name_to_template(name, html=True):
 
 
 def index(request):
-    # todo splash page (and login)
     return render(request, name_to_template('index'))
 
 
 #
 # Table helpers
 #
+
 
 class Table:
     def __init__(self, yr, rws):
@@ -42,7 +46,7 @@ def spot_headers(iw=1, pw=1, rw=1, cw=1):
     return [TableHeader('#', iw), TableHeader('Parcelă', pw), TableHeader('Rând', rw), TableHeader('Loc', cw)]
 
 
-def person_headers(fw=2, lw=2):
+def person_headers(fw=4, lw=4):
     return [TableHeader('Prenume', fw), TableHeader('Nume', lw)]
 
 
@@ -57,6 +61,7 @@ def owners_to_names(owners):
 #
 # Form helpers
 #
+
 
 def years_form(request):
     """
@@ -100,18 +105,26 @@ def years_list(form):
         return [date.today().year]
 
 
+#
+# General register & spot detail
+#
+
+
 def general_register(request):
-    # todo
     return render(request, name_to_template('general_register'), {'title': 'Registru General'})
 
 
 def spots(request):
-    #todo
     return render(request, name_to_template('spot'))
 
 
 def spot_detail(request, spot_id):
     return render(request, name_to_template('spot_detail'), {'spot_id': spot_id, 'title': 'Fișă Individuală'})
+
+
+#
+# Annual tables
+#
 
 
 def annual_table(request, title, name, table_headers, entites_filter, entity_data):
@@ -136,7 +149,7 @@ def annual_table(request, title, name, table_headers, entites_filter, entity_dat
     table_headers = spot_headers() + table_headers
 
     # data is allowed as much as ten times the column width
-    max_data_widths = list(map(lambda x: x.width * 10, table_headers))
+    max_data_widths = list(map(lambda x: int(x.width * 6.5), table_headers))
 
     # show the form and/or extract the years from it
     form = years_form(request)
@@ -165,91 +178,120 @@ def annual_table(request, title, name, table_headers, entites_filter, entity_dat
     return render(request, name_to_template(name, html=True), context)
 
 
-def spots_with_deed_in_year(year, or_before=False):
+def spots_with_attribute_date_comparison_year(attribute, comparison, year):
+    """
+    :param attribute: ownership_deeds, construction_authorizations etc
+    :param comparison: ==, <= etc
+    :param year: what to compare date of the attribute to
+    :return: list of spots
+    """
+    ops = {'>': operator.gt,
+           '<': operator.lt,
+           '>=': operator.ge,
+           '<=': operator.le,
+           '=': operator.eq,
+           '==': operator.eq,
+           '!=': operator.ne}
+    comp = ops[comparison]
+
     spts = []
     for spot in Spot.objects.all():
-        for deed in spot.ownership_deeds.all():
-            if deed.date.year == year or (or_before and deed.date.year < year):
+        for attr in getattr(spot, attribute).all():
+            if comp(attr.date.year, year):
                 spts.append(spot)
                 break
     return spts
 
 
 def ownerships(request):
-    def ownership_data_for_spot(spot, year):
-        # the most recent deed (that existed in the year in question)
-        d = spot.ownership_deeds.filter(date__lte=date(year, 12, 31)).order_by('-date')[0]
+    def ownership_data(spot, year):
+        d = spot.most_recent_deed_up_to(year)
 
         # the most recent receipt
         receipt = d.receipts.order_by('-date')[0]
 
-        # other owners on the same deed
         owners = d.owners.all()
+
+        # other owners on the same deed
         others = list(d.spots.all())
         others.remove(spot)
         others_disp = ', '.join([str(o) for o in others])
 
-        return [owners_to_names(owners), str(d), str(receipt), others_disp]
+        return [owners_to_names(owners), phones_if_any(owners), str(d), str(receipt), others_disp]
+
+    def phones_if_any(owners):
+        """
+        :param: owners list of Owners
+        :return: comma separated phone numbers. if there are none, a dash instead
+        """
+        numbers = []
+        for owner in owners:
+            if owner.phone is not None:
+                numbers.append(owner.phone_display())
+        if len(numbers) > 0:
+            return ', '.join(numbers)
+        else:
+            return '-'
 
     return annual_table(
         request=request,
         name='ownerships',
         title='Concesiuni',
-        table_headers=[TableHeader('Concesionari', 4), TableHeader('Act', 1), TableHeader('Chitanță', 1),
-                       TableHeader('Pe Același Act', 2)],
-        entites_filter=spots_with_deed_in_year,
-        entity_data=ownership_data_for_spot
+        # todo make widths quanta 1/24 not 1/12
+        table_headers=[TableHeader('Concesionari', 8), TableHeader('Telefoane', 4), TableHeader('Act', 2), TableHeader('Chitanță', 2),
+                       TableHeader('Pe același act', 4)],
+        entites_filter=lambda year: spots_with_attribute_date_comparison_year('ownership_deeds', '==', year),
+        entity_data=ownership_data
     )
 
 
+def collapse_names(names):
+    """
+    :param names: list of strings
+    :return: just one name if they are all the same, otherwise, the names separated by comma
+    """
+    if all(n == names[0] for n in names):
+        return names[0]
+    else:
+        return ', '.join(names)
+
+
 def constructions(request):
-    def constructor_display(construction):
-        if construction.owner_builder is not None:
-            return construction.owner_builder.full_name()
-        else:
-            company = construction.construction_company.name
-            # we use this special mark so we can know what to italicize
-            # also for a human to better distingusih between companies and human constructors
-            special = '.'
-            if not special in company:
-                company += special
-            return company
+    def construction_data(spot, year):
+        # working under the assumption that there can be only one authorization in a year for a spot
+        auth = spot.construction_authorizations.get(date__year=year)
 
-    def other_constructions_on_auth(c):
-        # take only constructions on the same authorization that are different from this one
-        others = list(c.construction_authorization.constructions.all())
-        if c in others:
-            others.remove(c)
+        # constructions sorted by type
+        constrs = auth.constructions.order_by('type')
+        constrs_types = ', '.join([c.get_type_display() for c in constrs])
 
-        # semicolon separated constructions (condensed info of them)
-        return ', '.join(list(map(condensed_info, others)))
+        constructors = [c.constructor() for c in constrs]
 
-    def condensed_info(c):
-        return '{0} pe {1}'.format(c.get_type_display(), c.remote_spot())
+        others = list(auth.spots.all())
+        others.remove(spot)
+        others_info = ', '.join([str(s) for s in others])
+
+        return [constrs_types, collapse_names(constructors), str(auth), others_info]
 
     return annual_table(
         request=request,
         name='constructions',
         title='Construcții',
-        table_headers=[TableHeader('Tip', 1), TableHeader('Constructor', 3), TableHeader('Autorizațe', 1),
-                       TableHeader('Pe Aceeași Autorizațe', 3)],
-        entites_filter=lambda year: Construction.objects.filter(construction_authorization__date__year=year),
-        # todo o autorizatie poate fi pe mai multe locuri
-        # pe care o alegem sa reprezinte constructia?
-        entity_data=lambda c, yr: [c.get_type_display(), constructor_display(c), c.construction_authorization,
-                                   other_constructions_on_auth(c)],
+        table_headers=[TableHeader('Tip', 2), TableHeader('Firmă', 8), TableHeader('Autorizațe', 2),
+                       TableHeader('Pe aceeași autorizațe', 8)],
+        entites_filter=lambda year: spots_with_attribute_date_comparison_year('construction_authorizations', '==', year),
+        entity_data=construction_data,
     )
 
 
 def operations(request):
-    # todo add year!!!
     return annual_table(
         request=request,
         name='operations',
         title='Înhumări',
-        table_headers=person_headers(2, 2) + [TableHeader('Tip', 1), TableHeader('Notă', 4)],
+        table_headers=person_headers(4, 4) + [TableHeader('Tip', 2), TableHeader('An', 2), TableHeader('Notă', 8)],
         entites_filter=lambda year: Operation.objects.filter(date__year=year),
-        entity_data=lambda o, yr: [o.first_name, o.last_name, o.get_type_display(), o.note]
+        entity_data=lambda o, yr: [o.first_name, o.last_name, o.get_type_display(), o.date.year, o.note]
     )
 
 
@@ -259,6 +301,7 @@ def revenue(request):
         try:
             payment = YearlyPayment.objects.filter(year=year).get(spot=spot)
             return [payment.value, str(payment.receipt)]
+        # means it was not paid that year (but we know it was owned)
         except YearlyPayment.DoesNotExist:
             return [0, '-']
 
@@ -266,16 +309,16 @@ def revenue(request):
         request=request,
         name='revenue',
         title='Încasări',
-        table_headers=[TableHeader('Valoare Contribuție', 4), TableHeader('Chitanță', 4)],
-        entites_filter=lambda yr: spots_with_deed_in_year(yr, or_before=True),
+        table_headers=[TableHeader('Valoare', 10), TableHeader('Chitanță', 10)],
+        entites_filter=lambda year: spots_with_attribute_date_comparison_year('ownership_deeds', '<=', year),
         entity_data=payment_data
     )
 
 
 def maintentance(request):
-    def maintenance_to_owner(maintenance):
-        # take the most recent deed
-        deed = maintenance.spot.ownership_deeds.order_by('-date')[0]
+    def maintenance_to_owners(maintenance, year):
+        # if there is than one deed change for a spot in a year, only the latest one will show
+        deed = maintenance.spot.most_recent_deed_up_to(year)
         owners = deed.owners.order_by('last_name', 'first_name').all()
         return owners_to_names(owners)
 
@@ -283,14 +326,18 @@ def maintentance(request):
         request=request,
         name='maintenance',
         title='Întreținere',
-        table_headers=[TableHeader('Concesionari', 6), TableHeader('Nivel Întreținere', 2)],
+        table_headers=[TableHeader('Concesionari', 16), TableHeader('Nivel întreținere', 4)],
         entites_filter=lambda year: MaintenanceLevel.objects.filter(year=year),
-        entity_data=lambda m, yr: [maintenance_to_owner(m), m.get_description_display()]
+        entity_data=lambda m, yr: [maintenance_to_owners(m, yr), m.get_description_display()]
     )
 
 
+#
+# Administration
+#
+
+
 def administration(request):
-    # todo administration
     table_headers = ['#', 'Parcela', 'Rand', 'Loc']
     row1 = ['1', '1a', '1', '1bis']
     row2 = ['2', '2a', '100', '3']
