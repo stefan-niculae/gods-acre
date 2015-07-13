@@ -1,10 +1,13 @@
 OUTPUT:
 incasari: sa se poata apasa sa vezi DOAR tabele cu plata zero sau cu plata nenula!
 tables: glyphicon glyphicon-chevron-up for sorttable
+??? in fisa individuala loc, la constructii, nu sa afisam si alte locuri pe aceeasi autorizatie?
+??? platit pana in (daca respectam faptul ca nu exista gauri), este defapt ultimul an platit.. se cam repeta informatia (este acelasi lucru cu prima linie) din fisa indiv, incasari
 
 
 INPUT:
 inhumare a concesionarului -> nu mai e concesionar
+more easily enter years in which a spot has been kept
 
 
 PRINTING:

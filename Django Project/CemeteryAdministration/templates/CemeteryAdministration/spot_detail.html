@@ -29,7 +29,7 @@
     </section>
 
     <section id="owners">
-        <h3 class="page-header">Istoric concesiuni</h3>
+        <h3 class="page-header">Concesiuni</h3>
 
         <table class="table table-striped table-hover sortable">
             <thead>
@@ -38,67 +38,47 @@
                     <th class="col-lg-5">Telefoane</th>
                     <th class="col-lg-1">Act</th>
                     <th class="col-lg-3">Chitanțe</th>
-                    <th class="col-lg-6">Pe Același Act</th>
+                    <th class="col-lg-6">Pe același act</th>
                 </tr>
             </thead>
             <tbody>
+                <!--todo somehow make this a reusable block-->
+            {% for row in owners %}
                 <tr class="row">
-                    <td class="">
-                        {% for owner in spot.owners %}
-                        Ana Popescu, Vasile Popescu, Ionel Ionescu
-                        {% endfor %}
+                    {% for data in row %}
+                    <td>
+                        {{ data }}
                     </td>
-                    <td class="">0723 456 789, 0723 456 789</td>
-                    <td class="">150/2010</td>
-                    <td class="">30/2010, 31/2010</td>
-                    <td class="">#720 2F-13-4, #721 F 13 6</td>
+                    {% endfor %}
                 </tr>
-                <tr class="row">
-                    <td class="">Alexandru Alexandrescu</td>
-                    <td class="">0765 432 108</td>
-                    <td class="">27/2005</td>
-                    <td class="">75/2005</td>
-                    <td class=""></td>
-                </tr>
+            {% endfor %}
             </tbody>
         </table>
     </section>
 
     <section id="operations">
-        <h3 class="page-header">Istoric înhumări</h3>
+        <h3 class="page-header">Înhumări</h3>
 
         <table class="table table-striped table-hover sortable">
             <thead>
                 <tr class="row">
                     <th class="col-lg-4">Prenume</th>
                     <th class="col-lg-4">Nume</th>
-                    <th class="col-lg-1">An</th>
                     <th class="col-lg-1">Tip</th>
+                    <th class="col-lg-1">An</th>
                     <th class="col-lg-14">Notă</th>
                 </tr>
             </thead>
             <tbody>
+            {% for row in operations %}
                 <tr class="row">
-                    <td class="">Adrian</td>
-                    <td class="">Dobre</td>
-                    <td class="">2012</td>
-                    <td class="">înhumare</td>
-                    <td class=""></td>
+                    {% for data in row %}
+                    <td>
+                        {{ data }}
+                    </td>
+                    {% endfor %}
                 </tr>
-                <tr class="row">
-                    <td class="">Daniel</td>
-                    <td class="">Dumitrescu</td>
-                    <td class="">2011</td>
-                    <td class="">dezhumare</td>
-                    <td class="">osemintele au fost transportate</td>
-                </tr>
-                <tr class="row">
-                    <td class="">Daniel</td>
-                    <td class="">Dumitrescu</td>
-                    <td class="">2005</td>
-                    <td class="">înhumare</td>
-                    <td class=""></td>
-                </tr>
+            {% endfor %}
             </tbody>
         </table>
     </section>
@@ -111,45 +91,23 @@
                 <thead>
                     <tr class="row">
                         <th class="col-lg-8">An</th>
-                        <th class="col-lg-8">Sumă</th>
+                        <th class="col-lg-8">Valoare</th>
                         <th class="col-lg-8">Chitanță</th>
                     </tr>
                 </thead>
                 <tbody>
+                {% for row in payments %}
                     <tr class="row">
-                        <td class="">2012</td>
-                        <td class="">150</td>
-                        <td class="">5/2012</td>
+                        {% for data in row %}
+                        <td>
+                            {{ data }}
+                        </td>
+                        {% endfor %}
                     </tr>
-                    <tr class="row">
-                        <td class="">2011</td>
-                        <td class="">150</td>
-                        <td class="">321/2010</td>
-                    </tr>
-                    <tr class="row">
-                        <td class="">2010</td>
-                        <td class="">150</td>
-                        <td class="">321/2010</td>
-                    </tr>
-                    <tr class="row">
-                        <td class="">2007</td>
-                        <td class="">100</td>
-                        <td class="">15/2006</td>
-                    </tr>
-                    <tr class="row">
-                        <td class="">2006</td>
-                        <td class="">100</td>
-                        <td class="">15/2006</td>
-                    </tr>
-                    <tr class="row">
-                        <td class="">2005</td>
-                        <td class="">100</td>
-                        <td class="">122/2005</td>
-                    </tr>
+                {% endfor %}
                 </tbody>
             </table>
-
-            <p>Plătit până în 2013.</p>
+            <p>Plătit până în {{ last_year_paid }}.</p>
         </section>
 
         <div class="col-lg-1">
@@ -162,27 +120,21 @@
             <table class="table table-striped table-hover sortable">
                 <thead>
                     <tr class="row">
-                        <th class="col-lg-1">Autorizație</th>
-                        <th class="col-lg-7">Tip</th>
+                        <th class="col-lg-7">Tip</th> <!--todo TIPuri.. maybe-->
                         <th class="col-lg-16">Constructor</th>
+                        <th class="col-lg-1">Autorizație</th>
                     </tr>
                 </thead>
                 <tbody>
+                {% for row in constructions %}
                     <tr class="row">
-                        <td class="">1/2013</td>
-                        <td class="">bordură</td>
-                        <td class="">Regie prorie</td>
+                        {% for data in row %}
+                        <td>
+                            {{ data }}
+                        </td>
+                        {% endfor %}
                     </tr>
-                    <tr class="row">
-                        <td class="">5/2010</td>
-                        <td class="">cavou</td>
-                        <td class="italic">Firma de constructii S.R.L</td>
-                    </tr>
-                    <tr class="row">
-                        <td class="">12/2006</td>
-                        <td class="">bordură</td>
-                        <td class="">Regie proprie</td>
-                    </tr>
+                {% endfor %}
                 </tbody>
             </table>
         </section>
@@ -201,21 +153,11 @@
                     </tr>
                 </thead>
                 <tbody>
+                {% for year in unkept_years %}
                     <tr class="row">
-                        <td align="center">2014</td>
+                        <td align="center">{{ year }}</td>
                     </tr>
-                    <tr class="row">
-                        <td align="center">2013</td>
-                    </tr>
-                    <tr class="row">
-                        <td align="center">2009</td>
-                    </tr>
-                    <tr class="row">
-                        <td align="center">2008</td>
-                    </tr>
-                    <tr class="row">
-                        <td align="center">2007</td>
-                    </tr>
+                {% endfor %}
                 </tbody>
             </table>
         </section>

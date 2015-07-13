@@ -240,7 +240,7 @@ class OperationsTest(TestCase):
 
         self.assertListEqual(tables[0].rows,
                              [
-                                 [self.spot1.id, '1p', '1r', '1c', 'a', 'aa', 'înhumare', 2001, None],
+                                 [self.spot1.id, '1p', '1r', '1c', 'a', 'aa', 'înhumare', None],
                              ])
 
     def test2_exhumation_with_and_without_note(self):
@@ -261,9 +261,32 @@ class OperationsTest(TestCase):
 
         self.assertListEqual(tables[0].rows,
                              [
-                                 [self.spot1.id, '1p', '1r', '1c', 'b', 'bb', 'dezhumare', 2002, None],
-                                 [self.spot2.id, '2p', '2r', '2c', 'c', 'cc', 'dezhumare', 2002, 'n']
+                                 [self.spot1.id, '1p', '1r', '1c', 'b', 'bb', 'dezhumare', None],
+                                 [self.spot2.id, '2p', '2r', '2c', 'c', 'cc', 'dezhumare', 'n']
                              ])
+
+    def test3_same_spot_same_year_two_operations(self):
+        operation4 = Operation.objects.create(spot=self.spot1,
+                                              date=date(2003, 1, 1),
+                                              type='exhm',
+                                              first_name='d',
+                                              last_name='dd',
+                                              note='n')
+        operation5 = Operation.objects.create(spot=self.spot1,
+                                              date=date(2003, 2, 1),
+                                              type='bral',
+                                              first_name='e',
+                                              last_name='ee')
+
+        response = self.client.get(reverse(revpath(self.view_name)), {'ani': '3'})
+        tables = response.context['tables']
+
+        self.assertListEqual(tables[0].rows,
+                             [
+                                 [self.spot1.id, '1p', '1r', '1c', 'd', 'dd', 'dezhumare', 'n'],
+                                 [self.spot1.id, '1p', '1r', '1c', 'e', 'ee', 'înhumare', None]
+                             ])
+
 
 
 class MaintenanceTest(TestCase):

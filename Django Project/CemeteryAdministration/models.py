@@ -52,6 +52,7 @@ class Spot(models.Model):
     note = models.CharField(max_length=250, null=True, blank=True)
 
     def __str__(self):
+        # todo make this more reatable (dashes, no PRC)
         return '#{0} P{1} R{2} C{3}'.format(self.id, self.parcel, self.row, self.column)
 
     def identif(self):
@@ -139,7 +140,7 @@ class Construction(models.Model):
 
     # todo add constraint owner_builder must be one of the owners
     owner_builder = models.ForeignKey(Owner, null=True, blank=True)  # todo (also add a preference to show 'Regie Proprie' or the actual name of the builder)
-    construction_company = models.ForeignKey(ConstructionCompany, null=True, blank=True)
+    construction_company = models.ForeignKey(ConstructionCompany, null=True, blank=True)  # todo aren't the company/builder supposed to be one on one?
     construction_authorization = models.ForeignKey(ConstructionAuthorization, related_name='constructions')
 
     def __str__(self):
@@ -162,7 +163,7 @@ class Construction(models.Model):
 #
 
 class Operation(models.Model):
-    spot = models.ForeignKey(Spot)  # todo show how many there are buried when adding a new operation
+    spot = models.ForeignKey(Spot, related_name='operations')  # todo show how many there are buried when adding a new operation
     date = models.DateField(default=date.today)  # todo warn if date is in the future
 
     BURIAL = 'bral'
