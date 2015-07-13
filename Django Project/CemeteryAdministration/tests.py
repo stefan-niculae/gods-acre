@@ -643,31 +643,31 @@ class OwnershipsTest(TestCase):
 
         self.assertListEqual(tables[0].rows,
                              [
-                                 [self.spot1.id, '1p', '1r', '1c', 'ana a', '1/2001', '1/1901', ''],
+                                 [self.spot1.id, '1p', '1r', '1c', 'ana a', '-', '1/2001', '1/1901', ''],
                              ])
 
     def test2_overriding_deeds(self):
-        deed1 = OwnershipDeed.objects.create(number=1,
-                                             date=date(2002, 1, 1))
-        deed1.spots = [self.spot1, self.spot2]
         deed2 = OwnershipDeed.objects.create(number=2,
+                                             date=date(2002, 1, 1))
+        deed2.spots = [self.spot1, self.spot2]
+        deed3 = OwnershipDeed.objects.create(number=3,
                                              date=date(2022, 1, 1))
-        deed2.spots = [self.spot1]
+        deed3.spots = [self.spot1]
 
         owner1 = Owner.objects.create(first_name='ana',
                                       last_name='a')
-        owner1.ownership_deeds = [deed1]
-        owner1 = Owner.objects.create(first_name='bob',
-                                      last_name='b')
         owner1.ownership_deeds = [deed2]
+        owner2 = Owner.objects.create(first_name='bob',
+                                      last_name='b')
+        owner2.ownership_deeds = [deed3]
 
         receipt1 = OwnershipReceipt.objects.create(number=1,
                                                    date=date(1902, 1, 1),
-                                                   ownership_deed=deed1,
+                                                   ownership_deed=deed2,
                                                    value=100)
         receipt2 = OwnershipReceipt.objects.create(number=2,
                                                    date=date(1922, 1, 1),
-                                                   ownership_deed=deed2,
+                                                   ownership_deed=deed3,
                                                    value=100)
 
         response = self.client.get(reverse(revpath(self.view_name)), {'ani': '2 22'})
@@ -675,12 +675,42 @@ class OwnershipsTest(TestCase):
 
         self.assertListEqual(tables[0].rows,
                              [
-                                 [self.spot1.id, '1p', '1r', '1c', 'ana a', '1/2002', '1/1902', '#%d P2p R2r C2c' % self.spot2.id],
-                                 [self.spot2.id, '2p', '2r', '2c', 'ana a', '1/2002', '1/1902', '#%d P1p R1r C1c' % self.spot1.id],
+                                 [self.spot1.id, '1p', '1r', '1c', 'ana a', '-', '2/2002', '1/1902', '#%d P2p R2r C2c' % self.spot2.id],
+                                 [self.spot2.id, '2p', '2r', '2c', 'ana a', '-', '2/2002', '1/1902', '#%d P1p R1r C1c' % self.spot1.id],
                              ])
         self.assertListEqual(tables[1].rows,
                              [
-                                 [self.spot1.id, '1p', '1r', '1c', 'bob b', '2/2022', '2/1922', ''],
+                                 [self.spot1.id, '1p', '1r', '1c', 'bob b', '-', '3/2022', '2/1922', ''],
+                             ])
+
+    def test3_phone_and_two_receipts(self):
+        deed4 = OwnershipDeed.objects.create(number=4,
+                                             date=date(2003, 1, 1))
+        deed4.spots = [self.spot1]
+
+        owner3 = Owner.objects.create(first_name='ana',
+                                      last_name='a',
+                                      phone='723456789')
+        owner3.ownership_deeds = [deed4]
+        owner4 = Owner.objects.create(first_name='bob',
+                                      last_name='b')
+        owner4.ownership_deeds = [deed4]
+
+        receipt3 = OwnershipReceipt.objects.create(number=3,
+                                                   date=date(1803, 1, 1),
+                                                   ownership_deed=deed4,
+                                                   value=100)
+        receipt4 = OwnershipReceipt.objects.create(number=4,
+                                                   date=date(1903, 1, 1),
+                                                   ownership_deed=deed4,
+                                                   value=100)
+
+        response = self.client.get(reverse(revpath(self.view_name)), {'ani': '3'})
+        tables = response.context['tables']
+
+        self.assertListEqual(tables[0].rows,
+                             [
+                                 [self.spot1.id, '1p', '1r', '1c', 'ana a, bob b', '0723 456 789', '4/2003', '4/1903, 3/1803', ''],
                              ])
 
 

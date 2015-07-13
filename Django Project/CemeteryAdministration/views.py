@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from .models import *
 from .forms import YearsForm
 import re
@@ -119,7 +119,12 @@ def spots(request):
 
 
 def spot_detail(request, spot_id):
-    return render(request, name_to_template('spot_detail'), {'spot_id': spot_id, 'title': 'Fișă Individuală'})
+    spot = get_object_or_404(Spot, pk=spot_id)
+    context = {
+        'spot': spot,
+        'title': 'Fișă Individuală'
+    }
+    return render(request, name_to_template('spot_detail'), context)
 
 
 #
@@ -149,7 +154,7 @@ def annual_table(request, title, name, table_headers, entites_filter, entity_dat
     table_headers = spot_headers() + table_headers
 
     # data is allowed as much as ten times the column width
-    max_data_widths = list(map(lambda x: int(x.width * 6.5), table_headers))
+    max_data_widths = list(map(lambda x: int(x.width * 6.8), table_headers))
 
     # show the form and/or extract the years from it
     form = years_form(request)
@@ -208,7 +213,9 @@ def ownerships(request):
         d = spot.most_recent_deed_up_to(year)
 
         # the most recent receipt
-        receipt = d.receipts.order_by('-date')[0]
+        # todo get all receipts
+        receipts = d.receipts.order_by('-date').all()
+        receipts_disp = ', '.join(str(r) for r in receipts)
 
         owners = d.owners.all()
 
@@ -217,7 +224,7 @@ def ownerships(request):
         others.remove(spot)
         others_disp = ', '.join([str(o) for o in others])
 
-        return [owners_to_names(owners), phones_if_any(owners), str(d), str(receipt), others_disp]
+        return [owners_to_names(owners), phones_if_any(owners), str(d), receipts_disp, others_disp]
 
     def phones_if_any(owners):
         """
@@ -237,9 +244,8 @@ def ownerships(request):
         request=request,
         name='ownerships',
         title='Concesiuni',
-        # todo make widths quanta 1/24 not 1/12
-        table_headers=[TableHeader('Concesionari', 8), TableHeader('Telefoane', 4), TableHeader('Act', 2), TableHeader('Chitanță', 2),
-                       TableHeader('Pe același act', 4)],
+        table_headers=[TableHeader('Concesionari', 7), TableHeader('Telefoane', 5), TableHeader('Act', 2), TableHeader('Chitanțe', 3),
+                       TableHeader('Pe același act', 3)],
         entites_filter=lambda year: spots_with_attribute_date_comparison_year('ownership_deeds', '==', year),
         entity_data=ownership_data
     )
@@ -277,7 +283,7 @@ def constructions(request):
         request=request,
         name='constructions',
         title='Construcții',
-        table_headers=[TableHeader('Tip', 2), TableHeader('Firmă', 8), TableHeader('Autorizațe', 2),
+        table_headers=[TableHeader('Tip', 2), TableHeader('Constructor', 8), TableHeader('Autorizațe', 2),
                        TableHeader('Pe aceeași autorizațe', 8)],
         entites_filter=lambda year: spots_with_attribute_date_comparison_year('construction_authorizations', '==', year),
         entity_data=construction_data,
@@ -289,14 +295,13 @@ def operations(request):
         request=request,
         name='operations',
         title='Înhumări',
-        table_headers=person_headers(4, 4) + [TableHeader('Tip', 2), TableHeader('An', 2), TableHeader('Notă', 8)],
+        table_headers=person_headers(4, 4) + [TableHeader('Tip', 2), TableHeader('An', 1), TableHeader('Notă', 9)],
         entites_filter=lambda year: Operation.objects.filter(date__year=year),
         entity_data=lambda o, yr: [o.first_name, o.last_name, o.get_type_display(), o.date.year, o.note]
     )
 
 
 def revenue(request):
-    # todo add button to show only spots with/without payment
     def payment_data(spot, year):
         try:
             payment = YearlyPayment.objects.filter(year=year).get(spot=spot)

@@ -1,24 +1,17 @@
-observatii la loc de veci (sa se vada in registru general & detalii loc)
-telefon la concesionar (sa se vada la concesiuni)
-
-
 OUTPUT:
 incasari: sa se poata apasa sa vezi DOAR tabele cu plata zero sau cu plata nenula!
 tables: glyphicon glyphicon-chevron-up for sorttable
-??? cum sa afisam parcela cu P R L sau cu - sau doar spatiu? cu P=!
-!!! la constructii, nu numele ci doar /regie proprie/
+
 
 INPUT:
-operatii:
 inhumare a concesionarului -> nu mai e concesionar
-!!! platile pot fi doar la rand (nu cu gauri)
 
 
 PRINTING:
-intretinere:
-sa se vada intreaga lista de concesionari (nu cu puncte puncte...)
+sa se vada intreaga lista, nu doar lucruri cu puncte puncte...
 
 
 
-MISC:
-o autorizatie de constructii e valabila 6 luni
+PREFERENCES:
+constructions & spot detail: name of owner builder or just 'Regie Proprie'
+general register & spot_detail & ownerships: full receipt list for an ownership act or just the most recent one

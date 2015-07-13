@@ -1,30 +1,30 @@
 {% extends "CemeteryAdministration/base.html" %}
 
-{% block title %}Fisa Individuala {{ spot_id }}{% endblock %}
+{% block title %}Fisa Individuala #{{ spot.id }}{% endblock %}
 
 {% block content %}
 
     <section id="identification" class="row">
         <!--FIXME the bar underneath this title is too much to the left-->
-        <h3 class="page-header col-lg-12">Identificare</h3>
+        <h3 class="page-header col-lg-24">Identificare</h3>
 
-        <p id="labels" class="col-lg-1">
+        <p id="labels" class="col-lg-2">
             <b>
-            Cod<br>
+            Cod #<br>
             Parcelă<br>
             Rând<br>
             Loc<br>
             </b>
         </p>
-        <p id="values" class="col-lg-2">
-            1050<br>
-            A<br>
-            27<br>
-            3bis<br>
+        <p id="values" class="col-lg-3">
+            {{ spot.id }}<br>
+            {{ spot.parcel }}<br>
+            {{ spot.row }}<br>
+            {{ spot.column }}<br>
         </p>
-        <p class="col-lg-9 text-right">
+        <p class="col-lg-19 text-right">
             <b>Observații</b><br>
-            Note despre locul de veci
+            {{ spot.notes|default:'-' }}
         </p>
     </section>
 
@@ -34,20 +34,24 @@
         <table class="table table-striped table-hover sortable">
             <thead>
                 <tr class="row">
-                    <th class="col-lg-4">Concesionari</th>
-                    <th class="col-lg-2">Telefon</th>
+                    <th class="col-lg-9">Concesionari</th>
+                    <th class="col-lg-5">Telefoane</th>
                     <th class="col-lg-1">Act</th>
-                    <th class="col-lg-1">Chitanță</th>
-                    <th class="col-lg-4">Pe Același Act</th>
+                    <th class="col-lg-3">Chitanțe</th>
+                    <th class="col-lg-6">Pe Același Act</th>
                 </tr>
             </thead>
             <tbody>
                 <tr class="row">
-                    <td class="">Ana Popescu, Vasile Popescu, Ionel Ionescu</td>
-                    <td class="">0723 456 789</td>
+                    <td class="">
+                        {% for owner in spot.owners %}
+                        Ana Popescu, Vasile Popescu, Ionel Ionescu
+                        {% endfor %}
+                    </td>
+                    <td class="">0723 456 789, 0723 456 789</td>
                     <td class="">150/2010</td>
-                    <td class="">30/2010</td>
-                    <td class="">#720 P=2F R=13 L=4, #721 P=F R=13 L=6</td>
+                    <td class="">30/2010, 31/2010</td>
+                    <td class="">#720 2F-13-4, #721 F 13 6</td>
                 </tr>
                 <tr class="row">
                     <td class="">Alexandru Alexandrescu</td>
@@ -66,11 +70,11 @@
         <table class="table table-striped table-hover sortable">
             <thead>
                 <tr class="row">
-                    <th class="col-lg-2">Prenume</th>
-                    <th class="col-lg-2">Nume</th>
+                    <th class="col-lg-4">Prenume</th>
+                    <th class="col-lg-4">Nume</th>
                     <th class="col-lg-1">An</th>
                     <th class="col-lg-1">Tip</th>
-                    <th class="col-lg-6">Notă</th>
+                    <th class="col-lg-14">Notă</th>
                 </tr>
             </thead>
             <tbody>
@@ -100,15 +104,15 @@
     </section>
 
     <section class="row">
-        <section id="contributions" class="col-lg-3">
+        <section id="contributions" class="col-lg-6">
             <h3 class="page-header">Încasări</h3>
 
             <table class="table table-striped table-hover sortable">
                 <thead>
                     <tr class="row">
-                        <th class="col-lg-4">An</th>
-                        <th class="col-lg-4">Sumă</th>
-                        <th class="col-lg-4">Chitanță</th>
+                        <th class="col-lg-8">An</th>
+                        <th class="col-lg-8">Sumă</th>
+                        <th class="col-lg-8">Chitanță</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -152,15 +156,15 @@
 
         </div>
 
-        <section id="constructions" class="col-lg-4">
+        <section id="constructions" class="col-lg-13">
             <h3 class="page-header">Construcții</h3>
 
             <table class="table table-striped table-hover sortable">
                 <thead>
                     <tr class="row">
                         <th class="col-lg-1">Autorizație</th>
-                        <th class="col-lg-1">Tip</th>
-                        <th class="col-lg-10">Constructor</th>
+                        <th class="col-lg-7">Tip</th>
+                        <th class="col-lg-16">Constructor</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -193,7 +197,7 @@
             <table class="table table-striped table-hover sortable">
                 <thead>
                     <tr class="row">
-                        <th class="col-lg-12">Ani în care nu a fost întreținut</th>
+                        <th class="col-lg-24">Ani neîntreținut</th>
                     </tr>
                 </thead>
                 <tbody>

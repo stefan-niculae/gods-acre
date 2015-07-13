@@ -88,7 +88,7 @@ class OwnershipReceipt(NrYear):
 class Owner(models.Model):
     ownership_deeds = models.ManyToManyField(OwnershipDeed, related_name='owners')
     first_name = models.CharField(max_length=25)  # todo input only letters
-    last_name = models.CharField(max_length=25)   # todo input only letters
+    last_name = models.CharField(max_length=25)   # todo capitalize each word entered on a name field
     phone = models.CharField(max_length=15, null=True, blank=True)  # todo regex validation for this
 
     def __str__(self):
@@ -125,6 +125,7 @@ class ConstructionCompany(models.Model):
 
 
 class Construction(models.Model):
+    # todo warn on a new construction on a spot that has an ownership deed older than 6 months after the constr authorization
     # todo warn if there is already a border/tomb on the same spot
     BORDER = 'brdr'
     TOMB = 'tomb'
@@ -218,6 +219,7 @@ class ContributionReceipt(NrYear):
 class YearlyPayment(models.Model):
     # todo add constraint: only one payment per year per spot
     # todo add constraint: year after or equal to deed date
+    # todo warn if there are holes in the payments line (they must come one after another)
     spot = models.ForeignKey(Spot)
     receipt = models.ForeignKey(ContributionReceipt)
     year = models.IntegerField()
