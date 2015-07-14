@@ -2,12 +2,36 @@ import operator
 from .view_utils import *
 from .models import *
 
+
+#
+# General register
+#
+
+
 #
 # Spot detail
 #
 
 
-pass
+def last_paid(spot, deed=None):
+    payments = YearlyPayment.objects.filter(spot=spot)
+    if deed is not None:
+        payments = payments.filter(year__gte=deed.date.year)
+
+    if len(payments) > 0:
+        return payments[0].year
+    else:
+        return '-'
+
+
+def unkept_years(spot, deed):
+    kept_years = MaintenanceLevel.objects.filter(spot=spot).values_list('year', flat=True)
+    unkept = []
+    for year in range(date.today().year, deed.date.year - 1, -1):
+        # todo this can be done more efficiently (traverse both at the same time => O(max m,n) not O(n*m)
+        if year not in kept_years:
+            unkept.append(year)
+    return unkept
 
 
 #
@@ -62,22 +86,8 @@ def ownership_data_from_deed(spot, deed):
     others.remove(spot)
     others_disp = ', '.join([str(o) for o in others])
 
-    return [owners_to_names(owners), phones_if_any(owners), str(deed), receipts_disp, others_disp]
+    return [persons_to_names(owners), owners_to_phones(owners), str(deed), receipts_disp, others_disp]
 
-
-def phones_if_any(owners):
-    """
-    :param: owners list of Owners
-    :return: comma separated phone numbers. if there are none, a dash instead
-    """
-    numbers = []
-    for owner in owners:
-        if owner.phone is not None:
-            numbers.append(owner.phone_display())
-    if len(numbers) > 0:
-        return ', '.join(numbers)
-    else:
-        return '-'
 
 #
 # Constructions
@@ -121,6 +131,37 @@ def operation_data(operation, year, include_year=False):
     return data
 
 
+def persons_to_names(persons, as_list=False):
+    names = []
+    # add every owner to the list
+    for person in persons:
+        names.append(person.full_name())
+
+    if as_list:
+        return names
+    else:
+        return ', '.join(names)
+
+
+def owners_to_phones(owners, as_list=False):
+    """
+    :param: owners list of Owners
+    :return: comma separated phone numbers. if there are none, a dash instead
+    """
+    numbers = []
+    for owner in owners:
+        if owner.phone is not None:
+            numbers.append(owner.phone_display())
+
+    if as_list:
+        return numbers
+    else:
+        if len(numbers) > 0:
+            return ', '.join(numbers)
+        else:
+            return '-'
+
+
 #
 # Revenue
 #
@@ -151,7 +192,7 @@ def maintenance_to_owners(maintenance, year):
     # if there is than one deed change for a spot in a year, only the latest one will show
     deed = maintenance.spot.most_recent_deed_up_to(year)
     owners = deed.owners.order_by('last_name', 'first_name').all()
-    return owners_to_names(owners)
+    return persons_to_names(owners)
 
 
 def maintenance_data(maintenance, year):

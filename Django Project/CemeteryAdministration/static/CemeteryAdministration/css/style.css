@@ -25,9 +25,15 @@ td div {
     display: inline;
 }
 
-.field-left {
-    float: left;
+.border-between > [class*='col-']:before {
+ background: #bababa;
+ bottom: 0;
+ content: " ";
+ left: 0;
+ position: absolute;
+ width: 1.5px;
+ top: 0;
 }
-.field-right {
-    float: right;
+.border-between > [class*='col-']:first-child:before {
+ display: none;
 }

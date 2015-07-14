@@ -40,14 +40,6 @@ def person_headers(fw=4, lw=4):
     return [TableHeader('Prenume', fw), TableHeader('Nume', lw)]
 
 
-def owners_to_names(owners):
-    names = []
-    # add every owner to the list
-    for owner in owners:
-        names.append(owner.full_name())
-    return ', '.join(names)
-
-
 #
 # Form helpers
 #
@@ -65,19 +57,34 @@ def years_form(request):
         return YearsForm()
 
 
-def fuzzy_year(yr):
+year_threshold = 50
+
+
+def shortcut_to_year(shorcut):
     """
-    :param yr: number representing year
-    :return: formal year (ex 15 => 2015, 94 => 1994)
+    :param shorcut: number representing shorcut
+    :return: formal shorcut (ex 15 => 2015, 94 => 1994, 2006 => 2006)
     """
-    threshold = 50
     # 15 => 2015
-    if yr <= threshold:
-        return 2000 + yr
+    if 0 <= shorcut <= year_threshold:
+        return 2000 + shorcut
     # 94 => 1994
-    if threshold < yr < 100:
-        return 1900 + yr
-    return yr
+    elif year_threshold < shorcut < 100:
+        return 1900 + shorcut
+    else:
+        return shorcut
+
+
+def year_to_shortcut(year):
+    """
+    reverse of shortcut to year
+    """
+    if 2000 <= year <= 2000 + year_threshold:
+        return year - 2000
+    elif 1900 < year < 2000:
+        return year - 1900
+    else:
+        return year
 
 
 def years_list(form):
@@ -89,7 +96,7 @@ def years_list(form):
         # extract the numbers from the string containing spaces, commas and apostrophes
         yrs_list = list(map(int, re.findall('\d+', yrs_str)))
         # convert each 15 to 2015 and so on
-        return list(map(fuzzy_year, yrs_list))
+        return list(map(shortcut_to_year, yrs_list))
     else:
         # by default, show only the current year
         return [date.today().year]

@@ -10,7 +10,50 @@ def index(request):
 
 
 def general_register(request):
-    return render(request, name_to_template('general_register'), {'title': 'Registru General'})
+    def join_constr_types(constrs):
+        return ', '.join([c.get_type_display() for c in constrs])
+
+    # todo dash if any of these is empty!!
+
+    # todo search form (and pagination)
+    rows = []
+    for spot in Spot.objects.all():
+        # todo check if there is no act
+        # get the most recent act
+        deeds = []
+        for d in OwnershipDeed.objects.order_by('-date'):
+            if spot in d.spots.all():
+                deeds.append(d)
+        deed = deeds[0]
+        owners = deed.owners.all()
+        # todo refactor filtering to deed date into one thing
+        opers = spot.operations.all().filter(date__gte=deed.date).order_by('-date')
+        auths = []
+        # todo models order... so that you don't have to write order_by for everything
+        for auth in ConstructionAuthorization.objects.filter(date__gte=deed.date).order_by('-date'):
+            if spot in auth.spots.all():
+                auths.append(auth)
+
+        # todo refactor this atrocity
+        constr_types = [join_constr_types(Construction.objects.filter(construction_authorization=a)) for a in auths]
+
+        row = [[spot.id], [spot.parcel], [spot.row], [spot.column],
+               persons_to_names(owners, as_list=True), owners_to_phones(owners, as_list=True),  # todo align each phone with its owner
+               [deed], deed.receipts.all(),
+               persons_to_names(opers, as_list=True), ['{}{}'.format(o.date.year, o.get_type_display()[0]) for o in opers],
+               # todo preference bordura, cavou 1/2001 or bordura 1/2001, cavou 1/2001 on different lines
+               constr_types, auths,
+               [last_paid(spot, deed)],
+               [', '.join([str(year_to_shortcut(y)) for y in unkept_years(spot, deed)])]
+               ]
+        print('row=',row)
+        rows.append(row)
+
+    context = {
+        'title': 'Registru General',
+        'rows': rows
+    }
+    return render(request, name_to_template('general_register'), context)
 
 
 def spots(request):
@@ -18,9 +61,10 @@ def spots(request):
 
 
 def spot_detail(request, spot_id):
+    # todo prettify 404 page
     spot = get_object_or_404(Spot, pk=spot_id)
 
-    # todo notice when one of these is empty
+    # todo notice when one of these is empty!!!
     # todo highlight latest item in each category
     deeds = []
     # todo check whether there should be an order by every time *.objects is called
@@ -41,12 +85,6 @@ def spot_detail(request, spot_id):
     constrs = [construction_data_from_auth(spot, a, include_others=False) for a in auths]
 
     oldest_deed = deeds[-1]
-    kept_years = MaintenanceLevel.objects.filter(spot=spot).values_list('year', flat=True)
-    unkept_years = []
-    for year in range(date.today().year, oldest_deed.date.year - 1, -1):
-        # todo this can be done more efficiently
-        if year not in kept_years:
-            unkept_years.append(year)
 
     context = {
         'title': 'Fișă Individuală (istoric)',
@@ -54,9 +92,9 @@ def spot_detail(request, spot_id):
         'owners': owners,
         'operations': opers,
         'payments': payments,
-        'last_year_paid': pays[0].year,
+        'last_year_paid': last_paid(spot),
         'constructions': constrs,
-        'unkept_years': unkept_years
+        'unkept_years': unkept_years(spot, oldest_deed)
     }
     return render(request, name_to_template('spot_detail'), context)
 
@@ -69,10 +107,10 @@ def spot_detail(request, spot_id):
 def annual_table(request, title, name, table_headers, entites_filter, entity_data):
     """
     :param request: http request
-    :param title: external page title and header
-    :param name: internal page name
+    :param title: external page title and header (showed on the page)
+    :param name: internal page name (used in form submission)
     :param table_headers: list containing TableHeaders (not including spot headers)
-    :param entites_filter: function that takes year as an argument
+    :param entites_filter: function that takes year as an argument and returns a query set of apropriate entities
     :param entity_data: function that takes an entity and returns list of data about it (not including spot identifiers)
     :return: render of the completed template
     """

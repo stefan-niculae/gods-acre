@@ -57,7 +57,7 @@ class Spot(models.Model):
 
     def identif(self):
         """
-        :return: identifing data about this spot, as a list
+        :return: list of identifing data about this spot
         """
         return [self.id, self.parcel, self.row, self.column]
 
@@ -180,6 +180,10 @@ class Operation(models.Model):
 
     def __str__(self):
         return fields_and_values(self)
+
+    # person should have been a model... this is not DRY
+    def full_name(self):
+        return self.first_name + ' ' + self.last_name
 
 
 #
