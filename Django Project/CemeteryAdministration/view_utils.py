@@ -33,7 +33,7 @@ class TableHeader:
 
 
 def spot_headers(iw=1, pw=1, rw=1, cw=1):
-    return [TableHeader('#', iw), TableHeader('Parcelă', pw), TableHeader('Rând', rw), TableHeader('Loc', cw)]
+    return [TableHeader('#', iw), TableHeader('Parcela', pw), TableHeader('Rand', rw), TableHeader('Loc', cw)]
 
 
 def person_headers(fw=4, lw=4):

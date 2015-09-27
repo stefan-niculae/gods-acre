@@ -1,40 +1,40 @@
 {% extends "CemeteryAdministration/base.html" %}
 
-{% block title %}Gestiune{% endblock %}
+{% block title %}Administrare{% endblock %}
 
 {% block content %}
+
+    <!--TODO pagination-->
 
     <section id="container-fluid">
 
         <form method="post" id="db-add-form"></form>
 
-        <table class="table table-striped table-hover db">
+        <table class="table table-striped table-hover db row">
             <thead>
                 <tr>
                     {% for table_header in table_headers %}
-                    <th>{{ table_header }}</th>
+                    <th class="col-md-6">{{ table_header }}</th>
                     {% endfor %}
-                    <th class="db-buttons">
-
-                    </th>
                 </tr>
             </thead>
             <tbody>
+                <!--<tr class="db-add-row">-->
+                    <!--{% for table_header in table_headers %}-->
+                    <!--<td contenteditable="true"></td>-->
+                    <!--{% endfor %}-->
+                    <!--<td><button type="submit" class="btn btn-sm btn-success" form="db-add-form"><span class="glyphicon glyphicon-plus"></span></button></td>-->
+                <!--</tr>-->
+
                 {% for table_row in table_rows %}
                 <tr>
                     {% for table_data in table_row %}
-                    <td>{{ table_data }}</td>
+                    <td contenteditable="true">{{ table_data }}</td>
                     {% endfor %}
+                    <td><button type="submit" class="btn btn-xs btn-info" form="db-add-form">D</button></td>
+                    <td><button type="submit" class="btn btn-xs btn-danger" form="db-add-form"><span class="glyphicon glyphicon-remove"></span></button>                    </td>
                 </tr>
                 {% endfor %}
-
-                <tr class="db-add-row">
-                    {% for table_header in table_headers %}
-                    <td><input type="text" form="db-add-form"
-                               name="{{ table_header }}" placeholder="{{ table_header }}"></td>
-                    {% endfor %}
-                    <td><button type="submit" class="btn btn-success" form="db-add-form">+</button></td>
-                </tr>
             </tbody>
         </table>
     </section>

@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from .view_contents import *
+from django_ajax.decorators import ajax
 
 
 #TODO remove str(...) from here and instead, call str as as mapping in tests
@@ -18,13 +19,17 @@ def general_register(request):
     # todo search form (and pagination)
     rows = []
     for spot in Spot.objects.all():
-        # todo check if there is no act
+        # todo check if there is no act (do it more efficiently and also treat it better)
         # get the most recent act
         deeds = []
         for d in OwnershipDeed.objects.order_by('-date'):
             if spot in d.spots.all():
                 deeds.append(d)
-        deed = deeds[0]
+
+        if len(deeds) > 0:
+            deed = deeds[0]
+        else:
+            break
         owners = deed.owners.all()
         # todo refactor filtering to deed date into one thing
         opers = spot.operations.all().filter(date__gte=deed.date).order_by('-date')
@@ -46,7 +51,6 @@ def general_register(request):
                [last_paid(spot, deed)],
                [', '.join([str(year_to_shortcut(y)) for y in unkept_years(spot, deed)])]
                ]
-        print('row=',row)
         rows.append(row)
 
     context = {
@@ -125,8 +129,8 @@ def annual_table(request, title, name, table_headers, entites_filter, entity_dat
 
     table_headers = spot_headers() + table_headers
 
-    # data is allowed as much as ten times the column width
-    max_data_widths = list(map(lambda x: int(x.width * 6.8), table_headers))
+    # text max length is 7 times each column width
+    max_data_widths = list(map(lambda x: int(x.width * 7), table_headers))
 
     # show the form and/or extract the years from it
     form = years_form(request)
@@ -228,3 +232,61 @@ def administration(request):
         'table_rows': table_rows,
     }
     return render(request, name_to_template('administration'), context)
+
+
+# Used to identify the field name when sending back from the front-end
+class TraceableData:
+    def __init__(self, entity, db_id, field, data):
+        self.entity = entity
+        self.field = field
+        self.db_id = db_id
+        self.data = data
+
+
+def spots_administration(request):
+    headers = ['#', 'Parcela', 'Rand', 'Loc', 'Nota']
+    fields = ['id', 'parcel', 'row', 'column', 'note']
+    rows = []
+    for spot in Spot.objects.all():
+        row = [TraceableData('Spot', spot.id, field, getattr(spot, field)) for field in fields]
+        rows.append(row)
+
+    context = {
+        'title': 'Administrare locuri de veci',
+        'headers': headers,
+        'rows': rows,
+    }
+    return render(request, name_to_template('spots_administration'), context)
+
+
+def companies_administration(request):
+    headers = ['Nume']
+    fields = ['name']
+    rows = []
+    for company in ConstructionCompany.objects.all():
+        row = [TraceableData('ConstructionCompany', company.id, field, getattr(company, field)) for field in fields]
+        rows.append(row)
+
+    context = {
+        'title': 'Administrare companii de constructii',
+        'headers': headers,
+        'rows': rows,
+    }
+    return render(request, name_to_template('spots_administration'), context)
+
+
+@ajax
+def save(request):
+    entity  = request.POST.get('entity',    'NO ENTITY')
+    db_id   = request.POST.get('db_id',     'NO ID')
+    field   = request.POST.get('field',     'NO FIELD')
+    data    = request.POST.get('data',      'NO DATA')
+
+    try:
+        obj = globals()[entity].objects.get(id=int(db_id))
+        setattr(obj, field, data)
+        obj.save()
+        return 'SUCCESS'
+    except:  # TODO check what exceptions this can throw
+        print('>' * 25, 'Error running update statement!')
+        return 'ERROR'

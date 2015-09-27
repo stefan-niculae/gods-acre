@@ -9,11 +9,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         {% load staticfiles %}
-        <link rel="stylesheet" type="text/css" href="{% static 'CemeteryAdministration/css/bootstrap.css' %}"/>
-        <link rel="stylesheet" type="text/css" href="{% static 'CemeteryAdministration/css/bootstrap-theme.css' %}"/>
-        <link rel="stylesheet" type="text/css" href="{% static 'CemeteryAdministration/css/bootstrap-footer.css' %}"/>
-        <link rel="stylesheet" type="text/css" href="{% static 'CemeteryAdministration/css/bootstrap-custom.css' %}"/>
-        <link rel="stylesheet" type="text/css" href="{% static 'CemeteryAdministration/css/style.css' %}"/>
+        <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/bootstrap.css' %}"/>
+        <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/bootstrap-theme.css' %}"/>
+        <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/bootstrap-footer.css' %}"/>
+        <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/bootstrap-custom.css' %}"/>
+        <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/font-awesome.min.css' %}"/>
+        <!--todo move css only where needed-->
+        <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/style.css' %}"/>
 
         <link rel="shortcut icon" href="{% static 'CemeteryAdministration/images/favicon.ico' %}">
 
@@ -24,7 +26,6 @@
 
     <body>
         <!-- Fixed navbar -->
-        <!-- FIXME navbar resize -->
         <nav class="navbar navbar-default">
             <div class="container-fluid">
                 <!-- Brand and toggle get grouped for better mobile display -->
@@ -46,7 +47,6 @@
                             <a href="{% url 'CemeteryAdministration:spot' %}">Fișă Individuală</a></li>
                         <li role="separator" class="divider-vertical"></li>
 
-
                         <li class="{% active_page request 'ownerships' %}">
                             <a href="{% url 'CemeteryAdministration:ownerships' %}">Concesiuni</a></li>
                         <li class="{% active_page request 'constructions' %}">
@@ -57,45 +57,10 @@
                             <a href="{% url 'CemeteryAdministration:revenue' %}">Încasări</a></li>
                         <li class="{% active_page request 'maintenance' %}">
                             <a href="{% url 'CemeteryAdministration:maintenance' %}">Întreținere</a></li>
-                        <li role="separator" class="divider-vertical"></li>
-
-                        <!--todo maybe add dropup http://getbootstrap.com/components/#btn-dropdowns-dropup-->
-                        <li class="{% active_page request 'administration' %}">
-                            <a href="{% url 'CemeteryAdministration:administration' %}">Administrare</a></li>
-
-                        <!--<li class="dropdown">-->
-                        <!--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Administrare<span class="caret"></span></a>-->
-                        <!--<ul class="dropdown-menu">-->
-                        <!--<li><a href="#">Locuri de Veci</a></li>-->
-                        <!--<li role="separator" class="divider"></li>-->
-
-                        <!--<li><a href="#">Acte Concesiune</a></li>-->
-                        <!--<li><a href="#">Chitante Concesiune</a></li>-->
-                        <!--<li><a href="#">Concesionari</a></li>-->
-                        <!--<li role="separator" class="divider"></li>-->
-
-                        <!--<li><a href="#">Constructii</a></li>-->
-                        <!--<li><a href="#">Autorizatii Constructii</a></li>-->
-                        <!--<li><a href="#">Firme Constructii</a></li>-->
-                        <!--<li role="separator" class="divider"></li>-->
-
-
-                        <!--<li><a href="#">Contributii</a></li>-->
-                        <!--<li><a href="#">Chitante Contributii</a></li>-->
-                        <!--<li><a href="#">Locuri de Veci</a></li>-->
-                        <!--<li role="separator" class="divider"></li>-->
-
-                        <!--<li><a href="#">Operatii</a></li>-->
-                        <!--<li role="separator" class="divider"></li>-->
-
-
-                        <!--<li><a href="#">Intretinere</a></li>-->
-                        <!--</ul>-->
-                        <!--</li>-->
                     </ul>
 
                     <ul class="nav navbar-nav navbar-right">
-                        <li><a href="#">I/O</a></li>
+                        <li><a href="#" class="navigation-glyph"><i class="fa fa-cog fa-2x"></i></a></li>
                     </ul>
                 </div><!-- /.navbar-collapse -->
             </div><!-- /.container-fluid -->
@@ -114,8 +79,10 @@
 
         <script src="{% static 'CemeteryAdministration/js/jquery.js' %}"></script>
         <script src="{% static 'CemeteryAdministration/js/bootstrap.js' %}"></script>
+         <!-- todo move sorttable, ajax, toggle only to relevant pages -->
+        <script src="{% static 'django_ajax/js/jquery.ajax.min.js' %}"></script>
         <script src="{% static 'CemeteryAdministration/js/script.js' %}"></script>
-        <script src="{% static 'CemeteryAdministration/js/sorttable.js' %}"></script> <!-- todo move sorttable only to pages with tables -->
+
     </body>
 
 </html>

@@ -38,7 +38,8 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'CemeteryAdministration',
-    'django_forms_bootstrap',
+    'django_forms_bootstrap',  # TODO check if this is used
+    'django_ajax',
 )
 
 MIDDLEWARE_CLASSES = (

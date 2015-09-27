@@ -11,6 +11,13 @@
 @media (max-width: 1060px) {
 }
 
+/* Navigation glyph buttons */
+.navigation-glyph {
+    /* Formerly 15px */
+    padding: .75em !important;
+} 
+
+/* Content whitespace */
 h1 {
     margin-bottom: 2em;
 }
@@ -60,4 +67,17 @@ h1 {
     .collapse.in{
   		display:block !important;
 	}
+}
+
+
+/* Navbar dropdown on hover */
+ul.nav li.dropdown:hover ul.dropdown-menu {
+  display: block;
+}
+
+/* Search field above administration tables */
+/*TODO fix this (responsiveness)*/
+.general-search > div {
+    margin-left: .5%;
+    width: 97.75%;
 }
