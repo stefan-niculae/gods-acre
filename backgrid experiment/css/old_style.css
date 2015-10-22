@@ -1,0 +1,66 @@
+#content > h1 {
+    text-align: center;
+}
+
+
+.year-search {
+    margin-top: 3em;
+    margin-bottom: 5em;
+}
+
+/* TODO put this on the same line as the text box (on the left) */
+label[for="id_ani"] {
+    display: none;
+}
+
+.italic {
+    font-style: italic;
+}
+
+td div {
+    display: inline;
+}
+
+/*
+.border-between > [class*='col-']:before {
+ background: #bababa;
+ bottom: 0;
+ content: " ";
+ left: 0;
+ position: absolute;
+ width: 1.5px;
+ top: 0;
+}
+.border-between > [class*='col-']:first-child:before {
+ display: none;
+}
+*/
+
+/*TODO add border/no-border @ preferences*/
+/* Only inner table bordering */
+
+/*
+.table-bordered {
+    border: 0px !important;
+}
+
+.table-bordered td:first-child, .table-bordered th:first-child {
+    border-left: 0px !important;
+}
+
+.table-bordered td:last-child, .table-bordered th:last-child {
+    border-right: 0px !important;
+}
+
+.table-bordered tr:last-child td {
+    border-bottom: 0px !important;
+}
+
+.table-bordered * {
+    border-bottom: 0px !important;
+    border-top: 0px !important;
+}
+.table-bordered th {
+    border: 0px !important;
+}
+*/
