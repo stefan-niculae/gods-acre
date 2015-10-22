@@ -18,7 +18,7 @@
 }
 
 /* Highlight the sorted column */
-.backgrid .sorted-col {
+.backgrid .sorted-col, .backgrid th.ascending, .backgrid th.descending {
     background-color: rgba(200, 227, 253, 0.24);
 }
 

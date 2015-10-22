@@ -6,7 +6,6 @@ columnWidths = [1, 1, 1, 1, 2, 3, 3]
 
 
 
-
 # Utils
 
 sum = (arr) ->
@@ -178,6 +177,7 @@ encashments.fetch
 
     setInitialSortedHighlight tableWrapper, columns, 'id'
     setHighlightOnSort tableWrapper
+    setClearSortingOnSearch tableWrapper
     addSortedIndicator tableWrapper
 
     setSearchIcons tableWrapper
@@ -259,17 +259,14 @@ repositionRow = (grid, oldIndex, newIndex) ->
 
 
 highlightColumn = (tableWrapper, columnIndex) ->
-  # FIXME
   $ '#' + tableWrapper + ' td:nth-child(' + columnIndex + ')'
-    .add '#' + tableWrapper + ' th:nth-child(' + columnIndex + ')'
-    .toggleClass 'sorted-col'
+    .addClass 'sorted-col'
 
 
 setInitialSortedHighlight = (tableWrapper, columns, idName) ->
-  # FIXME does nothing now
   # Find which column is the one with the ID
   names = _.pluck columns, 'name'
-  index = _.indexOf names, idName + 1 # nth-child is 1-indexed
+  index = _.indexOf(names, idName) + 1 # nth-child is 1-indexed
 
   highlightColumn tableWrapper, index
 
@@ -279,22 +276,23 @@ setHighlightOnSort = (tableWrapper) ->
   headers.click (event) ->
     target = $ event.currentTarget
     # If this is the column that the table is currently sorted by
-    if target.hasClass 'ascending' || target.hasClass 'descending'
+    if target.hasClass('ascending') || target.hasClass('descending')
       columnIndex = headers.index(target) + 1
       highlightColumn tableWrapper, columnIndex
 
 
-clearHeaderHighlights = (tableWrapper) ->
-  # Clear only the header, as the rows reset automatically on search
-  $ '#' + tableWrapper + ' th.sorted-col'
-    .removeClass 'sorted-col'
+setClearSortingOnSearch = (tableWrapper) ->
+  clearHighlight = () ->
+      $('#' + tableWrapper + ' th.ascending').removeClass 'ascending'
+      $('#' + tableWrapper + ' th.descending').removeClass 'descending'
 
-
-setHighlightClearOnSearch = (tableWrapper) ->
   $ '#' + tableWrapper + ' input[type="search"]'
-    .keyPress () ->
-      clearHeaderHighlights tableWrapper
+    .keypress () -> clearHighlight()
 
+  $ '#' + tableWrapper + ' a.clear'
+    .keypress () ->
+      clearHighlight()
+      $('#' + tableWrapper + ' th .sorted-indicator').hide() # clear the caret
 
 
 addSortedIndicator = (tableWrapper) ->
