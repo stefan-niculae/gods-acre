@@ -57,12 +57,16 @@
 
 
 /* FIXME search bar doesn't correctly scale, it's wider sometimes that the table */
-.search-and-filter-row {
-    margin-bottom: 2em;
-    margin-left: 2em; /* To account for the selecting checkboxes column */
-    margin-right: 50px; /* To account for the editing buttons column */
+.above-rows {
+    margin-left: 3.1em; /* To account for the selecting checkboxes column */
+    margin-right: 100px; /* To account for the editing buttons column */
 }
-.search-and-filter-row .search-cols {
+
+.above-rows .row {
+    margin-bottom: 2em;
+}
+
+.control-row .search-cols {
     padding: 0;
 }
 /* Widen the search bar */
@@ -98,6 +102,11 @@
 .backgrid-filter.form-search .fa-search,
 .backgrid-filter.form-search .fa-times{
     color: black;
+}
+
+/* TODO align filter & add buttons */
+.control-row button {
+    float: right;
 }
 
 /* FIXME */
@@ -152,4 +161,18 @@ table.backgrid:hover .select-all-header-cell input,
     font-size: 1.25em;
     padding: 5px 10px;
     margin-left: 5px;
+}
+
+.backgrid .hanging-button-wrapper {
+
+}
+
+.backgrid .add-button {
+    /*float: right !important;*/
+    /*position: absolute !important;*/
+        display: inline-block;
+    width: 100px;
+    height: 60px;
+    position:relative;
+    right: -50px;
 }

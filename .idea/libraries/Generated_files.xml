@@ -2,11 +2,11 @@
   <library name="Generated files" type="javaScript">
     <properties>
       <sourceFilesUrls>
-        <item url="file://$PROJECT_DIR$/js/test.js" />
+        <item url="file://$PROJECT_DIR$/backgrid experiment/js/test.js" />
       </sourceFilesUrls>
     </properties>
     <CLASSES>
-      <root url="file://$PROJECT_DIR$/js/test.js" />
+      <root url="file://$PROJECT_DIR$/backgrid experiment/scripts/test.js" />
     </CLASSES>
     <SOURCES />
   </library>
