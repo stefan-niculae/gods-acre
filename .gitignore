@@ -65,3 +65,7 @@ target/
 [Ss]cripts
 pyvenv.cfg
 pip-selfcheck.json
+
+# JetBrains IDE configs
+.idea
+
