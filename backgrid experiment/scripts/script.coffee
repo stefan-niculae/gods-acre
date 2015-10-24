@@ -162,7 +162,7 @@ clientSideFilter = new Backgrid.Extension.ClientSideFilter
   # The model fields to search for matches
   fields: ["id", "parcel", "row", "column", "year", "value", "receipt"]
   # How long to wait after typing has stopped before searching can
-  wait: 150
+  wait: 200
 
 $tableWrapper.prepend clientSideFilter.render().el
 
@@ -172,7 +172,7 @@ $tableWrapper.prepend clientSideFilter.render().el
 encashments.fetch
   reset: true
   success: () ->
-    setColumnWidths tableWrapper, columnWidths, colType
+    setColumnWidths tableWrapper, columnWidths
 
     setInitialSortedHighlight tableWrapper, columns, "id"
     setHighlightOnSort tableWrapper
@@ -185,7 +185,7 @@ encashments.fetch
 
     # TODO align buttons properly to the right
     addColumnFiltering tableWrapper
-    addEntityForm tableWrapper, columnWidths, regexes
+    addEntityForm tableWrapper, columnWidths
 
   error: (collection, response) ->
     printError "Fetching failed. Error response: %s.", response
@@ -194,19 +194,11 @@ encashments.fetch
 # Bootstrap styling
 
 bootstrapColumns = 12
-colType = "lg"
-slidingDuration = 100
-regexes =
-  locationIdentifier: /^\d(bis|[A-Za-z])$/ # TODO treat 2a as 2A
-  year: /(^['`]?\d{2}$)|(^\d{4}$)/ # TODO convert 09 to 2009 and 94 to 2004, warn (bootstrap styling) if year is absurd
-  currencyValue: /^\d+$/ # TODO warn if value is at least three times as big than the others
-  numberPerYear: /^\d{1,3}\/((['`]?\d{2})|(\d{4}))$/ # TODO same as year conversion
 
 addWidths = (elements, widths, colType) ->
-  for elementWidthPair in _.zip elements, widths
-    elem = $ elementWidthPair[0]
-    width = elementWidthPair[1]
-    elem.addClass s.sprintf "col-%s-%d", colType, width
+  colType = "lg"
+  for [elem, width] in _.zip elements, widths
+    $(elem).addClass s.sprintf "col-%s-%d", colType, width
 
 setColumnWidths = (tableWrapper, widths, colType) ->
   if sum(widths) != bootstrapColumns
@@ -225,32 +217,6 @@ setColumnWidths = (tableWrapper, widths, colType) ->
       printError msg, widths.length, headers.length - 2
 
   addWidths headers, adjustedWidths, colType
-
-
-
-#insertBlankRow = (grid) ->
-#  blankRow =
-#    id: -1
-#    parcel: ""
-#    row: ""
-#    column: ""
-#    year: -1
-#    value: -1
-#    receipt: ""
-#
-#  # Insert the "blank" line at the top
-#  grid.insertRow blankRow
-#  row = repositionRow grid, -1, 0
-#  row.addClass "blank-row"
-#
-#  # Ignore the SelectAll and editable buttons cells
-#  # assumes they are on the first and last positions
-#  row.find "td"
-#    .slice 1, -1
-#    # Make all cells text empty except the id one
-#    .each (index, elem) ->
-#      $elem = $ elem
-#      $elem.text if $elem.hasClass "id-cell" then "-" else ""
 
 
 repositionRow = (grid, oldIndex, newIndex) ->
@@ -343,47 +309,148 @@ setSearchSize = (tableWrapper) ->
 addColumnFiltering = (tableWrapper) ->
   $ '<div class="col-xs-1 filter-cols">'
     .html '<button class="btn btn-primary"><i class="fa fa-filter fa-lg"></i></button>'
-    .insertAfter '#' + tableWrapper + ' .search-cols'
+    .insertAfter "##{tableWrapper} .search-cols"
   # TODO add the filters
 
 
 setSearchEscClear = (tableWrapper) ->
-  input = $ '#' + tableWrapper + ' .form-search input'
+  input = $ "##{tableWrapper} .form-search input"
   input.keypress (event) ->
     code = event.keyCode || event.which
     # On Escape press
     input.val('') if code is 27
+
 
 addEntityForm = (tableWrapper, columnWidths, regexes) ->
   # Build the horizontal entry form
   # TODO get this from django forms
   form = $ '<form class="form-inline entry-form" action="">'
     .html """
-          <input type="text" placeholder="Auto ID" disabled>
-          <input type="text" placeholder="Parcel" required pattern="#{regexes.locationIdentifier}">
-          <input type="text" placeholder="Row" required pattern="#{regexes.locationIdentifier}">
-          <input type="text" placeholder="Column" required pattern="#{regexes.locationIdentifier}">
-          <input type="text" placeholder="Year" required pattern="#{regexes.year}">
-          <input type="text" placeholder="Value" required pattern="#{regexes.currencyValue}">
-          <input type="text" placeholder="Receipt" required pattern="#{regexes.numberPerYear}">
+          <input placeholder='Auto ID' disabled title="The ID is generated automatically">
+          <input placeholder='Parcel'   validation-req validation-regex='locationIdentifier'>
+          <input placeholder='Row'      validation-req validation-regex='locationIdentifier'>
+          <input placeholder='Column'   validation-req validation-regex='locationIdentifier'>
+          <input placeholder='Year'     validation-req validation-regex='year'>
+          <input placeholder='Value'    validation-req validation-regex='currency'>
+          <input placeholder='Receipt'  validation-req validation-regex='numberPerYear'>
+          <br><br><br>
+          <button type='submit' class='btn btn-success add-button'><i class='fa fa-plus fa-lg'>
           """
-  addWidths form.find('input'), columnWidths, colType
-  form.append "<button type='submit' class='btn btn-success add-button'><i class='fa fa-plus fa-lg'>"
+          # TODO remove br's and style it correctly!
+  inputs = form.find "input"
+  setRegexMessages inputs
+
+  validationDelay = 400
+  inputs
+    # FIXME tooltips get shown/hidden only if you mouse over them very slowly
+    .attr
+      type: "text"
+      "data-toggle": "tooltip"
+      "data-placement": "top"
+      container: "body"
+    .addClass "form-control"
+    .wrap "<div class='form-group'>"
+    .typeWatch
+      callback: validateInput
+      wait: validationDelay
+      captureLength: 1
+
+  #addWidths form.find('input'), columnWidths, colType
+
   # Initially, the form is hidden
-#  form.hide()
+  #form.hide()
+
+  # Setup the validation
+  form.submit () ->
+    checkInputs this
 
   # Insert the form
   $ '<div class="row entry-row">'
     .append form
-    .insertAfter '#' + tableWrapper + ' .control-row'
+    .insertAfter "##{tableWrapper} .control-row"
 
+  slidingDuration = 100
   # Insert the display button
   $ '<div class="col-xs-1 add-cols">'
     .html '<button class="btn btn-default"><i class="fa fa-plus fa-lg">'
-    .insertAfter '#' + tableWrapper + ' .filter-cols'
+    .insertAfter "##{tableWrapper} .filter-cols"
     .click () ->
       if form.is(':visible')
         form.slideUp slidingDuration
       else
         form.slideDown slidingDuration
+
+
+
+
+
+# Validation
+
+
+class ValidationInfo
+  constructor: (@regex, @message) ->
+
+
+validationInfos =
+  locationIdentifier: new ValidationInfo /^\d([Bb][Ii][Ss]|[A-Za-z])?$/,      "A digit followed by a letter or 'bis'" # TODO treat 2a as 2A
+  year:               new ValidationInfo /(^['`]?\d{2}$)|(^\d{4}$)/,          "A year like 2015, 15 or '94" # TODO convert 09 to 2009 and 94 to 2004, warn (bootstrap styling) if year is absurd
+  currency:           new ValidationInfo /^\d{1,6}$/,                         "A number up to 6 digits long" # TODO warn if value is at least three times as big than the others
+  numberPerYear:      new ValidationInfo /^\d{1,3}\/((['`]?\d{2})|(\d{4}))$/, "A number up to 3 digits long, followed by / and then a year like 2015, 15 or '94" # TODO same as year conversion, autocomplete this to last + 1 of curr year? (and auto-select it on tab)
+
+
+setRegexMessages = (inputs) ->
+  for input in inputs
+    $input = $ input
+    regexName = $input.attr "validation-regex"
+
+    if regexName?
+      $input.attr title: validationInfos[regexName].message
+      $input.tooltip()
+
+
+validateInput = (arg) ->
+  if typeof arg is "string"
+    input = this
+    value = arg
+  else
+    input = arg
+    value = $(input).val()
+
+  $input = $ input
+  regexName = $input.attr "validation-regex"
+  isRequired = $input.attr "validation-req"
+
+  className = ""
+
+  regexIsRelevant = true
+  # If it is required but the value is empty
+  if isRequired?
+    if value is ""
+      className = "has-error"
+      regexIsRelevant = false
+  else
+    regexIsRelevant = false if value is ""
+
+  # If there is a regex and the requiredness hasn't been violated
+  if regexIsRelevant and regexName?
+    regex = validationInfos[regexName].regex
+    className = if regex.test value then "has-success" else "has-error"
+
+  $input.parent()
+    .removeClass "has-success has-error"
+    .addClass className
+
+  return className in ["", "has-success"]
+
+
+checkInputs = (form) ->
+  inputs = $(form).find "input"
+  allValid = true
+
+  for input in inputs
+    if not validateInput input
+      $(input).tooltip("show")
+      allValid = false
+
+  return allValid
 
