@@ -401,10 +401,11 @@ class ValidationRegex
 
 
 validationRegexes =
+  # TODO tell the user '15 or '94 can be entered
   locationIdentifier: new ValidationRegex /^\d([Bb][Ii][Ss]|[A-Za-z])?$/,      "A digit followed by a letter or 'bis'" # TODO treat 2a as 2A
-  year:               new ValidationRegex /(^['`]?\d{2}$)|(^\d{4}$)/,          "A year like 2015, 15 or '94" # TODO convert 09 to 2009 and 94 to 2004, warn (bootstrap styling) if year is absurd
-  currency:           new ValidationRegex /^\d{1,6}$/,                         "A number up to 6 digits long" # TODO warn if value is at least three times as big than the others
-  numberPerYear:      new ValidationRegex /^\d{1,3}\/((['`]?\d{2})|(\d{4}))$/, "A number up to 3 digits long, followed by a slash / and then a year, like 2015, 15 or '94" # TODO same as year conversion, autocomplete this to last + 1 of curr year? (and auto-select it on tab)
+  year:               new ValidationRegex /(^['`]?\d{2}$)|(^\d{4}$)/,          "A year like 2015, 15 or '15" # TODO convert 09 to 2009 and 94 to 2004, warn (bootstrap styling) if year is absurd
+  currency:           new ValidationRegex /^\d{1,6}$/,                         "A number up to 6 digits long" # TODO automatically complete with the average of the year entered
+  numberPerYear:      new ValidationRegex /^\d{1,3}\/((['`]?\d{2})|(\d{4}))$/, "A number up to 3 digits long, followed by a slash / and then a year, like 2015, 15 or '15" # TODO same as year conversion, autocomplete this to last + 1 of curr year? (and auto-select it on tab)
 
 
 class ValidationWarning

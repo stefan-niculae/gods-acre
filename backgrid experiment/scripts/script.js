@@ -318,9 +318,9 @@
 
   validationRegexes = {
     locationIdentifier: new ValidationRegex(/^\d([Bb][Ii][Ss]|[A-Za-z])?$/, "A digit followed by a letter or 'bis'"),
-    year: new ValidationRegex(/(^['`]?\d{2}$)|(^\d{4}$)/, "A year like 2015, 15 or '94"),
+    year: new ValidationRegex(/(^['`]?\d{2}$)|(^\d{4}$)/, "A year like 2015, 15 or '15"),
     currency: new ValidationRegex(/^\d{1,6}$/, "A number up to 6 digits long"),
-    numberPerYear: new ValidationRegex(/^\d{1,3}\/((['`]?\d{2})|(\d{4}))$/, "A number up to 3 digits long, followed by a slash / and then a year, like 2015, 15 or '94")
+    numberPerYear: new ValidationRegex(/^\d{1,3}\/((['`]?\d{2})|(\d{4}))$/, "A number up to 3 digits long, followed by a slash / and then a year, like 2015, 15 or '15")
   };
 
   ValidationWarning = (function() {
