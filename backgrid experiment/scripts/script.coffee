@@ -12,8 +12,7 @@ columnWidths = [1, 1, 1, 1, 2, 3, 3]
 sum = (arr) ->
   arr.reduce (prev, curr) -> prev + curr
 
-printError = (format, args...) ->
-  console.error s.sprintf format, args...
+currentYear = new Date().getFullYear()
 
 
 
@@ -188,7 +187,7 @@ encashments.fetch
     addEntityForm tableWrapper, columnWidths
 
   error: (collection, response) ->
-    printError "Fetching failed. Error response: %s.", response
+    console.error "Fetching failed. Error response: #{response}."
 
 
 # Bootstrap styling
@@ -202,8 +201,7 @@ addWidths = (elements, widths, colType) ->
 
 setColumnWidths = (tableWrapper, widths, colType) ->
   if sum(widths) != bootstrapColumns
-    msg = "Total number of columns (%d) differs from total number of bootstrap columns (%d)."
-    printError msg, sum widths, bootstrapColumns
+    console.error "Total number of columns (#{sum widths}) differs from total number of bootstrap columns (#{bootstrapColumns})."
 
   # Prepend with a zero to account for the SelectAll column
   # and append a zero to account for the editing buttons
@@ -213,8 +211,7 @@ setColumnWidths = (tableWrapper, widths, colType) ->
   headers = $ "#" +  tableWrapper + " th"
   # Subtract one for the SelectAll column and one for the editing buttons column
   if headers.length - 2 != widths.length
-      msg = "The number of columns (%d) differs from the number of headers (%d)."
-      printError msg, widths.length, headers.length - 2
+      console.error "The number of columns (#{widths.length}) differs from the number of headers (#{headers.length - 2})."
 
   addWidths headers, adjustedWidths, colType
 
@@ -224,11 +221,11 @@ repositionRow = (grid, oldIndex, newIndex) ->
   n = rows.length
 
   if n is 0
-    printError "Grid is empty"
+    console.error "Grid is empty"
     return
 
   if Math.abs(oldIndex) >= n or Math.abs(newIndex) > n
-    printError "Index is larger than the number of rows"
+    console.error "Index (old one, #{oldIndex} or new one, #{newIndex}) is larger than the number of rows (#{n})"
     return
 
   # -1 becomes n - 1
@@ -326,11 +323,11 @@ addEntityForm = (tableWrapper, columnWidths, regexes) ->
   # TODO get this from django forms
   form = $ '<form class="form-inline entry-form" action="">'
     .html """
-          <input placeholder='Auto ID' disabled title="The ID is generated automatically">
+          <input placeholder='Auto ID' disabled data-hint="The ID is generated automatically">
           <input placeholder='Parcel'   validation-req validation-regex='locationIdentifier'>
           <input placeholder='Row'      validation-req validation-regex='locationIdentifier'>
           <input placeholder='Column'   validation-req validation-regex='locationIdentifier'>
-          <input placeholder='Year'     validation-req validation-regex='year'>
+          <input placeholder='Year'     validation-req validation-regex='year'                validation-warn='closeYear'>
           <input placeholder='Value'    validation-req validation-regex='currency'>
           <input placeholder='Receipt'  validation-req validation-regex='numberPerYear'>
           <br><br><br>
@@ -338,22 +335,19 @@ addEntityForm = (tableWrapper, columnWidths, regexes) ->
           """
           # TODO remove br's and style it correctly!
   inputs = form.find "input"
-  setRegexMessages inputs
+  # Initially, show the regex validation message
 
   validationDelay = 400
   inputs
-    # FIXME tooltips get shown/hidden only if you mouse over them very slowly
-    .attr
-      type: "text"
-      "data-toggle": "tooltip"
-      "data-placement": "top"
-      container: "body"
+    .attr type: "text"
     .addClass "form-control"
     .wrap "<div class='form-group'>"
+    .wrap "<span class='hint--top hint--rounded'>"
     .typeWatch
       callback: validateInput
       wait: validationDelay
       captureLength: 1
+  setRegexMessages inputs
 
   #addWidths form.find('input'), columnWidths, colType
 
@@ -387,15 +381,36 @@ addEntityForm = (tableWrapper, columnWidths, regexes) ->
 # Validation
 
 
-class ValidationInfo
+class ValidationRegex
   constructor: (@regex, @message) ->
 
 
-validationInfos =
-  locationIdentifier: new ValidationInfo /^\d([Bb][Ii][Ss]|[A-Za-z])?$/,      "A digit followed by a letter or 'bis'" # TODO treat 2a as 2A
-  year:               new ValidationInfo /(^['`]?\d{2}$)|(^\d{4}$)/,          "A year like 2015, 15 or '94" # TODO convert 09 to 2009 and 94 to 2004, warn (bootstrap styling) if year is absurd
-  currency:           new ValidationInfo /^\d{1,6}$/,                         "A number up to 6 digits long" # TODO warn if value is at least three times as big than the others
-  numberPerYear:      new ValidationInfo /^\d{1,3}\/((['`]?\d{2})|(\d{4}))$/, "A number up to 3 digits long, followed by / and then a year like 2015, 15 or '94" # TODO same as year conversion, autocomplete this to last + 1 of curr year? (and auto-select it on tab)
+validationRegexes =
+  locationIdentifier: new ValidationRegex /^\d([Bb][Ii][Ss]|[A-Za-z])?$/,      "A digit followed by a letter or 'bis'" # TODO treat 2a as 2A
+  year:               new ValidationRegex /(^['`]?\d{2}$)|(^\d{4}$)/,          "A year like 2015, 15 or '94" # TODO convert 09 to 2009 and 94 to 2004, warn (bootstrap styling) if year is absurd
+  currency:           new ValidationRegex /^\d{1,6}$/,                         "A number up to 6 digits long" # TODO warn if value is at least three times as big than the others
+  numberPerYear:      new ValidationRegex /^\d{1,3}\/((['`]?\d{2})|(\d{4}))$/, "A number up to 3 digits long, followed by / and then a year like 2015, 15 or '94" # TODO same as year conversion, autocomplete this to last + 1 of curr year? (and auto-select it on tab)
+
+
+class ValidationWarning
+  constructor: (@filter, @message) ->
+
+validationWarnings =
+  closeYear: new ValidationWarning ((val) -> Math.abs(val - currentYear) > 100), "Entered year is more than 100 years apart from today"
+
+
+class InputState
+  constructor: (@bootstrapClass, @hintClass) ->
+
+
+INPUT_STATES =
+  NEUTRAL:  new InputState "", ""
+  ERROR:    new InputState "has-error", "hint--error"
+  WARNING:  new InputState "has-warning", "hint--warning"
+  SUCCESS:  new InputState "has-success", "hint--success"
+
+bootstrapStateClasses = _.pluck(INPUT_STATES, "bootstrapClass").join(' ')
+hintStateClasses      = _.pluck(INPUT_STATES, "hintClass")     .join(' ')
 
 
 setRegexMessages = (inputs) ->
@@ -404,8 +419,8 @@ setRegexMessages = (inputs) ->
     regexName = $input.attr "validation-regex"
 
     if regexName?
-      $input.attr title: validationInfos[regexName].message
-      $input.tooltip()
+      info = validationRegexes[regexName]
+      $input.parent().attr "data-hint": info.message unless info is undefined
 
 
 validateInput = (arg) ->
@@ -417,39 +432,97 @@ validateInput = (arg) ->
     value = $(input).val()
 
   $input = $ input
-  regexName = $input.attr "validation-regex"
-  isRequired = $input.attr "validation-req"
+  regexName   = $input.attr "validation-regex"
+  isRequired  = $input.attr "validation-req"
+  warningName = $input.attr "validation-warn"
 
-  className = ""
 
-  regexIsRelevant = true
-  # If it is required but the value is empty
-  if isRequired?
-    if value is ""
-      className = "has-error"
-      regexIsRelevant = false
-  else
-    regexIsRelevant = false if value is ""
+  # TODO merge passes (req, regex, warn) into one (but keep it legible)
+  passesRequiredness = () ->
+    if not isRequired?
+      return [true, "Ok!", INPUT_STATES.NEUTRAL]
 
-  # If there is a regex and the requiredness hasn't been violated
-  if regexIsRelevant and regexName?
-    regex = validationInfos[regexName].regex
-    className = if regex.test value then "has-success" else "has-error"
+    if value isnt ""
+      # Is required and something is entered
+      return [true, "Ok!", INPUT_STATES.NEUTRAL]
+    else
+      # No need to say what is required as the placeholder shows that...
+      # ... and the placeholder is visible because there is nothing entered
+      return [false, "Required", INPUT_STATES.ERROR]
 
+
+  passesRegex = () ->
+    if not regexName?
+      return [true, "Ok!", INPUT_STATES.NEUTRAL]
+
+    {regex, message} = validationRegexes[regexName]
+    if regex is undefined
+      console.error "#{regexName} was not found in the validationRegexes dictionary."
+      return [true, "Ok!", INPUT_STATES.NEUTRAL]
+
+    if regex.test value
+      return [true, "Ok!", INPUT_STATES.SUCCESS]
+    else
+      return [false, message, INPUT_STATES.ERROR]
+
+
+  passesWarning = () ->
+    if not warningName?
+      return [true, "Ok!", INPUT_STATES.NEUTRAL]
+
+    {filter, message} = validationWarnings[warningName]
+    if filter is undefined
+      console.error "#{warningName} was not found in the validationWarning dictionary."
+      return [true, "Ok!", INPUT_STATES.NEUTRAL]
+
+    if filter(value)
+      return [true, "Ok!", INPUT_STATES.NEUTRAL]
+    else
+      return [false, message, INPUT_STATES.WARNING]
+
+  validationResults = () ->
+    # We test things in this order: requiredess, regex and warnings
+    for [hasPassed, message, state] in [passesRequiredness(), passesRegex(), passesWarning()]
+      if not hasPassed
+        return [message, state]
+    return ["Ok!", INPUT_STATES.SUCCESS]
+
+
+  [message, state] = validationResults()
+
+  # Setting the bootstrap class
+  $input.parent().parent()
+    .removeClass "#{bootstrapStateClasses}"
+    .addClass state.bootstrapClass
+
+  # Setting the hint class
   $input.parent()
-    .removeClass "has-success has-error"
-    .addClass className
+    .attr "data-hint": message
+    .removeClass "#{hintStateClasses}"
+    .addClass state.hintClass
 
-  return className in ["", "has-success"]
+  return state in [INPUT_STATES.NEUTRAL, INPUT_STATES.SUCCESS]
+
 
 
 checkInputs = (form) ->
-  inputs = $(form).find "input"
+  showTooltip = (elem) ->
+    elem
+    # Force showing the tooltip
+      .addClass("hint--always")
+      # But return to normal behaviour once hovered over
+      .hover (event) ->
+        $(event.currentTarget)
+          .removeClass "hint--always"
+
+
+  # Act on all inputs except the ID one (which is automatically generated), assumed to be first
+  inputs = $(form).find("input")[1..]
   allValid = true
 
   for input in inputs
     if not validateInput input
-      $(input).tooltip("show")
+      showTooltip $(input).parent()
       allValid = false
 
   return allValid
