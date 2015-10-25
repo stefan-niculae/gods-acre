@@ -12,6 +12,21 @@ columnWidths = [1, 1, 1, 1, 2, 3, 3]
 sum = (arr) ->
   arr.reduce (prev, curr) -> prev + curr
 
+translateShortYear = (year) ->
+  YEAR_THRESHOLD = 50
+  # Make sure it's a number
+  year = +year
+
+  # 15 => 2015
+  if 0 <= year <= YEAR_THRESHOLD
+    2000 + year
+  # 94 => 1994
+  else if YEAR_THRESHOLD < year < 100
+    1900 + year
+  # Year is already like 2015
+  else
+    year
+
 currentYear = new Date().getFullYear()
 
 
@@ -389,14 +404,23 @@ validationRegexes =
   locationIdentifier: new ValidationRegex /^\d([Bb][Ii][Ss]|[A-Za-z])?$/,      "A digit followed by a letter or 'bis'" # TODO treat 2a as 2A
   year:               new ValidationRegex /(^['`]?\d{2}$)|(^\d{4}$)/,          "A year like 2015, 15 or '94" # TODO convert 09 to 2009 and 94 to 2004, warn (bootstrap styling) if year is absurd
   currency:           new ValidationRegex /^\d{1,6}$/,                         "A number up to 6 digits long" # TODO warn if value is at least three times as big than the others
-  numberPerYear:      new ValidationRegex /^\d{1,3}\/((['`]?\d{2})|(\d{4}))$/, "A number up to 3 digits long, followed by / and then a year like 2015, 15 or '94" # TODO same as year conversion, autocomplete this to last + 1 of curr year? (and auto-select it on tab)
+  numberPerYear:      new ValidationRegex /^\d{1,3}\/((['`]?\d{2})|(\d{4}))$/, "A number up to 3 digits long, followed by a slash / and then a year, like 2015, 15 or '94" # TODO same as year conversion, autocomplete this to last + 1 of curr year? (and auto-select it on tab)
 
 
 class ValidationWarning
   constructor: (@filter, @message) ->
 
+
+closeYearFilter = (year) ->
+  # Remove the apostrophe
+  year = year[1..] if year[0] in ["'", "`"]
+  # Translate the year if necessary
+  year = translateShortYear year
+  console.log "entered year is #{year}"
+  return Math.abs(year - currentYear) > 100
+
 validationWarnings =
-  closeYear: new ValidationWarning ((val) -> Math.abs(val - currentYear) > 100), "Entered year is more than 100 years apart from today"
+  closeYear: new ValidationWarning closeYearFilter, "Entered year is more than 100 years apart from today"
 
 
 class InputState
@@ -424,9 +448,11 @@ setRegexMessages = (inputs) ->
 
 
 validateInput = (arg) ->
+  # Two ways of calling this: by string and with the input as 'this'...
   if typeof arg is "string"
     input = this
     value = arg
+  # ... or directly by the input element
   else
     input = arg
     value = $(input).val()
@@ -472,13 +498,14 @@ validateInput = (arg) ->
 
     {filter, message} = validationWarnings[warningName]
     if filter is undefined
-      console.error "#{warningName} was not found in the validationWarning dictionary."
+      console.error "#{warningName} was not found in the validationWarnings dictionary."
       return [true, "Ok!", INPUT_STATES.NEUTRAL]
 
-    if filter(value)
-      return [true, "Ok!", INPUT_STATES.NEUTRAL]
-    else
+    # If it triggers a warning
+    if filter value
       return [false, message, INPUT_STATES.WARNING]
+    else
+      return [true, "Ok!", INPUT_STATES.NEUTRAL]
 
   validationResults = () ->
     # We test things in this order: requiredess, regex and warnings
