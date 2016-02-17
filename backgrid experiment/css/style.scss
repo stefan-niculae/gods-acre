@@ -1,41 +1,50 @@
 /* Align everything to the left */
 .backgrid td, .backgrid th {
-  text-align: left; }
+  text-align: left;
+}
 
 .backgrid th a {
-  color: black; }
+  color: black;
+}
 
 /* Bolden the ID on each row */
 .backgrid .id-cell {
-  font-weight: bold; }
+  font-weight: bold;
+}
 
 /* Keep text vertically centered when editng */
 .backgrid .editor {
-  vertical-align: middle; }
+  vertical-align: middle;
+}
 
 /* Highlight the sorted column */
 .backgrid .sorted-col, .backgrid th.ascending, .backgrid th.descending {
-  background-color: rgba(200, 227, 253, 0.24); }
+  background-color: rgba(200, 227, 253, 0.24);
+}
 
 /*FIXME*/
 /* Centering the empty data message doesn't work */
 .backgrid .empty td {
-  text-align: center !important; }
+  text-align: center !important;
+}
 
 /* Hide the default sorting indicator */
 .backgrid .sort-caret {
-  display: none; }
+  display: none;
+}
 
 /* The sorted indicator is hidden by default */
 .sorted-indicator {
   float: right;
   color: grey;
-  visibility: hidden; }
+  visibility: hidden;
+}
 
 /* Only visible on the column that is currently sorted */
 .ascending .sorted-indicator,
 .descending .sorted-indicator {
-  visibility: visible; }
+  visibility: visible;
+}
 
 /* And flipped vertically when reverse sorted */
 .descending .sorted-indicator {
@@ -44,71 +53,85 @@
   -webkit-transform: scaleY(-1);
   transform: scaleY(-1);
   filter: FlipV;
-  -ms-filter: "FlipV"; }
+  -ms-filter: "FlipV";
+}
 
 /* TODO Softer inner table borders */
+
+
+
 /* FIXME search bar doesn't correctly scale, it's wider sometimes that the table */
+//.above-rows {
+//  margin-left: 3.1em; /* To account for the selecting checkboxes column */
+//  margin-right: 100px; /* To account for the editing buttons column */
+//}
+
 .above-rows .row {
-  margin-bottom: 2em; }
+  margin-bottom: 2em;
+}
 
 .control-row .search-cols {
-  padding: 0; }
+  padding: 0;
+}
 
 /* Widen the search bar */
 .backgrid-filter.form-search {
   width: auto;
-  margin: 0; }
+  margin: 0;
+}
 
 /* Hide default search icon */
 .backgrid-filter.form-search .search {
-  display: none; }
+  display: none;
+}
 
 /* Position the new search icon */
 .backgrid-filter.form-search .fa-search {
   position: absolute;
   left: 7.5px;
-  top: 6px;
-  /* HACK */
-  font-size: 17.5px; }
+  top: 6px; /* HACK */
+  font-size: 17.5px;
+}
 
 /* Reposition the clear icon */
 .backgrid-filter.form-search .clear {
   position: absolute;
-  right: 2%;
-  /* FIXME */
-  top: 3.5px;
-  /* HACK */
-  margin: 0; }
+  right: 2%; /* FIXME */
+  top: 3.5px; /* HACK */
+  margin: 0;
+}
 
 /* Move input to the right */
 .backgrid-filter input[type="search"] {
   padding-left: 30px;
   padding-right: 30px;
-  width: 92.5%;
-  /* HACK */ }
+  width: 92.5%; /* HACK */
+}
 
 /* Set icon color to black */
 .backgrid-filter.form-search .fa-search,
 .backgrid-filter.form-search .fa-times {
-  color: black; }
+  color: black;
+}
 
 /* TODO align filter & add buttons */
 .control-row button {
-  float: right; }
+  float: right;
+}
 
 /* FIXME */
 .backgrid th {
-  border-top: 1.5px solid #DDD; }
+  border-top: 1.5px solid #DDD;
+}
 
 /* Hide the background and border of selecting checkboxes */
 .backgrid .select-all-header-cell,
 .backgrid .select-row-cell {
-  background-color: white;
-  /* HACK This assumes the entire page background is white */
-  border-left: 0;
-  /* This assumes they are the first (leftmost) column */
+  background-color: white; /* HACK This assumes the entire page background is white */
+  border-left: 0; /* This assumes they are the first (leftmost) column */
   border-top: 0;
-  border-bottom: 0; }
+  border-bottom: 0;
+}
 
 /* Hide background and border of editing buttons */
 .backgrid th.editing-buttons,
@@ -116,38 +139,45 @@
   background-color: white;
   border-top: 0;
   border-bottom: 0;
-  border-right: 0; }
+  border-right: 0;
+}
 
 /* Hide the table's lateral borders */
 table.backgrid {
-  border: 0; }
+  border: 0;
+}
 
 /* Selecting checkboxes and editing buttons are hidden by default */
 .backgrid .select-all-header-cell input,
 .backgrid .select-row-cell input,
 .backgrid .editing-buttons-cell button {
-  visibility: hidden; }
+  visibility: hidden;
+}
 
 /* Visible on hovering on the row */
 table.backgrid:hover .select-all-header-cell input,
 .backgrid tr:hover input,
 .backgrid tr:hover .editing-buttons-cell button {
-  visibility: visible; }
+  visibility: visible;
+}
 
 /* Selected checkboxes should always be visible */
 .backgrid .select-all-header-cell input:checked,
 .backgrid .select-row-cell input:checked {
-  visibility: visible; }
+  visibility: visible;
+}
 
 /* No cell padding on editing buttons */
 .backgrid .editing-buttons-cell {
-  padding: 0; }
+  padding: 0;
+}
 
 /* Editing buttons size */
 .backgrid .editing-buttons-cell button {
   font-size: 1.25em;
   padding: 5px 10px;
-  margin-left: 5px; }
+  margin-left: 5px;
+}
 
 .backgrid .add-button {
   /*float: right !important;*/
@@ -156,10 +186,10 @@ table.backgrid:hover .select-all-header-cell input,
   width: 100px;
   height: 60px;
   position: relative;
-  right: -50px; }
+  right: -50px;
+}
 
 .entry-row {
   margin-left: 5px;
-  margin-right: 5px; }
-
-/*# sourceMappingURL=style.css.map */
+  margin-right: 5px;
+}

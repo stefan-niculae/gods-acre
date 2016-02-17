@@ -194,12 +194,12 @@ encashments.fetch
     addSortedIndicator tableWrapper
 
     setSearchIcons tableWrapper
-    setSearchSize tableWrapper
+    repositionSearch tableWrapper
     setSearchEscClear tableWrapper
 
     # TODO align buttons properly to the right
-    addColumnFiltering tableWrapper
-    addEntityForm tableWrapper, columnWidths
+    #addColumnFiltering tableWrapper
+    addEntityFormTriggers tableWrapper, columnWidths
 
   error: (collection, response) ->
     console.error "Fetching failed. Error response: #{response}."
@@ -209,8 +209,7 @@ encashments.fetch
 
 bootstrapColumns = 12
 
-addWidths = (elements, widths, colType) ->
-  colType = "lg"
+addWidths = (elements, widths, colType = "lg") ->
   for [elem, width] in _.zip elements, widths
     $(elem).addClass s.sprintf "col-%s-%d", colType, width
 
@@ -231,6 +230,7 @@ setColumnWidths = (tableWrapper, widths, colType) ->
   addWidths headers, adjustedWidths, colType
 
 
+# delete?
 repositionRow = (grid, oldIndex, newIndex) ->
   rows = grid.$el.find "tbody tr"
   n = rows.length
@@ -281,10 +281,10 @@ setClearSortingOnSearch = (tableWrapper) ->
       $("##{tableWrapper} th.descending").removeClass "descending"
 
   $ "##{tableWrapper} input[type='search']"
-    .keypress () -> clearHighlight()
+    .keypress -> clearHighlight()
 
   $ "##{tableWrapper} a.clear"
-    .keypress () ->
+    .keypress ->
       clearHighlight()
       $("##{tableWrapper} th .sorted-indicator").hide() # clear the caret
 
@@ -311,18 +311,11 @@ setSearchIcons = (tableWrapper) ->
         #.appendTo("##{tableWrapper} .form-search input[type='search']"); // Move it next to the input
 
 
-setSearchSize = (tableWrapper) ->
-  $ "##{tableWrapper} .form-search"
-    .wrap '<section class="above-rows">'
-    .wrap '<div class="row control-row">'
-    .wrap '<div class="col-xs-10 search-cols">'
-
-
-addColumnFiltering = (tableWrapper) ->
-  $ '<div class="col-xs-1 filter-cols">'
-    .html '<button class="btn btn-primary"><i class="fa fa-filter fa-lg"></i></button>'
-    .insertAfter "##{tableWrapper} .search-cols"
-  # TODO add the filters
+repositionSearch = (tableWrapper) ->
+  $ ".control-row"
+    .prepend '<div class="col-xs-10 search-cols">'
+  $ ".search-cols"
+    .prepend $("##{tableWrapper} .form-search")
 
 
 setSearchEscClear = (tableWrapper) ->
@@ -333,22 +326,8 @@ setSearchEscClear = (tableWrapper) ->
     input.val('') if code is 27
 
 
-addEntityForm = (tableWrapper, columnWidths, regexes) ->
-  # Build the horizontal entry form
-  # TODO get this from django forms
-  form = $ '<form class="form-inline entry-form" action="">'
-    .html """
-          <input placeholder='Auto ID' disabled data-hint="The ID is generated automatically">
-          <input placeholder='Parcel'   validation-req validation-regex='locationIdentifier'>
-          <input placeholder='Row'      validation-req validation-regex='locationIdentifier'>
-          <input placeholder='Column'   validation-req validation-regex='locationIdentifier'>
-          <input placeholder='Year'     validation-req validation-regex='year'                validation-warn='closeYear'>
-          <input placeholder='Value'    validation-req validation-regex='currency'>
-          <input placeholder='Receipt'  validation-req validation-regex='numberPerYear'>
-          <br><br><br>
-          <button type='submit' class='btn btn-success add-button'><i class='fa fa-plus fa-lg'>
-          """
-          # TODO remove br's and style it correctly!
+addEntityFormTriggers = (tableWrapper, columnWidths, regexes) ->
+  form = $ "##{tableWrapper} .entry-form"
   inputs = form.find "input"
   # Initially, show the regex validation message
 
@@ -364,8 +343,6 @@ addEntityForm = (tableWrapper, columnWidths, regexes) ->
       captureLength: 1
   setRegexMessages inputs
 
-  #addWidths form.find('input'), columnWidths, colType
-
   # Initially, the form is hidden
   #form.hide()
 
@@ -374,20 +351,22 @@ addEntityForm = (tableWrapper, columnWidths, regexes) ->
     checkInputs this
 
   # Insert the form
-  $ '<div class="row entry-row">'
-    .append form
-    .insertAfter "##{tableWrapper} .control-row"
+#  $ '<div class="row entry-row">'
+#    .append form
+#    .insertAfter "##{tableWrapper} .control-row"
 
   slidingDuration = 100
   # Insert the display button
-  $ '<div class="col-xs-1 add-cols">'
-    .html '<button class="btn btn-default"><i class="fa fa-plus fa-lg">'
-    .insertAfter "##{tableWrapper} .filter-cols"
+#  $ '<div class="col-xs-1 add-cols">'
+#    .html '<button class="btn btn-default"><i class="fa fa-plus fa-lg">'
+#    .insertAfter "##{tableWrapper} .filter-cols"
+  form.find '.add-cols button'
     .click () ->
       if form.is(':visible')
         form.slideUp slidingDuration
       else
         form.slideDown slidingDuration
+
 
 
 
