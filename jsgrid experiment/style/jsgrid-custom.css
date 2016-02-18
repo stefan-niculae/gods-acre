@@ -1,0 +1,28 @@
+/* Horizontally center the pager */
+.jsgrid-pager-container {
+    text-align: center;
+}
+.jsgrid-pager {
+    display: inline-block;
+}
+
+
+/* Align appropriate table headers to the left */
+.jsgrid-table .left-aligned-header {
+    text-align: left;
+}
+.jsgrid-table .right-aligned-header {
+    text-align: right;
+}
+
+
+.id-cell {
+    font-weight: bold;
+}
+
+
+.jsgrid-clear-filter-button {
+    content: "x" !important;
+}
+
+
