@@ -70,104 +70,100 @@
       <section id="example-table">
 
         <section class="above-rows">
-          <!--<div class="row">-->
-            <!--<div class="col-lg-1">b</div>-->
 
-            <div class="row control-row col-lg-10">
+          <div class="row control-row col-lg-10">
 
-              <div class="col-xs-1 filter-cols">
-                <button class="btn btn-primary"><i class="fa fa-filter fa-lg"></i></button>
-              </div>
-
-              <div class="col-xs-1 add-cols">
-                <button class="btn btn-default"><i class="fa fa-plus fa-lg"></i></button>
-              </div>
+            <div class="col-xs-1 filter-cols">
+              <button class="btn btn-primary"><i class="fa fa-filter fa-lg"></i></button>
             </div>
 
-            <div class="row entry-row col-lg-10">
-              <form class="form-inline entry-form" action="">
-                <div class="form-group">
-                  <span class="hint--top hint--rounded">
-                    <input placeholder="Auto ID" disabled
-                           data-hint="The ID is generated automatically"
-                           type="text"
-                           class="form-control">
-                  </span>
-                </div>
+            <div class="col-xs-1 add-cols">
+              <button class="btn btn-default"><i class="fa fa-plus fa-lg"></i></button>
+            </div>
+          </div>
 
-                <div class="form-group">
-                  <span class="hint--top hint--rounded"
-                        data-hint="A digit followed by a letter or 'bis'">
-                    <input placeholder="Parcel"
-                           validation-req
-                           validation-regex="locationIdentifier"
-                           type="text"
-                           class="form-control">
-                  </span>
-                </div>
+          <div class="row entry-row col-lg-10">
+            <form class="form-inline entry-form" action="">
+              <div class="form-group">
+                <span class="hint--top hint--rounded">
+                  <input placeholder="Auto ID" disabled
+                         data-hint="The ID is generated automatically"
+                         type="text"
+                         class="form-control">
+                </span>
+              </div>
 
-                <div class="form-group">
-                  <span class="hint--top hint--rounded"
-                        data-hint="A digit followed by a letter or 'bis'">
-                    <input placeholder="Row"
-                           validation-req
-                           validation-regex="locationIdentifier"
-                           type="text"
-                           class="form-control">
-                  </span>
-                </div>
-
-                <div class="form-group">
-                  <span class="hint--top hint--rounded"
-                        data-hint="A digit followed by a letter or 'bis'">
-                  <input placeholder="Column"
+              <div class="form-group">
+                <span class="hint--top hint--rounded"
+                      data-hint="A digit followed by a letter or 'bis'">
+                  <input placeholder="Parcel"
                          validation-req
                          validation-regex="locationIdentifier"
                          type="text"
                          class="form-control">
-                  </span>
-                </div>
+                </span>
+              </div>
 
-                <div class="form-group">
-                  <span class="hint--top hint--rounded"
-                        data-hint="A year like 2015, 15 or '15">
-                    <input placeholder="Year"
-                           validation-req
-                           validation-regex="year"
-                           validation-warn="closeYear"
-                           type="text"
-                           class="form-control">
-                  </span>
-                </div>
+              <div class="form-group">
+                <span class="hint--top hint--rounded"
+                      data-hint="A digit followed by a letter or 'bis'">
+                  <input placeholder="Row"
+                         validation-req
+                         validation-regex="locationIdentifier"
+                         type="text"
+                         class="form-control">
+                </span>
+              </div>
 
-                <div class="form-group">
-                  <span class="hint--top hint--rounded"
-                        data-hint="A number up to 6 digits long">
-                    <input placeholder="Value"
-                           validation-req
-                           validation-regex="currency"
-                           type="text"
-                           class="form-control">
-                  </span>
-                </div>
+              <div class="form-group">
+                <span class="hint--top hint--rounded"
+                      data-hint="A digit followed by a letter or 'bis'">
+                <input placeholder="Column"
+                       validation-req
+                       validation-regex="locationIdentifier"
+                       type="text"
+                       class="form-control">
+                </span>
+              </div>
 
-                <div class="form-group">
-                  <span class="hint--top hint--rounded"
-                        data-hint="A number up to 3 digits long, followed by a slash (/) and then a year, like 2015, 15 or '15">
-                    <input placeholder="Receipt"
-                           validation-req
-                           validation-regex="numberPerYear"
-                           type="text"
-                           class="form-control">
-                  </span>
-                </div>
+              <div class="form-group">
+                <span class="hint--top hint--rounded"
+                      data-hint="A year like 2015, 15 or '15">
+                  <input placeholder="Year"
+                         validation-req
+                         validation-regex="year"
+                         validation-warn="closeYear"
+                         type="text"
+                         class="form-control">
+                </span>
+              </div>
 
-                <button type="submit" class="btn btn-success add-button"><i class="fa fa-plus fa-lg"></i></button>
-              </form>
-            </div>
+              <div class="form-group">
+                <span class="hint--top hint--rounded"
+                      data-hint="A number up to 6 digits long">
+                  <input placeholder="Value"
+                         validation-req
+                         validation-regex="currency"
+                         type="text"
+                         class="form-control">
+                </span>
+              </div>
 
-            <!--<div class="col-lg-1">a</div>-->
-          <!--</div>-->
+              <div class="form-group">
+                <span class="hint--top hint--rounded"
+                      data-hint="A number up to 3 digits long, followed by a slash (/) and then a year, like 2015, 15 or '15">
+                  <input placeholder="Receipt"
+                         validation-req
+                         validation-regex="numberPerYear"
+                         type="text"
+                         class="form-control">
+                </span>
+              </div>
+
+              <button type="submit" class="btn btn-success add-button"><i class="fa fa-plus fa-lg"></i></button>
+            </form>
+          </div>
+
         </section>
 
       </section>
@@ -198,6 +194,7 @@
   
   <script src="lib/bootstrap.min.js"></script>
   <script src="lib/underscore.string.min.js"></script>
+  <script src="lib/replace-tag.js"></script>
 
   <script src="scripts/script.js"></script>
 </body>
