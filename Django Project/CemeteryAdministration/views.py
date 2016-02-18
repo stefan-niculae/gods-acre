@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
+
 from django.shortcuts import render, get_object_or_404
 from .view_contents import *
-from django_ajax.decorators import ajax
+#from django_ajax.decorators import ajax
 
 
 #TODO remove str(...) from here and instead, call str as as mapping in tests
@@ -275,7 +277,7 @@ def companies_administration(request):
     return render(request, name_to_template('spots_administration'), context)
 
 
-@ajax
+# @ajax
 def save(request):
     entity  = request.POST.get('entity',    'NO ENTITY')
     db_id   = request.POST.get('db_id',     'NO ID')

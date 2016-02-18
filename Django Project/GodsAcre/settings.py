@@ -109,7 +109,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-#STATIC_ROOT = os.path.join(BASE_DIR, '/CemeteryAdministration/static')
+# STATIC_ROOT = os.path.join(BASE_DIR, '/CemeteryAdministration/static')
 
 # https://www.turnkeylinux.org/blog/django-navbar
 TEMPLATE_CONTEXT_PROCESSORS = (
