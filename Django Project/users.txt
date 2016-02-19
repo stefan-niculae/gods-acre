@@ -1,7 +1,25 @@
-django
+--- Django ---
 cemetery_site_admin
 cemetery_site_admin_pw
 
-postgres
+python manage.py createsuperuser
+Username: cemetery_site_admin
+Email address: 
+Password: cemetery_site_admin_pw
+Password (again): cemetery_site_admin_pw
+
+127.0.0.1:8000/django-admin
+
+
+
+--- Postgres ---
 cemetery_dba
 cemetery_dba_pw
+
+Open Postgres.app (or enter command psql)
+  \l lists all databases
+  \du lists all users
+Create User cemetery_dba With Password 'cemetery_dba_pw';
+Create Database cemetery;
+Grant All Privileges On Database cemetery To cemetery_dba;
+

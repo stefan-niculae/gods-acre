@@ -1,9 +1,0 @@
-Open Postgres.app (or enter command psql)
-
-  \l lists all databases
-  \du lists all users
-
-Create User cemetery_dba With Password 'cemetery_dba_pw';
-Create Database cemetery;
-Grant All Privileges On Database cemetery To cemetery_dba;
-
