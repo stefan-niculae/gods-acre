@@ -1,5 +1,6 @@
 from django.conf.urls import url
 from . import views
+from .views import *
 
 
 urlpatterns = [
@@ -31,4 +32,9 @@ urlpatterns = [
     url(r'^admin/intret/?$', views.administration, name='maintenance_administration'),
 
     url(r'^save/?$', views.save, name='save'),
+
+
+    # jsgrid
+    url(r'^revenue_jsgrid/?$', views.rev_js_grid, name='rev_js_grid'),
+    url(r'^revenue_jsgrid/api/?$', RevenueJsGrid.as_view())
 ]

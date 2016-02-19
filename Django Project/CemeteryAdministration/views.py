@@ -4,6 +4,10 @@ from django.shortcuts import render, get_object_or_404
 from .view_contents import *
 #from django_ajax.decorators import ajax
 
+from django.http import HttpResponse
+from django.core import serializers
+from simple_rest import Resource
+
 
 #TODO remove str(...) from here and instead, call str as as mapping in tests
 
@@ -292,3 +296,42 @@ def save(request):
     except:  # TODO check what exceptions this can throw
         print('>' * 25, 'Error running update statement!')
         return 'ERROR'
+
+
+# TODO move this inside the revenuejsgrid class
+class RevenueInfo:
+    def __init__(self, id, parcel, row, column, year, value, receipt):
+        self.id = id
+        self.parcel = parcel
+        self.row = row
+        self.column = column
+        self.year = year
+        self.value = value
+        self.receipt = receipt
+
+
+def to_json(objects):
+    return serializers.serialize('json', objects)
+
+
+def rev_js_grid(request):
+    return render(request, 'revenue_jsgrid.html')
+
+# todo replace this name
+class RevenueJsGrid(Resource):
+
+    def get(self, request):
+        spots = Spot.objects.all() \
+            .filter(parcel__contains=request.GET.get('parcel')) \
+            .filter(row__contains=request.GET.get('row')) \
+            .filter(column__contains=request.GET.get('column'))
+            # TODO id aswell?
+
+        infos = []
+        for s in spots:
+            infos.append(RevenueInfo(s.id, s.parcel, s.row, s.column, 2000, 100, "1/2000"))
+
+        return HttpResponse(to_json(infos), content_type='application/json', status=200)
+
+
+

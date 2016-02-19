@@ -2,87 +2,104 @@
 
 <html lang="ro">
 
-    <head>
-        <!-- Bootstrap -->
-        <meta charset="UTF-8">
-        <meta http-equiv="x-ua-compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+  <!-- Bootstrap -->
+  <meta charset="UTF-8">
+  <meta http-equiv="x-ua-compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        {% load staticfiles %}
-        <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/bootstrap.css' %}"/>
-        <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/bootstrap-theme.css' %}"/>
-        <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/bootstrap-footer.css' %}"/>
-        <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/bootstrap-custom.css' %}"/>
-        <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/font-awesome.min.css' %}"/>
-        <!--todo move css only where needed-->
-        <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/style.css' %}"/>
 
-        <link rel="shortcut icon" href="{% static 'CemeteryAdministration/images/favicon.ico' %}">
+  {% load staticfiles %}
+  <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/bootstrap.css' %}"/>
+  <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/bootstrap-theme.css' %}"/>
+  <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/bootstrap-footer.css' %}"/>
+  <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/bootstrap-custom.css' %}"/>
+  <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/font-awesome.min.css' %}"/>
+  <!--todo move css only where needed-->
+  <link rel="stylesheet" href="{% static 'CemeteryAdministration/css/style.css' %}"/>
 
-        {% load base_extras %}
+  {% block additional_styles %} {% endblock %}
+  <!-- Lib css -->
+  <link rel="stylesheet" href="{% static 'CemeteryAdministration/libs/style/jsgrid.min.css' %}"/>
+  <link rel="stylesheet" href="{% static 'CemeteryAdministration/libs/style/jsgrid-theme.min.css' %}"/>
 
-        <title> {% block title %} {{ title|title|default:"Title" }} {% endblock %} </title>
-    </head>
+  <!-- Custom css-->
+  <link rel="stylesheet" href="{% static 'CemeteryAdministration/style/jsgrid-custom.css' %}"/>
 
-    <body>
-        <!-- Fixed navbar -->
-        <nav class="navbar navbar-default">
-            <div class="container-fluid">
-                <!-- Brand and toggle get grouped for better mobile display -->
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-1" aria-expanded="false">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                </div>
 
-                <!-- Collect the nav links, forms, and other content for toggling -->
-                <div class="collapse navbar-collapse" id="navbar-collapse-1">
-                    <ul class="nav navbar-nav">
-                        <li class="{% active_page request 'general_register' %}">
-                            <a href="{% url 'CemeteryAdministration:general_register' %}">Registru General</a></li>
-                        <li class="{% active_page request 'spot' %}">
-                            <a href="{% url 'CemeteryAdministration:spot' %}">Fișă Individuală</a></li>
-                        <li role="separator" class="divider-vertical"></li>
 
-                        <li class="{% active_page request 'ownerships' %}">
-                            <a href="{% url 'CemeteryAdministration:ownerships' %}">Concesiuni</a></li>
-                        <li class="{% active_page request 'constructions' %}">
-                            <a href="{% url 'CemeteryAdministration:constructions' %}">Construcții</a></li>
-                        <li class="{% active_page request 'operations' %}">
-                            <a href="{% url 'CemeteryAdministration:operations' %}">Înhumări</a></li>
-                        <li class="{% active_page request 'revenue' %}">
-                            <a href="{% url 'CemeteryAdministration:revenue' %}">Încasări</a></li>
-                        <li class="{% active_page request 'maintenance' %}">
-                            <a href="{% url 'CemeteryAdministration:maintenance' %}">Întreținere</a></li>
-                    </ul>
+  <link rel="shortcut icon" href="{% static 'CemeteryAdministration/images/favicon.ico' %}">
 
-                    <ul class="nav navbar-nav navbar-right">
-                        <li><a href="#" class="navigation-glyph"><i class="fa fa-cog fa-2x"></i></a></li>
-                    </ul>
-                </div><!-- /.navbar-collapse -->
-            </div><!-- /.container-fluid -->
-        </nav>
+  {% load base_extras %}
 
-        <section id="content" class="container">
-            <h1>{{ title|title|default:"Title" }}</h1>
-            {% block content %} {% endblock %}
-        </section>
+  <title> {% block title %} {{ title|title|default:"Title" }} {% endblock %} </title>
+</head>
 
-        <footer class="footer hidden-print">
-            <div class="container">
-                <p class="text-muted">Ștefan Niculae | stefanconturi@gmail.com | © GPL 2015</p>
-            </div>
-        </footer>
+<body>
+<!-- Fixed navbar -->
+  <nav class="navbar navbar-default">
+    <div class="container-fluid">
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-1"
+                aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
 
-        <script src="{% static 'CemeteryAdministration/js/jquery.js' %}"></script>
-        <script src="{% static 'CemeteryAdministration/js/bootstrap.js' %}"></script>
-         <!-- todo move sorttable, ajax, toggle only to relevant pages -->
-        <script src="{% static 'django_ajax/js/jquery.ajax.min.js' %}"></script>
-        <script src="{% static 'CemeteryAdministration/js/script.js' %}"></script>
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse navbar-collapse" id="navbar-collapse-1">
+        <ul class="nav navbar-nav">
+          <li class="{% active_page request 'general_register' %}">
+            <a href="{% url 'CemeteryAdministration:general_register' %}">Registru General</a></li>
+          <li class="{% active_page request 'spot' %}">
+            <a href="{% url 'CemeteryAdministration:spot' %}">Fișă Individuală</a></li>
+          <li role="separator" class="divider-vertical"></li>
 
-    </body>
+          <li class="{% active_page request 'ownerships' %}">
+            <a href="{% url 'CemeteryAdministration:ownerships' %}">Concesiuni</a></li>
+          <li class="{% active_page request 'constructions' %}">
+            <a href="{% url 'CemeteryAdministration:constructions' %}">Construcții</a></li>
+          <li class="{% active_page request 'operations' %}">
+            <a href="{% url 'CemeteryAdministration:operations' %}">Înhumări</a></li>
+          <li class="{% active_page request 'revenue' %}">
+            <a href="{% url 'CemeteryAdministration:revenue' %}">Încasări</a></li>
+          <li class="{% active_page request 'maintenance' %}">
+            <a href="{% url 'CemeteryAdministration:maintenance' %}">Întreținere</a></li>
+        </ul>
+
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="#" class="navigation-glyph"><i class="fa fa-cog fa-2x"></i></a></li>
+        </ul>
+      </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+  </nav>
+
+  <section id="content" class="container">
+    <h1>{{ title|title|default:"Title" }}</h1>
+    {% block content %} {% endblock %}
+  </section>
+
+  <footer class="footer hidden-print">
+    <div class="container">
+      <p class="text-muted">Ștefan Niculae | stefanconturi@gmail.com | © GPL 2015</p>
+    </div>
+  </footer>
+
+  <script src="{% static 'CemeteryAdministration/js/jquery.js' %}"></script>
+  <script src="{% static 'CemeteryAdministration/js/bootstrap.js' %}"></script>
+  <!-- todo move sorttable, ajax, toggle only to relevant pages -->
+  <!--<script src="{% static 'django_ajax/js/jquery.ajax.min.js' %}"></script>-->
+  <script src="{% static 'CemeteryAdministration/js/script.js' %}"></script>
+
+  {% block additional_scripts %} {% endblock %}
+  <script src="{% static 'CemeteryAdministration/libs/scripts/jsgrid.min.js' %}"></script>
+  <script src="{% static 'CemeteryAdministration/scripts/utils.js' %}"></script>
+  <script src="{% static 'CemeteryAdministration/scripts/gird-features.js' %}"></script>
+
+</body>
 
 </html>

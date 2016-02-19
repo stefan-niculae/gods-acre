@@ -40,6 +40,7 @@ INSTALLED_APPS = (
     'CemeteryAdministration',
     'django_forms_bootstrap',  # TODO check if this is used
     #'django_ajax',
+    'simple_rest',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -58,7 +59,7 @@ ROOT_URLCONF = 'GodsAcre.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'CemeteryAdministration/templates/CemeteryAdministration')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
