@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.core.urlresolvers import reverse
-from CemeteryAdministration.models import *
+from .models import *
 from datetime import date
 
 

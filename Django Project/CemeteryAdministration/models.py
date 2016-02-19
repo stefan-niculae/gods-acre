@@ -230,7 +230,7 @@ class YearlyPayment(models.Model):
     spot = models.ForeignKey(Spot)
     receipt = models.ForeignKey(ContributionReceipt)
     year = models.IntegerField()
-    value = models.IntegerField()
+    value = models.IntegerField() # TODO make this a float
 
     def __str__(self):
         return fields_and_values(self)

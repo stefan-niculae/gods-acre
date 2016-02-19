@@ -7,6 +7,7 @@ tables: glyphicon glyphicon-chevron-up for sorttable
 ?telefon sau telefoane, chitanta sau chitante?
 
 INPUT:
+! add Spots in a range (like a cube of parcel, row and column)
 inhumare a concesionarului -> nu mai e concesionar
 more easily enter years in which a spot has been kept
 
