@@ -5,8 +5,8 @@ from .view_contents import *
 #from django_ajax.decorators import ajax
 
 from django.http import HttpResponse
-from django.core import serializers
 from simple_rest import Resource
+import json
 
 
 #TODO remove str(...) from here and instead, call str as as mapping in tests
@@ -298,22 +298,6 @@ def save(request):
         return 'ERROR'
 
 
-# TODO move this inside the revenuejsgrid class
-class RevenueInfo:
-    def __init__(self, id, parcel, row, column, year, value, receipt):
-        self.id = id
-        self.parcel = parcel
-        self.row = row
-        self.column = column
-        self.year = year
-        self.value = value
-        self.receipt = receipt
-
-
-def to_json(objects):
-    return serializers.serialize('json', objects)
-
-
 def rev_js_grid(request):
     return render(request, 'revenue_jsgrid.html')
 
@@ -329,9 +313,23 @@ class RevenueJsGrid(Resource):
 
         infos = []
         for s in spots:
-            infos.append(RevenueInfo(s.id, s.parcel, s.row, s.column, 2000, 100, "1/2000"))
+            infos.append(
+                {
+                    'model': 'RevenueInfo',
+                    'pk': s.id,
+                    'fields': {
+                        'parcel': s.parcel,
+                        'row': s.row,
+                        'column': s.column,
+                        'year': 2000,
+                        'value': 100,
+                        'receipt': "1/2000"
+                    }
+                }
+            )
 
-        return HttpResponse(to_json(infos), content_type='application/json', status=200)
+        json_infos = json.dumps(infos, default=lambda o: o.__dict__)
+        return HttpResponse(json_infos, content_type='application/json', status=200)
 
 
 
