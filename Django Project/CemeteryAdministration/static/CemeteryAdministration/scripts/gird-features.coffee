@@ -1,9 +1,11 @@
 $ ->
-  jsGridInit()
+  paymentsTable = $ "#payments-table"
+  initJsGrid paymentsTable
+  # addTableSuperHeaders paymentsTable
   changeIcons()
 
-jsGridInit = ->
-  $("table").jsGrid
+initJsGrid = (table) ->
+  table.jsGrid
 
     width: "100%"
     # If set to 100% then the pager won't go lower when there are fewer rows to display (no content or last page)
@@ -14,25 +16,26 @@ jsGridInit = ->
     fields: [
       {
         name: "parcel"
-        title: "P"
+        title: "Spot Parcel"
         type: "text"
       },
       {
         name: "row"
-        title: "R"
+        title: "Spot Row"
         type: "text"
       },
       {
         name: "column"
-        title: "C"
+        title: "Spot Column"
         type: "text"
       },
       {
         name: "year"
-        title: "Year"
+        title: "Year Paid"
         # It's actually a number, but when sending the data, the default for an empty number is zero
         # while the default for an empty text is the empty string
         # which IS contained in everything
+        # TODO make a custom field that acts as a number and on empty sends ''?
         type: "text" # number
 
         align: "left"
@@ -40,7 +43,7 @@ jsGridInit = ->
       },
       {
         name: "value"
-        title: "Value"
+        title: "Paid Amount"
         type: "text" # number
 
         align: "left"
@@ -48,14 +51,14 @@ jsGridInit = ->
       },
       {
         name: "receiptNumber"
-        title: "RNumber"
+        title: "Receipt Nr"
         type: "text" # number
 
         headercss: "left-aligned-header"
       },
       {
         name: "receiptYear"
-        title: "RYear"
+        title: "Receipt Year"
         type: "text" # number
 
         headercss: "left-aligned-header"
@@ -81,9 +84,9 @@ jsGridInit = ->
     autoload:   true #?
 
     # Paging
-    pageSize: 5 # TODO testing: set to an appropriate value
-    pageButtonCount: 3
-    # Whitespace must be around a keyword because they're part of the delimiter
+    pageSize: 25 # TODO add this in preferences
+    pageButtonCount: 5
+    # Whitespace must be around keywords because they're part of the delimiter
     pagerFormat: "{first} {prev} {pages} {next} {last} ( {itemCount} results )"
     pagePrevText: "<i class=\"fa fa-chevron-left\"></i>"
     pageNextText: "<i class=\"fa fa-chevron-right\"></i>"
@@ -105,6 +108,17 @@ jsGridController =
         $.extend item.fields, id: item.pk
 
     d.promise()
+
+
+addTableSuperHeaders = (table) ->
+  $ """
+    <tr class="jsgrid-header-row super-header-row">
+      <th colspan="3">Spot</th>
+      <th colspan="2">Payment</th>
+      <th colspan="2">Receipt</th>
+    </tr>
+  """
+    .prependTo table
 
 
 changeIcons = ->

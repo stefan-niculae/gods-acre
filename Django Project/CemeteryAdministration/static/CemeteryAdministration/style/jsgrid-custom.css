@@ -16,13 +16,14 @@
 }
 
 
-.id-cell {
+.jsgrid-table .id-cell {
     font-weight: bold;
 }
 
 
-.jsgrid-clear-filter-button {
-    content: "x" !important;
+.jsgrid-table .super-header-row {
+    border-bottom: 1px #e8e8e8 solid;
 }
-
-
+.jsgrid-table .super-header-row th {
+    text-align: center;
+}
