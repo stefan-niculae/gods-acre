@@ -301,29 +301,43 @@ def save(request):
 def rev_js_grid(request):
     return render(request, 'revenue_jsgrid.html')
 
-# todo replace this name
+
+# todo rename this to payment
 class RevenueJsGrid(Resource):
 
-    def get(self, request):
-        spots = Spot.objects.all() \
-            .filter(parcel__contains=request.GET.get('parcel')) \
-            .filter(row__contains=request.GET.get('row')) \
-            .filter(column__contains=request.GET.get('column'))
-            # TODO id aswell?
+    @staticmethod
+    def get(request):
+
+        def query_value(key):
+            print '>'*15, 'query for', key, 'is', request.GET.get(key)
+            return request.GET.get(key)
+
+        payments = YearlyPayment.objects \
+            .filter(year__contains=query_value('year'),
+                    value__contains=query_value('value')) \
+            .filter(spot__parcel__contains=query_value('parcel'),
+                    spot__row__contains=query_value('row'),
+                    spot__column__contains=query_value('column')) \
+            .filter(receipt__number__contains=query_value('receiptNumber'),
+                    # FIXME this tries to emulate receipt__date__year__contains=...
+                    # but the default incoming parameter is zero
+                    # and also it matches months and days as well
+                    receipt__date__regex=query_value('receiptYear'))
 
         infos = []
-        for s in spots:
+        for p in payments:
             infos.append(
                 {
-                    'model': 'RevenueInfo',
-                    'pk': s.id,
+                    'model': 'PaymentInfo',
+                    'pk': p.id,
                     'fields': {
-                        'parcel': s.parcel,
-                        'row': s.row,
-                        'column': s.column,
-                        'year': 2000,
-                        'value': 100,
-                        'receipt': "1/2000"
+                        'parcel': p.spot.parcel,
+                        'row': p.spot.row,
+                        'column': p.spot.column,
+                        'year': p.year,
+                        'value': p.value,
+                        'receiptNumber': p.receipt.number,
+                        'receiptYear': p.receipt.date.year
                     }
                 }
             )
