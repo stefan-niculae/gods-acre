@@ -4,14 +4,36 @@
 
   $(function() {
     var paymentsTable;
-    paymentsTable = $("#payments-table");
+    paymentsTable = $(".jsgrid");
     initJsGrid(paymentsTable);
     return changeIcons();
   });
 
-  initJsGrid = function(table) {
-    return table.jsGrid({
-      width: "100%",
+  this.tableConfigs = {
+    spotFields: [
+      {
+        name: "parcel",
+        title: "Spot Parcel",
+        type: "text"
+      }, {
+        name: "row",
+        title: "Spot Row",
+        type: "text"
+      }, {
+        name: "column",
+        title: "Spot Column",
+        type: "text"
+      }
+    ],
+    controlFields: [
+      {
+        type: "control",
+        editButton: false,
+        modeSwitchButton: true
+      }
+    ],
+    payments: {
+      url: "/payments/api/",
       fields: [
         {
           name: "parcel",
@@ -47,19 +69,66 @@
           title: "Receipt Year",
           type: "text",
           headercss: "left-aligned-header"
-        }, {
-          type: "control",
-          editButton: false,
-          modeSwitchButton: true
         }
-      ],
+      ]
+    },
+    burials: {
+      url: "/burials/api/",
+      fields: [
+        {
+          name: "firstName",
+          title: "First Name",
+          type: "text"
+        }, {
+          name: "lastName",
+          title: "Last Name",
+          type: "text"
+        }, {
+          name: "type",
+          title: "Type",
+          type: "select",
+          items: [
+            {
+              Text: "",
+              Value: ""
+            }, {
+              Text: "Burial",
+              Value: "bral"
+            }, {
+              Text: "Exhumation",
+              Value: "exhm"
+            }
+          ],
+          textField: "Text",
+          valueField: "Value",
+          align: "left",
+          headercss: "left-aligned-header"
+        }, {
+          name: "year",
+          title: "Year",
+          type: "text"
+        }, {
+          name: "note",
+          title: "Notes",
+          type: "text"
+        }
+      ]
+    }
+  };
+
+  initJsGrid = function(table) {
+    var configs;
+    configs = tableConfigs[table.attr("id")];
+    return table.jsGrid({
+      width: "100%",
+      fields: tableConfigs.spotFields.concat(configs.fields, tableConfigs.controlFields),
       controller: {
         loadData: function(filter) {
           var d;
           d = $.Deferred();
           $.ajax({
             type: "GET",
-            url: "/revenue_jsgrid/api",
+            url: configs.url,
             data: filter
           }).done(function(result) {
             return d.resolve($.map(result, function(item) {
@@ -73,21 +142,21 @@
         insertItem: function(item) {
           return $.ajax({
             type: "POST",
-            url: "/revenue_jsgrid/api",
+            url: configs.url,
             data: item
           });
         },
         updateItem: function(item) {
           return $.ajax({
             type: "PUT",
-            url: "/revenue_jsgrid/api/" + item.id,
+            url: "" + configs.url + item.id,
             data: item
           });
         },
         deleteItem: function(item) {
           return $.ajax({
             type: "DELETE",
-            url: "/revenue_jsgrid/api/" + item.id
+            url: "" + configs.url + item.id
           });
         }
       },

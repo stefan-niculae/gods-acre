@@ -283,32 +283,31 @@ def companies_administration(request):
 
 
 # @ajax
-def save(request):
-    entity  = request.POST.get('entity',    'NO ENTITY')
-    db_id   = request.POST.get('db_id',     'NO ID')
-    field   = request.POST.get('field',     'NO FIELD')
-    data    = request.POST.get('data',      'NO DATA')
+# def save(request):
+#     entity  = request.POST.get('entity',    'NO ENTITY')
+#     db_id   = request.POST.get('db_id',     'NO ID')
+#     field   = request.POST.get('field',     'NO FIELD')
+#     data    = request.POST.get('data',      'NO DATA')
+#
+#     try:
+#         obj = globals()[entity].objects.get(id=int(db_id))
+#         setattr(obj, field, data)
+#         obj.save()
+#         return 'SUCCESS'
+#     except:  # TODO check what exceptions this can throw
+#         print('>' * 25, 'Error running update statement!')
+#         return 'ERROR'
 
-    try:
-        obj = globals()[entity].objects.get(id=int(db_id))
-        setattr(obj, field, data)
-        obj.save()
-        return 'SUCCESS'
-    except:  # TODO check what exceptions this can throw
-        print('>' * 25, 'Error running update statement!')
-        return 'ERROR'
 
-
-def rev_js_grid(request):
-    return render(request, 'revenue_jsgrid.html')
-
-# TODO look at more status codes
 HTTP_200_OK = 200
 HTTP_201_CREATED = 201
 
 
-# todo rename this to payments
-class RevenueJsGrid(Resource):
+def payments(request):
+    return render(request, 'payments.html')
+
+
+class PaymentsAPI(Resource):
 
     @staticmethod
     # Read/Search
@@ -318,11 +317,11 @@ class RevenueJsGrid(Resource):
             return request.GET.get(key)
 
         payments = YearlyPayment.objects \
-            .filter(year__contains=query_value('year'),
-                    value__contains=query_value('value')) \
             .filter(spot__parcel__contains=query_value('parcel'),
                     spot__row__contains=query_value('row'),
                     spot__column__contains=query_value('column')) \
+            .filter(year__contains=query_value('year'),
+                    value__contains=query_value('value')) \
             .filter(receipt__number__contains=query_value('receiptNumber'),
                     # FIXME this tries to emulate receipt__date__year__contains=...
                     # but the default incoming parameter is zero
@@ -333,12 +332,12 @@ class RevenueJsGrid(Resource):
         for p in payments:
             infos.append(
                 {
-                    'model': 'PaymentInfo',
                     'pk': p.id,
                     'fields': {
                         'parcel': p.spot.parcel,
                         'row': p.spot.row,
                         'column': p.spot.column,
+
                         'year': p.year,
                         'value': p.value,
                         'receiptNumber': p.receipt.number,
@@ -374,7 +373,7 @@ class RevenueJsGrid(Resource):
             column=query_value('column')
         )
 
-        receipt = RevenueJsGrid.get_or_create_receipt(
+        receipt = PaymentsAPI.get_or_create_receipt(
             number=query_value('receiptNumber'),
             year=query_value('receiptYear')
         )
@@ -427,7 +426,7 @@ class RevenueJsGrid(Resource):
 
         # Other payments are on this receipt
         else:
-            payment.receipt = RevenueJsGrid.get_or_create_receipt(
+            payment.receipt = PaymentsAPI.get_or_create_receipt(
                 number=query_value('receiptNumber'),
                 year=query_value('receiptYear')
             )
@@ -443,3 +442,119 @@ class RevenueJsGrid(Resource):
 
         return HttpResponse(status=HTTP_200_OK)
 
+
+def burials(request):
+    return render(request, 'burials.html')
+
+class BurialsAPI(Resource):
+
+    @staticmethod
+    # Read/Search
+    def get(request):
+        # TODO don't let a person that is already buried be buried again
+        # ?or exhumate an unburied person
+        # ?and make sure the spot is empty before adding a burial
+
+        def query_value(key):
+            return request.GET.get(key)
+        burials = Operation.objects \
+            .filter(spot__parcel__contains=query_value('parcel'),
+                    spot__row__contains=query_value('row'),
+                    spot__column__contains=query_value('column')) \
+            .filter(first_name__contains=query_value('firstName'),
+                    last_name__contains=query_value('lastName'),
+                    # FIXME same as above
+                    date__regex=query_value('year'))
+
+        # The operation type field can be left empty
+        # And this way every type matches
+        if query_value('type') != '':
+            burials = burials.filter(type=query_value('type'))
+
+        # Only filter by note if something is entered in that field
+        # This is because None does not contain ''
+        if query_value('note') != '':
+            burials = burials.filter(note__contains=query_value('note'))
+
+        infos = []
+        for b in burials:
+            infos.append(
+                {
+                    'pk': b.id,
+                    'fields': {
+                        'parcel': b.spot.parcel,
+                        'row': b.spot.row,
+                        'column': b.spot.column,
+
+                        'firstName': b.first_name,
+                        'lastName': b.last_name,
+                        'type': b.type,
+                        'year': b.date.year,
+                        'note': b.note
+                    }
+                }
+            )
+
+        json_infos = json.dumps(infos, default=lambda o: o.__dict__)
+        # print '>'*25, 'burials =', json_infos
+        return HttpResponse(json_infos, content_type='application/json', status=HTTP_200_OK)
+
+
+    @staticmethod
+    # Create
+    def post(request):
+
+        def query_value(key):
+            return request.POST.get(key)
+
+        spot = Spot.objects.get(
+            parcel=query_value('parcel'),
+            row=query_value('row'),
+            column=query_value('column')
+        )
+
+        burial_date = date.today().replace(
+            year=int(query_value('year')))
+
+        Operation.objects.create(
+            spot=spot,
+            date=burial_date,
+            type=query_value('type'),
+            first_name=query_value('firstName'),
+            last_name=query_value('lastName'),
+            note=query_value('note')
+        )
+
+        return HttpResponse(status=HTTP_201_CREATED)
+
+    @staticmethod
+    # Update
+    def put(request, burial_id):
+
+        def query_value(key):
+            return request.PUT.get(key)
+
+        burial = Operation.objects.get(pk=burial_id)
+
+        burial.spot = Spot.objects.get(
+            parcel=query_value('parcel'),
+            row=query_value('row'),
+            column=query_value('column')
+        )
+
+        burial.type = query_value('type')
+        burial.first_name = query_value('firstName')
+        burial.last_name = query_value('lastName')
+        burial.note = query_value('note')
+
+        burial.save()
+
+        return HttpResponse(status=HTTP_200_OK)
+
+    @staticmethod
+    # Delete
+    def delete(request, burial_id):
+        burial = Operation.objects.get(pk=burial_id)
+        burial.delete()
+
+        return HttpResponse(status=HTTP_200_OK)

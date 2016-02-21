@@ -31,11 +31,13 @@ urlpatterns = [
     url(r'^admin/inhum/?$', views.administration, name='operations_administration'),
     url(r'^admin/intret/?$', views.administration, name='maintenance_administration'),
 
-    url(r'^save/?$', views.save, name='save'),
+    # url(r'^save/?$', views.save, name='save'),
 
+    url(r'^payments/?$', views.payments, name='payments'),
+    url(r'^payments/api/?$', PaymentsAPI.as_view()),
+    url(r'^payments/api/(?P<payment_id>[0-9]+)/?$', PaymentsAPI.as_view()),
 
-    # jsgrid
-    url(r'^revenue_jsgrid/?$', views.rev_js_grid, name='rev_js_grid'),
-    url(r'^revenue_jsgrid/api/?$', RevenueJsGrid.as_view()),
-    url(r'^revenue_jsgrid/api/(?P<payment_id>[0-9]+)/?$', RevenueJsGrid.as_view())
+    url(r'^burials/?$', burials, name='burials'),
+    url(r'^burials/api/?$', BurialsAPI.as_view()),
+    url(r'^burials/api/(?P<burial_id>[0-9]+)/?$', BurialsAPI.as_view()),
 ]

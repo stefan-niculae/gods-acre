@@ -1,19 +1,42 @@
 $ ->
-  paymentsTable = $ "#payments-table"
+  paymentsTable = $ ".jsgrid"
   initJsGrid paymentsTable
   # addTableSuperHeaders paymentsTable
   changeIcons()
 
-# TODO make page size (and modifiable) and results count always visible
-initJsGrid = (table) ->
-  table.jsGrid
 
-    width: "100%"
-    # If set to 100% then the pager won't go lower when there are fewer rows to display (no content or last page)
-    # But then filter clearing is glitchy and initial data loading doesn't work
-    # height: "100%"
+@tableConfigs =
 
-    # Field definitions
+  # TODO widths
+  spotFields: [
+    {
+      name: "parcel"
+      title: "Spot Parcel"
+      type: "text"
+    },
+    {
+      name: "row"
+      title: "Spot Row"
+      type: "text"
+    },
+    {
+      name: "column"
+      title: "Spot Column"
+      type: "text"
+    }
+  ]
+
+  controlFields: [
+    {
+      type: "control"
+      editButton: false # hide the explicit edit button (rows are clickable to edit anyway)
+      modeSwitchButton: true # TODO add a tutorial to teach what this this button is doing
+    }
+  ]
+
+  payments:
+    url: "/payments/api/"
+
     fields: [
       {
         name: "parcel"
@@ -63,13 +86,68 @@ initJsGrid = (table) ->
         type: "text" # number
 
         headercss: "left-aligned-header"
-      },
-      {
-        type: "control"
-        editButton: false # hide the explicit edit button (rows are clickable to edit anyway)
-        modeSwitchButton: true # TODO add a tutorial to teach what this this button is doing
       }
     ]
+
+  burials:
+    url: "/burials/api/"
+
+    fields: [
+      {
+        name: "firstName"
+        title: "First Name"
+        type: "text"
+      },
+      {
+        name: "lastName"
+        title: "Last Name"
+        type: "text"
+      },
+      {
+        name: "type"
+        title: "Type"
+        type: "select"
+
+        items: [
+          { Text: "", Value: "" },
+          { Text: "Burial", Value: "bral" },
+          { Text: "Exhumation", Value: "exhm" },
+        ]
+        textField: "Text"
+        valueField: "Value"
+
+        align: "left"
+        headercss: "left-aligned-header"
+      },
+      {
+        name: "year" # TODO date instead of year here?
+        title: "Year"
+        type: "text" # number
+      },
+      {
+        name: "note"
+        title: "Notes"
+        type: "text" # TODO make a big editing text field type
+      }
+    ]
+
+
+
+# TODO make page size (and modifiable) and results count always visible
+initJsGrid = (table) ->
+
+  configs = tableConfigs[table.attr "id"]
+
+  table.jsGrid
+
+    width: "100%"
+    # If set to 100% then the pager won't go lower when there are fewer rows to display (no content or last page)
+    # But then filter clearing is glitchy and initial data loading doesn't work
+    # height: "100%"
+
+    # Field definitions
+    # TODO make this nicer
+    fields: tableConfigs.spotFields.concat configs.fields, tableConfigs.controlFields
 
     controller:
       loadData: (filter) ->
@@ -77,9 +155,11 @@ initJsGrid = (table) ->
 
         $.ajax(
           type: "GET"
-          url: "/revenue_jsgrid/api"
+          url: configs.url
           data: filter
-        ).done (result) ->
+        )
+        .done (result) ->
+          # console.log JSON.stringify result, null, 2
           # TODO can't i put the id as a field from the db and this is no longer necessary?
           d.resolve $.map result, (item) ->
             $.extend item.fields, id: item.pk
@@ -91,25 +171,25 @@ initJsGrid = (table) ->
         # TODO autocomplete for receipt year/number (& show an indicator if you post on an existing receipt)
         $.ajax
           type: "POST"
-          url: "/revenue_jsgrid/api"
+          url: configs.url
           data: item
 
       updateItem: (item) ->
         # TODO again, don't let the user enter non existing spot P/R/C
         $.ajax
           type: "PUT"
-          url: "/revenue_jsgrid/api/#{item.id}"
+          url: "#{configs.url}#{item.id}"
           data: item
 
       deleteItem: (item) ->
         $.ajax
           type: "DELETE"
-          url: "/revenue_jsgrid/api/#{item.id}"
+          url: "#{configs.url}#{item.id}"
 
     # Features
     heading:    true
-    filtering:  true
-    inserting:  true
+    filtering:  true # TODO enter searches, esc clears
+    inserting:  true # TODO validators
     editing:    true
     selecting:  true
     sorting:    true
