@@ -4,6 +4,7 @@ $ ->
   # addTableSuperHeaders paymentsTable
   changeIcons()
 
+# TODO make page size (and modifiable) and results count always visible
 initJsGrid = (table) ->
   table.jsGrid
 
@@ -70,7 +71,40 @@ initJsGrid = (table) ->
       }
     ]
 
-    controller: jsGridController
+    controller:
+      loadData: (filter) ->
+        d = $.Deferred()
+
+        $.ajax(
+          type: "GET"
+          url: "/revenue_jsgrid/api"
+          data: filter
+        ).done (result) ->
+          # TODO can't i put the id as a field from the db and this is no longer necessary?
+          d.resolve $.map result, (item) ->
+            $.extend item.fields, id: item.pk
+
+        d.promise()
+
+      insertItem: (item) ->
+        # TODO autocomplete for spot P/R/C (and don't let something else be entered
+        # TODO autocomplete for receipt year/number (& show an indicator if you post on an existing receipt)
+        $.ajax
+          type: "POST"
+          url: "/revenue_jsgrid/api"
+          data: item
+
+      updateItem: (item) ->
+        # TODO again, don't let the user enter non existing spot P/R/C
+        $.ajax
+          type: "PUT"
+          url: "/revenue_jsgrid/api/#{item.id}"
+          data: item
+
+      deleteItem: (item) ->
+        $.ajax
+          type: "DELETE"
+          url: "/revenue_jsgrid/api/#{item.id}"
 
     # Features
     heading:    true
@@ -92,22 +126,6 @@ initJsGrid = (table) ->
     pageNextText: "<i class=\"fa fa-chevron-right\"></i>"
     pageFirstText: "First"
     pageLastText: "Last"
-
-caseInsensitive = true
-
-jsGridController =
-  loadData: (filter) ->
-    d = $.Deferred()
-
-    $.ajax(
-      type: "GET"
-      url: "/revenue_jsgrid/api"
-      data: filter
-    ).done (result) ->
-      d.resolve $.map result, (item) ->
-        $.extend item.fields, id: item.pk
-
-    d.promise()
 
 
 addTableSuperHeaders = (table) ->

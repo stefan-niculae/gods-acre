@@ -36,5 +36,6 @@ urlpatterns = [
 
     # jsgrid
     url(r'^revenue_jsgrid/?$', views.rev_js_grid, name='rev_js_grid'),
-    url(r'^revenue_jsgrid/api.*', RevenueJsGrid.as_view())
+    url(r'^revenue_jsgrid/api/?$', RevenueJsGrid.as_view()),
+    url(r'^revenue_jsgrid/api/(?P<payment_id>[0-9]+)/?$', RevenueJsGrid.as_view())
 ]

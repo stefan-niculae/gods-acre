@@ -7,6 +7,7 @@ from .view_contents import *
 from django.http import HttpResponse
 from simple_rest import Resource
 import json
+from datetime import date
 
 
 #TODO remove str(...) from here and instead, call str as as mapping in tests
@@ -301,15 +302,19 @@ def save(request):
 def rev_js_grid(request):
     return render(request, 'revenue_jsgrid.html')
 
+# TODO look at more status codes
+HTTP_200_OK = 200
+HTTP_201_CREATED = 201
 
-# todo rename this to payment
+
+# todo rename this to payments
 class RevenueJsGrid(Resource):
 
     @staticmethod
+    # Read/Search
     def get(request):
 
         def query_value(key):
-            print '>'*15, 'query for', key, 'is', request.GET.get(key)
             return request.GET.get(key)
 
         payments = YearlyPayment.objects \
@@ -343,7 +348,98 @@ class RevenueJsGrid(Resource):
             )
 
         json_infos = json.dumps(infos, default=lambda o: o.__dict__)
-        return HttpResponse(json_infos, content_type='application/json', status=200)
+        return HttpResponse(json_infos, content_type='application/json', status=HTTP_200_OK)
 
+    @staticmethod
+    def get_or_create_receipt(number, year):
+        receipt_date = date.today() \
+            .replace(year=int(year))
+        (receipt, created_now) = ContributionReceipt.objects.get_or_create(
+            number=number,
+            date__year=year,
+            defaults={'date': receipt_date}
+        )
+        return receipt
 
+    @staticmethod
+    # Create
+    def post(request):
+
+        def query_value(key):
+            return request.POST.get(key)
+
+        spot = Spot.objects.get(
+            parcel=query_value('parcel'),
+            row=query_value('row'),
+            column=query_value('column')
+        )
+
+        receipt = RevenueJsGrid.get_or_create_receipt(
+            number=query_value('receiptNumber'),
+            year=query_value('receiptYear')
+        )
+
+        YearlyPayment.objects.create(
+            year=query_value('year'),
+            value=query_value('value'),
+            spot=spot,
+            receipt=receipt
+        )
+
+        return HttpResponse(status=HTTP_201_CREATED)
+
+    @staticmethod
+    # Update
+    def put(request, payment_id):
+
+        def query_value(key):
+            return request.PUT.get(key)
+
+        payment = YearlyPayment.objects.get(pk=payment_id)
+        payment.year = query_value('year')
+        payment.value = query_value('value')
+
+        payment.spot = Spot.objects.get(
+            parcel=query_value('parcel'),
+            row=query_value('row'),
+            column=query_value('column')
+        )
+
+        payments_on_receipt = len(YearlyPayment.objects
+                                  .filter(receipt__id=payment.receipt.id))
+
+        # If it's the only payment on the receipt
+        if payments_on_receipt is 1:
+            # Find if the receipt already exists
+            try:
+                payment.receipt = ContributionReceipt.objects.get(
+                    number=query_value('receiptNumber'),
+                    date__year=query_value('receiptYear')
+                )
+                payment.save()
+                # This way we leak a receipt (it is linked to no payment now)
+
+            # If it doesn't already exist, update this one
+            except ContributionReceipt.DoesNotExist:
+                payment.receipt.number = query_value('receiptNumber')
+                payment.receipt.date.replace(year=int(query_value('receiptYear')))
+                payment.receipt.save()
+
+        # Other payments are on this receipt
+        else:
+            payment.receipt = RevenueJsGrid.get_or_create_receipt(
+                number=query_value('receiptNumber'),
+                year=query_value('receiptYear')
+            )
+            payment.save()
+
+        return HttpResponse(status=HTTP_200_OK)
+
+    @staticmethod
+    # Delete
+    def delete(request, payment_id):
+        payment = YearlyPayment.objects.get(pk=payment_id)
+        payment.delete()
+
+        return HttpResponse(status=HTTP_200_OK)
 
