@@ -64,6 +64,8 @@ class Spot(models.Model):
         return [self.id, self.parcel, self.row, self.column]
 
     def most_recent_deed_up_to(self, year):
+        # This assumes there are no "leftover" deeds
+        # ie: when a new deed is made, any old ones become invalid
         return self.ownership_deeds.filter(date__lte=date(year, 12, 31)).order_by('-date')[0]
 
 

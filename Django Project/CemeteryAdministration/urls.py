@@ -16,7 +16,7 @@ urlpatterns = [
     url(r'^constr/?$', views.constructions, name='constructions'),
     url(r'^oper/?$', views.operations, name='operations'),
     url(r'^incas/?$', views.revenue, name='revenue'),
-    url(r'^intret/?$', views.maintentance, name='maintenance'),
+    #url(r'^intret/?$', views.maintentance, name='maintenance'),
 
     url(r'^admin/?$', views.administration, name='administration'),
     url(r'^admin/locuri/?$', views.spots_administration, name='spots_administration'),
@@ -40,4 +40,8 @@ urlpatterns = [
     url(r'^burials/?$', burials, name='burials'),
     url(r'^burials/api/?$', BurialsAPI.as_view()),
     url(r'^burials/api/(?P<burial_id>[0-9]+)/?$', BurialsAPI.as_view()),
+
+    url(r'^maintenance_jsgrid/?$', views.maintenance, name='maintenance'),
+    url(r'^maintenance_jsgrid/api/?$', MaintenanceAPI.as_view()),
+    url(r'^maintenance_jsgrid/api/(?P<level_id>[0-9]+)/?$', MaintenanceAPI.as_view()),
 ]

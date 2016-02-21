@@ -212,7 +212,7 @@ def revenue(request):
     )
 
 
-def maintentance(request):
+def maintentance_old(request):
     return annual_table(
         request=request,
         name='maintenance',
@@ -446,6 +446,7 @@ class PaymentsAPI(Resource):
 def burials(request):
     return render(request, 'burials.html')
 
+
 class BurialsAPI(Resource):
 
     @staticmethod
@@ -457,6 +458,7 @@ class BurialsAPI(Resource):
 
         def query_value(key):
             return request.GET.get(key)
+
         burials = Operation.objects \
             .filter(spot__parcel__contains=query_value('parcel'),
                     spot__row__contains=query_value('row'),
@@ -496,9 +498,7 @@ class BurialsAPI(Resource):
             )
 
         json_infos = json.dumps(infos, default=lambda o: o.__dict__)
-        # print '>'*25, 'burials =', json_infos
         return HttpResponse(json_infos, content_type='application/json', status=HTTP_200_OK)
-
 
     @staticmethod
     # Create
@@ -558,3 +558,117 @@ class BurialsAPI(Resource):
         burial.delete()
 
         return HttpResponse(status=HTTP_200_OK)
+
+
+def maintenance(request):
+    return render(request, 'maintenance.html')
+
+
+class MaintenanceAPI(Resource):
+
+    @staticmethod
+    # Read/Search
+    def get(request):
+        # TODO make sure the spot has an owner in the time the maintenance level is recorded
+
+        def query_value(key):
+            return request.GET.get(key)
+
+        def bool_to_description(s):
+            return 'kept' if bool(s) else 'ukpt'
+
+        levels = MaintenanceLevel.objects \
+            .filter(spot__parcel__contains=query_value('parcel'),
+                    spot__row__contains=query_value('row'),
+                    spot__column__contains=query_value('column')) \
+            .filter(year__contains=query_value('firstName'))
+
+        if query_value('isKept') is not None:
+            levels = levels.filter(description=bool_to_description(query_value('isKept')))
+
+
+        infos = []
+        for l in levels:
+            owner = l.spot \
+                .most_recent_deed_up_to(l.year) \
+                .owners.all()[0]  # Chose a random owner as the representative
+                # TODO should this be a list of owners?
+
+            infos.append(
+                {
+                    'pk': l.id,
+                    'fields': {
+                        'parcel': l.spot.parcel,
+                        'row': l.spot.row,
+                        'column': l.spot.column,
+
+                        'year': l.year,
+                        'isKept': l.description == 'kept',
+
+                        'firstName': owner.first_name,
+                        'lastName': owner.last_name,
+                    }
+                }
+            )
+
+        json_infos = json.dumps(infos, default=lambda o: o.__dict__)
+        return HttpResponse(json_infos, content_type='application/json', status=HTTP_200_OK)
+
+    @staticmethod
+    def description_from_query(s):
+        if s == 'true':
+            return 'kept'
+        return 'ukpt'
+
+    @staticmethod
+    # Create
+    def post(request):
+
+        def query_value(key):
+            return request.POST.get(key)
+
+        spot = Spot.objects.get(
+            parcel=query_value('parcel'),
+            row=query_value('row'),
+            column=query_value('column')
+        )
+
+        MaintenanceLevel.objects.create(
+            spot=spot,
+
+            year=query_value('year'),
+            description=MaintenanceAPI.description_from_query(query_value('isKept'))
+        )
+
+        return HttpResponse(status=HTTP_201_CREATED)
+
+    @staticmethod
+    # Update
+    def put(request, level_id):
+
+        def query_value(key):
+            return request.PUT.get(key)
+
+        level = MaintenanceLevel.objects.get(pk=level_id)
+
+        level.spot = Spot.objects.get(
+            parcel=query_value('parcel'),
+            row=query_value('row'),
+            column=query_value('column')
+        )
+
+        level.year = query_value('year')
+        level.description = MaintenanceAPI.description_from_query(query_value('isKept'))
+
+        level.save()
+
+        return HttpResponse(status=HTTP_200_OK)
+
+    @staticmethod
+    # Delete
+    def delete(request, level_id):
+        level = MaintenanceLevel.objects.get(pk=level_id)
+        level.delete()
+
+        return HttpResponse(status=HTTP_200_OK)
+

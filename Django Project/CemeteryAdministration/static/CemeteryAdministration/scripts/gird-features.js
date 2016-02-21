@@ -36,18 +36,6 @@
       url: "/payments/api/",
       fields: [
         {
-          name: "parcel",
-          title: "Spot Parcel",
-          type: "text"
-        }, {
-          name: "row",
-          title: "Spot Row",
-          type: "text"
-        }, {
-          name: "column",
-          title: "Spot Column",
-          type: "text"
-        }, {
           name: "year",
           title: "Year Paid",
           type: "text",
@@ -113,6 +101,33 @@
           type: "text"
         }
       ]
+    },
+    maintenance: {
+      url: "/maintenance_jsgrid/api/",
+      fields: [
+        {
+          name: "year",
+          title: "Year",
+          type: "text"
+        }, {
+          name: "isKept",
+          title: "Kept",
+          type: "checkbox",
+          headercss: "left-aligned-header"
+        }, {
+          name: "firstName",
+          title: "First Name",
+          type: "text",
+          inserting: false,
+          editing: false
+        }, {
+          name: "lastName",
+          title: "Last Name",
+          type: "text",
+          inserting: false,
+          editing: false
+        }
+      ]
     }
   };
 
@@ -147,6 +162,8 @@
           });
         },
         updateItem: function(item) {
+          console.log("update to url " + configs.url + item.id);
+          console.log("item = " + (JSON.stringify(item, null, 2)));
           return $.ajax({
             type: "PUT",
             url: "" + configs.url + item.id,

@@ -39,21 +39,6 @@ $ ->
 
     fields: [
       {
-        name: "parcel"
-        title: "Spot Parcel"
-        type: "text"
-      },
-      {
-        name: "row"
-        title: "Spot Row"
-        type: "text"
-      },
-      {
-        name: "column"
-        title: "Spot Column"
-        type: "text"
-      },
-      {
         name: "year"
         title: "Year Paid"
         # It's actually a number, but when sending the data, the default for an empty number is zero
@@ -131,6 +116,40 @@ $ ->
       }
     ]
 
+  maintenance:
+    url: "/maintenance_jsgrid/api/"
+
+    # TODO add phone number to fields too?
+    fields: [
+      {
+        name: "year"
+        title: "Year"
+        type: "text"
+      },
+     {
+        name: "isKept"
+        title: "Kept"
+        type: "checkbox"
+
+        headercss: "left-aligned-header"
+      },
+      { # TODO autocomplete these when creating two
+        name: "firstName"
+        title: "First Name"
+        type: "text"
+
+        inserting: false
+        editing: false
+      },
+      {
+        name: "lastName"
+        title: "Last Name"
+        type: "text"
+
+        inserting: false
+        editing: false
+      },
+    ]
 
 
 # TODO make page size (and modifiable) and results count always visible
@@ -176,6 +195,9 @@ initJsGrid = (table) ->
 
       updateItem: (item) ->
         # TODO again, don't let the user enter non existing spot P/R/C
+        console.log "update to url #{configs.url}#{item.id}"
+        console.log "item = #{JSON.stringify(item, null, 2)}"
+
         $.ajax
           type: "PUT"
           url: "#{configs.url}#{item.id}"
