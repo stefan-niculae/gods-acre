@@ -57,6 +57,9 @@ class Spot(models.Model):
         # todo make this more reatable (dashes, no PRC)
         return '#{0} P{1} R{2} C{3}'.format(self.id, self.parcel, self.row, self.column)
 
+    def display_string(self):
+        return '{0}/{1}/{2}'.format(self.parcel, self.row, self.column)
+
     def identif(self):
         """
         :return: list of identifing data about this spot

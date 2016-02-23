@@ -166,7 +166,7 @@ def annual_table(request, title, name, table_headers, entites_filter, entity_dat
     return render(request, name_to_template(name, html=True), context)
 
 
-def ownerships(request):
+def ownerships_old(request):
     return annual_table(
         request=request,
         name='ownerships',
@@ -307,6 +307,13 @@ def payments(request):
     return render(request, 'payments.html')
 
 
+def date_from_year(year):
+    year = int(year)
+    # Because no day/month info was provided, we use the day of entry instead
+    return date.today().replace(year=year)
+
+
+# TODO move APIs to a different file
 class PaymentsAPI(Resource):
 
     @staticmethod
@@ -316,48 +323,46 @@ class PaymentsAPI(Resource):
         def query_value(key):
             return request.GET.get(key)
 
+        print '>'*25, r"Cast(Extract(Year From Date) As VarChar) LIKE '%" + query_value('receiptYear') + r"%'"
+
         payments = YearlyPayment.objects \
-            .filter(spot__parcel__contains=query_value('parcel'),
-                    spot__row__contains=query_value('row'),
-                    spot__column__contains=query_value('column')) \
-            .filter(year__contains=query_value('year'),
-                    value__contains=query_value('value')) \
-            .filter(receipt__number__contains=query_value('receiptNumber'),
-                    # FIXME this tries to emulate receipt__date__year__contains=...
-                    # but the default incoming parameter is zero
-                    # and also it matches months and days as well
-                    receipt__date__regex=query_value('receiptYear'))
+            .filter(spot__parcel__icontains=query_value('parcel'),
+                    spot__row__icontains=query_value('row'),
+                    spot__column__icontains=query_value('column')) \
+            .filter(year__icontains=query_value('year'),
+                    value__icontains=query_value('value')) \
+            .filter(receipt__number__icontains=query_value('receiptNumber'))
+
+        # Extra filter
+        payments = filter(
+            # Year contains query string
+            lambda p: query_value('receiptYear') in str(p.receipt.date.year),
+            payments)
 
         infos = []
         for p in payments:
-            infos.append(
-                {
-                    'pk': p.id,
-                    'fields': {
-                        'parcel': p.spot.parcel,
-                        'row': p.spot.row,
-                        'column': p.spot.column,
+            infos.append({
+                'pk': p.id,
+                'fields': {
+                    'parcel': p.spot.parcel,
+                    'row': p.spot.row,
+                    'column': p.spot.column,
 
-                        'year': p.year,
-                        'value': p.value,
-                        'receiptNumber': p.receipt.number,
-                        'receiptYear': p.receipt.date.year
-                    }
-                }
-            )
+                    'year': p.year,
+                    'value': p.value,
+                    'receiptNumber': p.receipt.number,
+                    'receiptYear': p.receipt.date.year
+                }})
 
         json_infos = json.dumps(infos, default=lambda o: o.__dict__)
         return HttpResponse(json_infos, content_type='application/json', status=HTTP_200_OK)
 
     @staticmethod
     def get_or_create_receipt(number, year):
-        receipt_date = date.today() \
-            .replace(year=int(year))
-        (receipt, created_now) = ContributionReceipt.objects.get_or_create(
+        receipt, created_now = ContributionReceipt.objects.get_or_create(
             number=number,
             date__year=year,
-            defaults={'date': receipt_date}
-        )
+            defaults={'date': date_from_year(year)})
         return receipt
 
     @staticmethod
@@ -367,23 +372,20 @@ class PaymentsAPI(Resource):
         def query_value(key):
             return request.POST.get(key)
 
-        spot = Spot.objects.get(
+        spot, created_now = Spot.objects.get_or_create(
             parcel=query_value('parcel'),
             row=query_value('row'),
-            column=query_value('column')
-        )
+            column=query_value('column'))
 
         receipt = PaymentsAPI.get_or_create_receipt(
             number=query_value('receiptNumber'),
-            year=query_value('receiptYear')
-        )
+            year=query_value('receiptYear'))
 
         YearlyPayment.objects.create(
             year=query_value('year'),
             value=query_value('value'),
             spot=spot,
-            receipt=receipt
-        )
+            receipt=receipt)
 
         return HttpResponse(status=HTTP_201_CREATED)
 
@@ -398,11 +400,10 @@ class PaymentsAPI(Resource):
         payment.year = query_value('year')
         payment.value = query_value('value')
 
-        payment.spot = Spot.objects.get(
+        payment.spot, created_now = Spot.objects.get_or_create(
             parcel=query_value('parcel'),
             row=query_value('row'),
-            column=query_value('column')
-        )
+            column=query_value('column'))
 
         payments_on_receipt = len(YearlyPayment.objects
                                   .filter(receipt__id=payment.receipt.id))
@@ -411,12 +412,14 @@ class PaymentsAPI(Resource):
         if payments_on_receipt is 1:
             # Find if the receipt already exists
             try:
+                old_receipt = payment.receipt
                 payment.receipt = ContributionReceipt.objects.get(
                     number=query_value('receiptNumber'),
-                    date__year=query_value('receiptYear')
-                )
+                    date__year=query_value('receiptYear'))
                 payment.save()
-                # This way we leak a receipt (it is linked to no payment now)
+
+                # This way we don't leak a receipt (linked to no payment)
+                old_receipt.delete()
 
             # If it doesn't already exist, update this one
             except ContributionReceipt.DoesNotExist:
@@ -428,8 +431,7 @@ class PaymentsAPI(Resource):
         else:
             payment.receipt = PaymentsAPI.get_or_create_receipt(
                 number=query_value('receiptNumber'),
-                year=query_value('receiptYear')
-            )
+                year=query_value('receiptYear'))
             payment.save()
 
         return HttpResponse(status=HTTP_200_OK)
@@ -460,13 +462,11 @@ class BurialsAPI(Resource):
             return request.GET.get(key)
 
         burials = Operation.objects \
-            .filter(spot__parcel__contains=query_value('parcel'),
-                    spot__row__contains=query_value('row'),
-                    spot__column__contains=query_value('column')) \
-            .filter(first_name__contains=query_value('firstName'),
-                    last_name__contains=query_value('lastName'),
-                    # FIXME same as above
-                    date__regex=query_value('year'))
+            .filter(spot__parcel__icontains=query_value('parcel'),
+                    spot__row__icontains=query_value('row'),
+                    spot__column__icontains=query_value('column')) \
+            .filter(first_name__icontains=query_value('firstName'),
+                    last_name__icontains=query_value('lastName'))
 
         # The operation type field can be left empty
         # And this way every type matches
@@ -476,26 +476,28 @@ class BurialsAPI(Resource):
         # Only filter by note if something is entered in that field
         # This is because None does not contain ''
         if query_value('note') != '':
-            burials = burials.filter(note__contains=query_value('note'))
+            burials = burials.filter(note__icontains=query_value('note'))
+
+        # Year contains
+        burials = filter(
+            lambda b: query_value('year') in str(b.date.year),
+            burials)
 
         infos = []
         for b in burials:
-            infos.append(
-                {
-                    'pk': b.id,
-                    'fields': {
-                        'parcel': b.spot.parcel,
-                        'row': b.spot.row,
-                        'column': b.spot.column,
+            infos.append({
+                'pk': b.id,
+                'fields': {
+                    'parcel': b.spot.parcel,
+                    'row': b.spot.row,
+                    'column': b.spot.column,
 
-                        'firstName': b.first_name,
-                        'lastName': b.last_name,
-                        'type': b.type,
-                        'year': b.date.year,
-                        'note': b.note
-                    }
-                }
-            )
+                    'firstName': b.first_name,
+                    'lastName': b.last_name,
+                    'type': b.type,
+                    'year': b.date.year,
+                    'note': b.note
+                }})
 
         json_infos = json.dumps(infos, default=lambda o: o.__dict__)
         return HttpResponse(json_infos, content_type='application/json', status=HTTP_200_OK)
@@ -507,23 +509,18 @@ class BurialsAPI(Resource):
         def query_value(key):
             return request.POST.get(key)
 
-        spot = Spot.objects.get(
+        spot, created_now = Spot.objects.get_or_create(
             parcel=query_value('parcel'),
             row=query_value('row'),
-            column=query_value('column')
-        )
-
-        burial_date = date.today().replace(
-            year=int(query_value('year')))
+            column=query_value('column'))
 
         Operation.objects.create(
             spot=spot,
-            date=burial_date,
+            date=date_from_year(query_value('year')),
             type=query_value('type'),
             first_name=query_value('firstName'),
             last_name=query_value('lastName'),
-            note=query_value('note')
-        )
+            note=query_value('note'))
 
         return HttpResponse(status=HTTP_201_CREATED)
 
@@ -536,11 +533,10 @@ class BurialsAPI(Resource):
 
         burial = Operation.objects.get(pk=burial_id)
 
-        burial.spot = Spot.objects.get(
+        burial.spot, created_now = Spot.objects.get_or_create(
             parcel=query_value('parcel'),
             row=query_value('row'),
-            column=query_value('column')
-        )
+            column=query_value('column'))
 
         burial.type = query_value('type')
         burial.first_name = query_value('firstName')
@@ -578,38 +574,47 @@ class MaintenanceAPI(Resource):
             return 'kept' if bool(s) else 'ukpt'
 
         levels = MaintenanceLevel.objects \
-            .filter(spot__parcel__contains=query_value('parcel'),
-                    spot__row__contains=query_value('row'),
-                    spot__column__contains=query_value('column')) \
-            .filter(year__contains=query_value('firstName'))
+            .filter(spot__parcel__icontains=query_value('parcel'),
+                    spot__row__icontains=query_value('row'),
+                    spot__column__icontains=query_value('column')) \
+            .filter(year__icontains=query_value('year'))
+        # Can't prefetch related spot owners
 
+        # Error: Relation fields do not support nested lookups
+        # .filter(spot__owners__first_name__icontains=query_value('firstName'),
+        #         spot__owners__last_name__icontains=query_value('lastName'))
+
+        # Filter by kept status if query is present
         if query_value('isKept') is not None:
             levels = levels.filter(description=bool_to_description(query_value('isKept')))
 
 
         infos = []
         for l in levels:
-            owner = l.spot \
+            owners = l.spot \
                 .most_recent_deed_up_to(l.year) \
-                .owners.all()[0]  # Chose a random owner as the representative
-                # TODO should this be a list of owners?
+                .owners.filter(
+                    first_name__icontains=query_value('firstName'),
+                    last_name__icontains=query_value('lastName')
+                )
 
-            infos.append(
-                {
-                    'pk': l.id,
-                    'fields': {
-                        'parcel': l.spot.parcel,
-                        'row': l.spot.row,
-                        'column': l.spot.column,
+            # Skip this maintenance level if none of the owners match the filter
+            if not owners.exists():
+                continue
 
-                        'year': l.year,
-                        'isKept': l.description == 'kept',
+            infos.append({
+                'pk': l.id,
+                'fields': {
+                    'parcel': l.spot.parcel,
+                    'row': l.spot.row,
+                    'column': l.spot.column,
 
-                        'firstName': owner.first_name,
-                        'lastName': owner.last_name,
-                    }
-                }
-            )
+                    'year': l.year,
+                    'isKept': l.description == 'kept',
+
+                    'firstName': owners[0].first_name,  # Chose a random owner as the representative
+                    'lastName': owners[0].last_name,  # TODO should this be a list of owners?
+                }})
 
         json_infos = json.dumps(infos, default=lambda o: o.__dict__)
         return HttpResponse(json_infos, content_type='application/json', status=HTTP_200_OK)
@@ -627,18 +632,15 @@ class MaintenanceAPI(Resource):
         def query_value(key):
             return request.POST.get(key)
 
-        spot = Spot.objects.get(
+        spot, created_now = Spot.objects.get_or_create(
             parcel=query_value('parcel'),
             row=query_value('row'),
-            column=query_value('column')
-        )
+            column=query_value('column'))
 
         MaintenanceLevel.objects.create(
             spot=spot,
-
             year=query_value('year'),
-            description=MaintenanceAPI.description_from_query(query_value('isKept'))
-        )
+            description=MaintenanceAPI.description_from_query(query_value('isKept')))
 
         return HttpResponse(status=HTTP_201_CREATED)
 
@@ -651,11 +653,10 @@ class MaintenanceAPI(Resource):
 
         level = MaintenanceLevel.objects.get(pk=level_id)
 
-        level.spot = Spot.objects.get(
+        level.spot, created_now = Spot.objects.get_or_create(
             parcel=query_value('parcel'),
             row=query_value('row'),
-            column=query_value('column')
-        )
+            column=query_value('column'))
 
         level.year = query_value('year')
         level.description = MaintenanceAPI.description_from_query(query_value('isKept'))
@@ -672,3 +673,177 @@ class MaintenanceAPI(Resource):
 
         return HttpResponse(status=HTTP_200_OK)
 
+
+def ownerships(request):
+    return render(request, 'ownerships.html')
+
+
+class OwnershipsAPI(Resource):
+
+    @staticmethod
+    # Read/Search
+    def get(request):
+
+        def query_value(key):
+            return request.GET.get(key)
+
+        deeds = OwnershipDeed.objects.all() \
+            .filter(number__icontains=query_value('deedNumber')) \
+            .prefetch_related('spots', 'owners', 'ownershipreceipt')  # We need additional data for each deed
+
+        deeds = filter(
+            lambda d: query_value('deedYear') in str(d.date),
+            deeds)
+
+        infos = []
+        for d in deeds:
+            # We do the filtering here and not in the main query
+            # because we want only entries where the parcel (ie) matches,
+            # not spots that are on a deed with a spot where the parcel matches
+            spots = d.spots \
+                .filter(parcel__icontains=query_value('parcel'),
+                        row__icontains=query_value('row'),
+                        column__icontains=query_value('column'))
+
+            if not spots.exists():
+                continue
+
+            owners = d.owners \
+                .filter(first_name__icontains=query_value('firstName'),
+                        last_name__icontains=query_value('lastName'))
+
+            # Filter by phone only if a phone number is entered
+            # Because None does not contain ''
+            if query_value('phone') != '':
+                owners = owners.filter(
+                    phone__icontains=query_value('phone'))
+
+            if not owners.exists():
+                continue
+
+            receipts = d.receipts \
+                .filter(number__icontains=query_value('receiptNumber'),
+                        value__icontains=query_value('receiptValue'))
+            receipts = filter(
+                lambda r: query_value('receiptYear') in str(r.date),
+                receipts)
+
+            if not receipts:
+                continue
+
+            for s in spots:
+                # Get the display string of every spot that is not the current one
+                other_spots = [os.display_string() for os in spots if os != s]
+
+                o = owners[0]  # Chose a random representative owner
+                r = receipts[0]  # Chose a random representative receipt
+
+                infos.append({
+                    'pk': '%d,%d,%d,%d' % (d.id, s.id, o.id, r.id),
+                    'fields': {
+                        'parcel': s.parcel,
+                        'row': s.row,
+                        'column': s.column,
+
+                        'firstName': o.first_name,   # TODO list of owners?
+                        'lastName': o.last_name,
+                        'phone': o.phone,  # TODO see if any of the owners have a phone nr
+
+                        'deedNumber': d.number,
+                        'deedYear': d.date.year,
+
+                        'receiptNumber': r.number,  # TODO list of receipts?
+                        'receiptYear': r.date.year,
+                        'receiptValue': r.value,
+
+                        'sharingSpots': ', '.join(other_spots)  # TODO handle way of displaying on frontend?
+                    }})
+
+        json_infos = json.dumps(infos, default=lambda o: o.__dict__)
+        return HttpResponse(json_infos, content_type='application/json', status=HTTP_200_OK)
+
+    @staticmethod
+    def none_if_empty(s):
+        return None if s == '' else s
+
+    @staticmethod
+    # Create
+    def post(request):
+
+        def query_value(key):
+            return request.POST.get(key)
+
+        spot, created_now = Spot.objects.get_or_create(
+            parcel=query_value('parcel'),
+            row=query_value('row'),
+            column=query_value('column'))
+
+        owner, created_now = Owner.objects.get_or_create(
+            first_name=query_value('firstName'),
+            last_name=query_value('lastName'),
+            phone=OwnershipsAPI.none_if_empty(query_value('phone')))
+
+        deed, created_now = OwnershipDeed.objects.get_or_create(
+            number=query_value('deedNumber'),
+            date=date_from_year(query_value('deedYear')))
+        deed.spots.add(spot)
+        deed.save()
+
+        owner.ownership_deeds.add(deed)
+        owner.save()
+
+        OwnershipReceipt.objects.get_or_create(
+            number=query_value('receiptNumber'),
+            date=date_from_year(query_value('receiptYear')),
+            value=query_value('receiptValue'),
+            ownership_deed=deed)
+
+        return HttpResponse(status=HTTP_201_CREATED)
+
+    @staticmethod
+    # Update
+    def put(request, deed_id, spot_id, owner_id, receipt_id):
+
+        def query_value(key):
+            return request.PUT.get(key)
+
+        deed = OwnershipDeed.objects.get(pk=deed_id)
+        deed.number = query_value('deedNumber')  # TODO set validator to see if there is already a deed with this nr/yr
+        deed.date = date_from_year(query_value('deedYear'))
+
+        old_spot = Spot.objects.get(pk=spot_id)
+        new_spot, created_now = Spot.objects.get_or_create(
+            parcel=query_value('parcel'),
+            row=query_value('row'),
+            column=query_value('column'))
+        if new_spot != old_spot:
+            deed.spots.remove(old_spot)
+            deed.spots.add(new_spot)  # It's ok if it already exists
+
+        old_owner = Owner.objects.get(pk=owner_id)
+        new_owner, created_now = Owner.objects.get_or_create(
+            first_name=query_value('firstName'),
+            last_name=query_value('lastName'),
+            phone=OwnershipsAPI.none_if_empty(query_value('phone')))
+        if new_owner != old_owner:
+            # If the old owner has no other deeds, it will remain leaking
+            deed.owners.remove(old_owner)
+            deed.owners.add(new_owner)
+        deed.save()
+
+        receipt = OwnershipReceipt.objects.get(pk=receipt_id)
+        receipt.number = query_value('receiptNumber')
+        receipt.date = date_from_year(query_value('receiptYear'))
+        receipt.value = query_value('receiptValue')
+        receipt.save()
+
+        return HttpResponse(status=HTTP_200_OK)
+
+    @staticmethod
+    # Delete
+    def delete(request, deed_id, spot_id, owner_id, receipt_id):
+        deed = OwnershipDeed.objects.get(pk=deed_id)
+        deed.delete()  # Any receipts will be cascade-deleted as well
+        # If this was the owner's only deed, it will remain leaking
+
+        return HttpResponse(status=HTTP_200_OK)

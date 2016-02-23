@@ -5,6 +5,7 @@ $ ->
   changeIcons()
 
 
+# TODO remove the debugging @
 @tableConfigs =
 
   # TODO widths
@@ -152,6 +153,62 @@ $ ->
     ]
 
 
+  ownerships:
+    url: "/ownerships_jsgrid/api/"
+
+    fields: [
+      {
+      name: "firstName"
+      title: "First Name"
+      type: "text"
+      },
+      {
+        name: "lastName"
+        title: "Last Name"
+        type: "text"
+      },
+      {
+        name: "phone"
+        title: "Phone"
+        type: "text"
+      },
+      {
+        name: "deedNumber"
+        title: "Deed Nr"
+        type: "text" # number
+      },
+      {
+        name: "deedYear"
+        title: "Deed Year"
+        type: "text" # number
+      },
+      {
+        # TODO auto-generate these when editing/inserting
+        name: "sharingSpots"
+        title: "On Same Deed"
+        type: "text"
+
+        inserting: false
+        editing: false
+      },
+      {
+        name: "receiptNumber"
+        title: "Receipt Nr"
+        type: "text" # number
+      },
+      {
+        name: "receiptYear"
+        title: "Receipt Year"
+        type: "text" # number
+      },
+      {
+        name: "receiptValue"
+        title: "Amount Paid"
+        type: "text" # number
+      }
+    ]
+
+
 # TODO make page size (and modifiable) and results count always visible
 initJsGrid = (table) ->
 
@@ -186,7 +243,7 @@ initJsGrid = (table) ->
         d.promise()
 
       insertItem: (item) ->
-        # TODO autocomplete for spot P/R/C (and don't let something else be entered
+        # TODO autocomplete for spot P/R/C (and don't let something else be entered)
         # TODO autocomplete for receipt year/number (& show an indicator if you post on an existing receipt)
         $.ajax
           type: "POST"
@@ -194,10 +251,7 @@ initJsGrid = (table) ->
           data: item
 
       updateItem: (item) ->
-        # TODO again, don't let the user enter non existing spot P/R/C
-        console.log "update to url #{configs.url}#{item.id}"
-        console.log "item = #{JSON.stringify(item, null, 2)}"
-
+        # TODO tell the user whether a new spot is created or they entered an existing one
         $.ajax
           type: "PUT"
           url: "#{configs.url}#{item.id}"

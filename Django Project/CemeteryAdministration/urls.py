@@ -41,7 +41,13 @@ urlpatterns = [
     url(r'^burials/api/?$', BurialsAPI.as_view()),
     url(r'^burials/api/(?P<burial_id>[0-9]+)/?$', BurialsAPI.as_view()),
 
+    # TODO delete the _jsgrid suffix
     url(r'^maintenance_jsgrid/?$', views.maintenance, name='maintenance'),
     url(r'^maintenance_jsgrid/api/?$', MaintenanceAPI.as_view()),
     url(r'^maintenance_jsgrid/api/(?P<level_id>[0-9]+)/?$', MaintenanceAPI.as_view()),
+
+    url(r'^ownerships_jsgrid/?$', views.ownerships, name='ownerships'),
+    url(r'^ownerships_jsgrid/api/?$', OwnershipsAPI.as_view()),
+    url(r'^ownerships_jsgrid/api/(?P<deed_id>[0-9]+),(?P<spot_id>[0-9]+),(?P<owner_id>[0-9]+),(?P<receipt_id>[0-9]+)/?$',
+        OwnershipsAPI.as_view()),
 ]

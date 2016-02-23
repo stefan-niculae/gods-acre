@@ -128,6 +128,50 @@
           editing: false
         }
       ]
+    },
+    ownerships: {
+      url: "/ownerships_jsgrid/api/",
+      fields: [
+        {
+          name: "firstName",
+          title: "First Name",
+          type: "text"
+        }, {
+          name: "lastName",
+          title: "Last Name",
+          type: "text"
+        }, {
+          name: "phone",
+          title: "Phone",
+          type: "text"
+        }, {
+          name: "deedNumber",
+          title: "Deed Nr",
+          type: "text"
+        }, {
+          name: "deedYear",
+          title: "Deed Year",
+          type: "text"
+        }, {
+          name: "sharingSpots",
+          title: "On Same Deed",
+          type: "text",
+          inserting: false,
+          editing: false
+        }, {
+          name: "receiptNumber",
+          title: "Receipt Nr",
+          type: "text"
+        }, {
+          name: "receiptYear",
+          title: "Receipt Year",
+          type: "text"
+        }, {
+          name: "receiptValue",
+          title: "Amount Paid",
+          type: "text"
+        }
+      ]
     }
   };
 
@@ -162,8 +206,6 @@
           });
         },
         updateItem: function(item) {
-          console.log("update to url " + configs.url + item.id);
-          console.log("item = " + (JSON.stringify(item, null, 2)));
           return $.ajax({
             type: "PUT",
             url: "" + configs.url + item.id,
