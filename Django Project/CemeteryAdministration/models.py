@@ -133,6 +133,8 @@ class ConstructionCompany(models.Model):
 
 
 class Construction(models.Model):
+    # TODO shouldn't this have a date as well?
+    # TODO an auth can be given for multiple constructions, how do we know on which spot this construction is?
     # todo warn on a new construction on a spot that has an ownership deed older than 6 months after the constr authorization
     # todo warn if there is already a border/tomb on the same spot
     BORDER = 'brdr'
@@ -147,6 +149,7 @@ class Construction(models.Model):
 
     # todo add constraint owner_builder must be one of the owners
     owner_builder = models.ForeignKey(Owner, null=True, blank=True)  # todo (also add a preference to show 'Regie Proprie' or the actual name of the builder)
+    # TODO rename these to company and authorization
     construction_company = models.ForeignKey(ConstructionCompany, null=True, blank=True)  # todo aren't the company/builder supposed to be one on one?
     construction_authorization = models.ForeignKey(ConstructionAuthorization, related_name='constructions')
 

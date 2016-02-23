@@ -12,8 +12,8 @@ urlpatterns = [
     url(r'^loc/(?P<spot_id>[0-9]+)/?$', views.spot_detail, name='spot_detail'),
     url(r'^reg/?$', views.general_register, name='general_register'),
 
-    url(r'^conces/?$', views.ownerships, name='ownerships'),
-    url(r'^constr/?$', views.constructions, name='constructions'),
+    url(r'^conces/?$', views.ownerships_old, name='ownerships_old'),
+    url(r'^constr/?$', views.constructions_old, name='constructions_old'),
     url(r'^oper/?$', views.operations, name='operations'),
     url(r'^incas/?$', views.revenue, name='revenue'),
     #url(r'^intret/?$', views.maintentance, name='maintenance'),
@@ -46,8 +46,15 @@ urlpatterns = [
     url(r'^maintenance_jsgrid/api/?$', MaintenanceAPI.as_view()),
     url(r'^maintenance_jsgrid/api/(?P<level_id>[0-9]+)/?$', MaintenanceAPI.as_view()),
 
+    # TODO remove _jsgrid suffix
     url(r'^ownerships_jsgrid/?$', views.ownerships, name='ownerships'),
     url(r'^ownerships_jsgrid/api/?$', OwnershipsAPI.as_view()),
-    url(r'^ownerships_jsgrid/api/(?P<deed_id>[0-9]+),(?P<spot_id>[0-9]+),(?P<owner_id>[0-9]+),(?P<receipt_id>[0-9]+)/?$',
+    url(r'^ownerships_jsgrid/api/(?P<deed_id>[0-9]+),(?P<receipt_id>[0-9]+)/?$',
         OwnershipsAPI.as_view()),
+
+    # TODO remove _jsgrid suffix
+    url(r'^constructions_jsgrid/?$', views.constructions, name='constructions_jsgrid'),
+    url(r'^constructions_jsgrid/api/?$', ConstructionsAPI.as_view()),
+    url(r'^constructions_jsgrid/api/(?P<construction_id>[0-9]+),(?P<authorization_id>[0-9]+),(?P<spot_id>[0-9]+)/?$',
+        ConstructionsAPI.as_view()),
 ]

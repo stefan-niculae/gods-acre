@@ -13,15 +13,15 @@
     spotFields: [
       {
         name: "parcel",
-        title: "Spot Parcel",
+        title: "Parcel",
         type: "text"
       }, {
         name: "row",
-        title: "Spot Row",
+        title: "Row",
         type: "text"
       }, {
         name: "column",
-        title: "Spot Column",
+        title: "Column",
         type: "text"
       }
     ],
@@ -170,6 +170,50 @@
           name: "receiptValue",
           title: "Amount Paid",
           type: "text"
+        }
+      ]
+    },
+    constructions: {
+      url: "/constructions_jsgrid/api/",
+      fields: [
+        {
+          name: "constructionType",
+          title: "Type",
+          type: "select",
+          items: [
+            {
+              Text: "",
+              Value: ""
+            }, {
+              Text: "Border",
+              Value: "brdr"
+            }, {
+              Text: "Tomb",
+              Value: "tomb"
+            }
+          ],
+          textField: "Text",
+          valueField: "Value",
+          align: "left",
+          headercss: "left-aligned-header"
+        }, {
+          name: "builder",
+          title: "Builder",
+          type: "text"
+        }, {
+          name: "authorizationNumber",
+          title: "Auth Nr",
+          type: "text"
+        }, {
+          name: "authorizationYear",
+          title: "Auth Year",
+          type: "text"
+        }, {
+          name: "sharingAuthorization",
+          title: "On Same Auth",
+          type: "text",
+          inserting: false,
+          editing: false
         }
       ]
     }

@@ -8,6 +8,7 @@ from django.http import HttpResponse
 from simple_rest import Resource
 import json
 from datetime import date
+from django.db.models import Q
 
 
 #TODO remove str(...) from here and instead, call str as as mapping in tests
@@ -178,7 +179,7 @@ def ownerships_old(request):
     )
 
 
-def constructions(request):
+def constructions_old(request):
     return annual_table(
         request=request,
         name='constructions',
@@ -595,8 +596,7 @@ class MaintenanceAPI(Resource):
                 .most_recent_deed_up_to(l.year) \
                 .owners.filter(
                     first_name__icontains=query_value('firstName'),
-                    last_name__icontains=query_value('lastName')
-                )
+                    last_name__icontains=query_value('lastName'))
 
             # Skip this maintenance level if none of the owners match the filter
             if not owners.exists():
@@ -739,7 +739,7 @@ class OwnershipsAPI(Resource):
                 r = receipts[0]  # Chose a random representative receipt
 
                 infos.append({
-                    'pk': '%d,%d,%d,%d' % (d.id, s.id, o.id, r.id),
+                    'pk': '%d,%d' % (d.id, r.id),
                     'fields': {
                         'parcel': s.parcel,
                         'row': s.row,
@@ -802,7 +802,7 @@ class OwnershipsAPI(Resource):
 
     @staticmethod
     # Update
-    def put(request, deed_id, spot_id, owner_id, receipt_id):
+    def put(request, deed_id, receipt_id):
 
         def query_value(key):
             return request.PUT.get(key)
@@ -811,39 +811,226 @@ class OwnershipsAPI(Resource):
         deed.number = query_value('deedNumber')  # TODO set validator to see if there is already a deed with this nr/yr
         deed.date = date_from_year(query_value('deedYear'))
 
-        old_spot = Spot.objects.get(pk=spot_id)
-        new_spot, created_now = Spot.objects.get_or_create(
+        spot, created_now = Spot.objects.get_or_create(
             parcel=query_value('parcel'),
             row=query_value('row'),
             column=query_value('column'))
-        if new_spot != old_spot:
-            deed.spots.remove(old_spot)
-            deed.spots.add(new_spot)  # It's ok if it already exists
+        deed.spots.add(spot)  # It's ok if it already exists
 
-        old_owner = Owner.objects.get(pk=owner_id)
-        new_owner, created_now = Owner.objects.get_or_create(
+        # If the old owner has no other deeds, it will remain leaking
+        owner, created_now = Owner.objects.get_or_create(
             first_name=query_value('firstName'),
             last_name=query_value('lastName'),
             phone=OwnershipsAPI.none_if_empty(query_value('phone')))
-        if new_owner != old_owner:
-            # If the old owner has no other deeds, it will remain leaking
-            deed.owners.remove(old_owner)
-            deed.owners.add(new_owner)
+        deed.owners.add(owner)
         deed.save()
 
-        receipt = OwnershipReceipt.objects.get(pk=receipt_id)
-        receipt.number = query_value('receiptNumber')
-        receipt.date = date_from_year(query_value('receiptYear'))
-        receipt.value = query_value('receiptValue')
-        receipt.save()
+        try:
+            # Check if the entered receipt already exits
+            OwnershipReceipt.objects.get(
+                number=query_value('receiptNumber'),
+                date__year=query_value('receiptYear'))
+            # If so, delete the old one
+            OwnershipReceipt.objects.get(pk=receipt_id).delete()
+
+        except OwnershipReceipt.DoesNotExist:
+            # If the receipt does not exist, edit the old one
+            receipt = OwnershipReceipt.objects.get(pk=receipt_id)
+            receipt.number = query_value('receiptNumber')
+            receipt.date = date_from_year(query_value('receiptYear'))
+            receipt.value = query_value('receiptValue')
+            receipt.save()
 
         return HttpResponse(status=HTTP_200_OK)
 
     @staticmethod
     # Delete
-    def delete(request, deed_id, spot_id, owner_id, receipt_id):
+    def delete(request, deed_id, receipt_id):
         deed = OwnershipDeed.objects.get(pk=deed_id)
         deed.delete()  # Any receipts will be cascade-deleted as well
         # If this was the owner's only deed, it will remain leaking
+
+        return HttpResponse(status=HTTP_200_OK)
+
+
+def constructions(request):
+    return render(request, 'constructions.html')
+
+
+class ConstructionsAPI(Resource):
+
+    @staticmethod
+    # Read/Search
+    def get(request):
+
+        def query_value(key):
+            return request.GET.get(key)
+
+        constructions = Construction.objects \
+            .filter(construction_authorization__number__icontains=query_value('authorizationNumber')) \
+            .filter(Q(owner_builder__first_name__icontains=query_value('builder')) |
+                    Q(owner_builder__last_name__icontains=query_value('builder')) |
+                    Q(construction_company__name__icontains=query_value('builder')))
+
+        # The operation type field can be left empty ... this way every type matches
+        # TODO refactor this into a reusable function
+        if query_value('constructionType') != '':
+            constructions = constructions.filter(type=query_value('constructionType'))
+
+        constructions = filter(
+            lambda c: query_value('authorizationYear') in str(c.construction_authorization.date),
+            constructions)
+
+        infos = []
+        for c in constructions:
+            a = c.construction_authorization
+
+            spots = a.spots \
+                .filter(parcel__icontains=query_value('parcel'),
+                        row__icontains=query_value('row'),
+                        column__icontains=query_value('column'))
+            if not spots.exists():
+                continue
+
+            for s in spots:
+                other_spots = [os.display_string() for os in spots if os != s]
+
+                infos.append({
+                    'pk': '%d,%d,%d' % (c.id, a.id, s.id),
+                    'fields': {
+                        'parcel': s.parcel,
+                        'row': s.row,
+                        'column': s.column,
+
+                        'constructionType': c.type,
+                        'builder': c.constructor(),
+
+                        'authorizationNumber': a.number,
+                        'authorizationYear': a.date.year,
+                        'sharingAuthorization': ', '.join(other_spots)
+                    }})
+
+        json_infos = json.dumps(infos, default=lambda o: o.__dict__)
+        return HttpResponse(json_infos, content_type='application/json', status=HTTP_200_OK)
+
+    @staticmethod
+    def get_or_create_authorization(number, year):
+        authorization, created_now = ConstructionAuthorization.objects.get_or_create(
+            number=number,
+            date__year=year,
+            defaults={'date': date_from_year(year)})
+        return authorization
+
+    @staticmethod
+    def owner_and_company_builders(name):
+        owner_builder = None
+        company = None
+
+        # Warning: this way, a new owner can't be created (he has to be added from the ownership page instead)
+        owners = filter(
+            lambda o: o.full_name() == name,
+            Owner.objects.all())
+
+        if not owners:
+            # TODO show warning when creating a company (maybe it is a misspelled owner name)
+            company, created_now = ConstructionCompany.objects.get_or_create(name=name)
+        else:
+            # TODO show a warning if there are multiple owners by the same name
+            # This is to get the case when there are multiple owners with the same full name
+            owner_builder = owners[0]
+
+        return owner_builder, company
+
+    @staticmethod
+    # Create
+    def post(request):
+
+        def query_value(key):
+            return request.POST.get(key)
+
+        spot, created_now = Spot.objects.get_or_create(
+            parcel=query_value('parcel'),
+            row=query_value('row'),
+            column=query_value('column'))
+
+        owner_builder, company = ConstructionsAPI.owner_and_company_builders(query_value('builder'))
+
+        authorization = ConstructionsAPI.get_or_create_authorization(
+            query_value('authorizationNumber'),
+            query_value('authorizationYear'))
+        authorization.spots.add(spot)
+        authorization.save()
+
+        print '{0} \nspot = {1}, \nowner_builder = {2}, \ncompany = {3}, \nauthorization = {4}'.format('-'*50, spot, owner_builder, company, authorization)
+
+        Construction.objects.create(
+            # TODO warn if there is already a construction of the same type on this spot
+            type=query_value('constructionType'),
+            owner_builder=owner_builder,
+            construction_company=company,
+            construction_authorization=authorization)
+
+        return HttpResponse(status=HTTP_201_CREATED)
+
+    @staticmethod
+    # Update
+    def put(request, construction_id, authorization_id, spot_id):
+
+        # TODO there is the issue of updating the type on one spot
+        # and when the page is refreshed, the type will be refreshed on all spots sharing the authorization
+        # that's because there is not a direct link from construction to spot, only one through authorization
+
+        # TODO look into the other APIs and see if we did the mistake of removing the newly entered spot/something else
+        # instead of removing the old one (which should be transmitted by id)
+        def query_value(key):
+            return request.PUT.get(key)
+
+        spot, created_now = Spot.objects.get_or_create(
+            parcel=query_value('parcel'),
+            row=query_value('row'),
+            column=query_value('column'))
+        old_spot = Spot.objects.get(pk=spot_id)
+
+        authorization = ConstructionsAPI.get_or_create_authorization(
+            query_value('authorizationNumber'),
+            query_value('authorizationYear'))
+        authorization.spots.add(spot)
+        authorization.save()
+
+        old_authorization = ConstructionAuthorization.objects.get(pk=authorization_id)
+
+        if authorization != old_authorization:
+            # If the old authorization has no other spots
+            if old_authorization.spots.count() == 1:
+                # Delete it
+                old_authorization.delete()
+            else:
+                # Otherwise, just remove this spot from it
+                old_authorization.spots.remove(old_spot)
+
+        owner_builder, company = ConstructionsAPI.owner_and_company_builders(query_value('builder'))
+
+        # TODO look into the other APIs and see if we did the mistake of only getting the model instead of get_or_crate
+        # when there are other models being edited
+        construction = Construction.objects.get(pk=construction_id)
+        construction.type = query_value('constructionType')
+        construction.owner_builder = owner_builder
+        construction.construction_company = company
+        construction.construction_authorization = authorization
+        construction.save()
+
+        return HttpResponse(status=HTTP_200_OK)
+
+
+    @staticmethod
+    # Delete
+    def delete(request, construction_id, authorization_id, spot_id):
+        construction = Construction.objects.get(pk=construction_id)
+        construction.delete()
+
+        authorization = ConstructionAuthorization.objects.get(pk=authorization_id)
+        # Delete the authorization if it has no other spots
+        if authorization.spots.count() == 0:
+            authorization.delete()
 
         return HttpResponse(status=HTTP_200_OK)

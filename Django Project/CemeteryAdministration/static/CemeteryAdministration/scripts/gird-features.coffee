@@ -12,17 +12,17 @@ $ ->
   spotFields: [
     {
       name: "parcel"
-      title: "Spot Parcel"
+      title: "Parcel"
       type: "text"
     },
     {
       name: "row"
-      title: "Spot Row"
+      title: "Row"
       type: "text"
     },
     {
       name: "column"
-      title: "Spot Column"
+      title: "Column"
       type: "text"
     }
   ]
@@ -127,7 +127,7 @@ $ ->
         title: "Year"
         type: "text"
       },
-     {
+      {
         name: "isKept"
         title: "Kept"
         type: "checkbox"
@@ -152,15 +152,14 @@ $ ->
       },
     ]
 
-
   ownerships:
     url: "/ownerships_jsgrid/api/"
 
     fields: [
       {
-      name: "firstName"
-      title: "First Name"
-      type: "text"
+        name: "firstName"
+        title: "First Name"
+        type: "text"
       },
       {
         name: "lastName"
@@ -205,6 +204,52 @@ $ ->
         name: "receiptValue"
         title: "Amount Paid"
         type: "text" # number
+      }
+    ]
+
+  constructions:
+    url: "/constructions_jsgrid/api/"
+
+    fields: [
+      {
+        name: "constructionType"
+        title: "Type"
+        type: "select"
+
+        items: [
+          { Text: "", Value: "" },
+          { Text: "Border", Value: "brdr" },
+          { Text: "Tomb", Value: "tomb" },
+        ]
+        textField: "Text"
+        valueField: "Value"
+
+        align: "left"
+        headercss: "left-aligned-header"
+      },
+      {
+        name: "builder"
+        title: "Builder"
+        type: "text"
+      },
+      {
+        name: "authorizationNumber"
+        title: "Auth Nr"
+        type: "text" # number
+      },
+      {
+        name: "authorizationYear"
+        title: "Auth Year"
+        type: "text" # number
+      },
+      {
+        # TODO auto-generate these when editing/inserting
+        name: "sharingAuthorization"
+        title: "On Same Auth"
+        type: "text"
+
+        inserting: false
+        editing: false
       }
     ]
 
