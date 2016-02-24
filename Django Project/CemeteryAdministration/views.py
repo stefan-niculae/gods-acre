@@ -9,7 +9,6 @@ from simple_rest import Resource
 import json
 from datetime import date
 from django.db.models import Q
-import pdb
 
 
 #TODO remove str(...) from here and instead, call str as as mapping in tests
