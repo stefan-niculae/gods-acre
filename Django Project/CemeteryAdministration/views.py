@@ -9,6 +9,7 @@ from simple_rest import Resource
 import json
 from datetime import date
 from django.db.models import Q
+import pdb
 
 
 #TODO remove str(...) from here and instead, call str as as mapping in tests
@@ -305,7 +306,10 @@ HTTP_201_CREATED = 201
 
 
 def payments(request):
-    return render(request, 'payments.html')
+    context = {
+        'title': 'Incasari'
+    }
+    return render(request, 'payments.html', context)
 
 
 def date_from_year(year):
@@ -447,7 +451,10 @@ class PaymentsAPI(Resource):
 
 
 def burials(request):
-    return render(request, 'burials.html')
+    context = {
+        'title': 'Inhumari'
+    }
+    return render(request, 'burials.html', context)
 
 
 class BurialsAPI(Resource):
@@ -558,7 +565,10 @@ class BurialsAPI(Resource):
 
 
 def maintenance(request):
-    return render(request, 'maintenance.html')
+    context = {
+        'title': 'Intretinere'
+    }
+    return render(request, 'maintenance.html', context)
 
 
 class MaintenanceAPI(Resource):
@@ -675,7 +685,10 @@ class MaintenanceAPI(Resource):
 
 
 def ownerships(request):
-    return render(request, 'ownerships.html')
+    context = {
+        'title': 'Concesiuni'
+    }
+    return render(request, 'ownerships.html', context)
 
 
 class OwnershipsAPI(Resource):
@@ -854,7 +867,10 @@ class OwnershipsAPI(Resource):
 
 
 def constructions(request):
-    return render(request, 'constructions.html')
+    context = {
+        'title': 'Constructii'
+    }
+    return render(request, 'constructions.html', context)
 
 
 class ConstructionsAPI(Resource):
@@ -975,7 +991,6 @@ class ConstructionsAPI(Resource):
     @staticmethod
     # Update
     def put(request, construction_id, authorization_id, spot_id):
-
         # TODO there is the issue of updating the type on one spot
         # and when the page is refreshed, the type will be refreshed on all spots sharing the authorization
         # that's because there is not a direct link from construction to spot, only one through authorization
@@ -984,6 +999,14 @@ class ConstructionsAPI(Resource):
         # instead of removing the old one (which should be transmitted by id)
         def query_value(key):
             return request.PUT.get(key)
+        # TODO look into the other APIs and see if we did the mistake of only getting the model instead of get_or_crate
+        # when there are other models being edited
+        construction = Construction.objects.get(pk=construction_id)
+        construction.type = query_value('constructionType')
+
+        owner_builder, company = ConstructionsAPI.owner_and_company_builders(query_value('builder'))
+        construction.owner_builder = owner_builder
+        construction.construction_company = company
 
         spot, created_now = Spot.objects.get_or_create(
             parcel=query_value('parcel'),
@@ -998,39 +1021,34 @@ class ConstructionsAPI(Resource):
         authorization.save()
 
         old_authorization = ConstructionAuthorization.objects.get(pk=authorization_id)
-
-        if authorization != old_authorization:
-            # If the old authorization has no other spots
-            if old_authorization.spots.count() == 1:
-                # Delete it
-                old_authorization.delete()
-            else:
-                # Otherwise, just remove this spot from it
-                old_authorization.spots.remove(old_spot)
-
-        owner_builder, company = ConstructionsAPI.owner_and_company_builders(query_value('builder'))
-
-        # TODO look into the other APIs and see if we did the mistake of only getting the model instead of get_or_crate
-        # when there are other models being edited
-        construction = Construction.objects.get(pk=construction_id)
-        construction.type = query_value('constructionType')
-        construction.owner_builder = owner_builder
-        construction.construction_company = company
-        construction.construction_authorization = authorization
+        construction.construction_authorization = authorization  # We set this now because its authorization
         construction.save()
 
-        return HttpResponse(status=HTTP_200_OK)
+        # On update of either spot or authorization
+        if authorization != old_authorization or spot != old_spot:
+            # Remove the spot from the authorization
+            old_authorization.spots.remove(old_spot)
+            old_authorization.save()
 
+            # Delete the old authorization has no other spots
+            if authorization != old_authorization and old_authorization.spots.count() == 0:
+                old_authorization.delete()
+
+        return HttpResponse(status=HTTP_200_OK)
 
     @staticmethod
     # Delete
     def delete(request, construction_id, authorization_id, spot_id):
-        construction = Construction.objects.get(pk=construction_id)
-        construction.delete()
+        spot = Spot.objects.get(pk=spot_id)
 
+        # TODO Upon deletion, warn the user that the spot will be removed from the authorization
+        # This means rows with this spot and this authorization will be ALL removed
+        # update this visually as well
         authorization = ConstructionAuthorization.objects.get(pk=authorization_id)
+        authorization.spots.remove(spot)
         # Delete the authorization if it has no other spots
         if authorization.spots.count() == 0:
+            # Constructions will be deleted when their authorization is removed
             authorization.delete()
 
         return HttpResponse(status=HTTP_200_OK)
