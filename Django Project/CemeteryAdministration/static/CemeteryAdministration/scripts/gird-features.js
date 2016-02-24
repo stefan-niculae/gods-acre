@@ -38,24 +38,24 @@
         {
           name: "year",
           title: "Year Paid",
-          type: "text",
+          type: "number",
           align: "left",
           headercss: "left-aligned-header"
         }, {
           name: "value",
           title: "Paid Amount",
-          type: "text",
+          type: "number",
           align: "left",
           headercss: "left-aligned-header"
         }, {
           name: "receiptNumber",
           title: "Receipt Nr",
-          type: "text",
+          type: "number",
           headercss: "left-aligned-header"
         }, {
           name: "receiptYear",
           title: "Receipt Year",
-          type: "text",
+          type: "number",
           headercss: "left-aligned-header"
         }
       ]
@@ -94,7 +94,7 @@
         }, {
           name: "year",
           title: "Year",
-          type: "text"
+          type: "number"
         }, {
           name: "note",
           title: "Notes",
@@ -108,7 +108,7 @@
         {
           name: "year",
           title: "Year",
-          type: "text"
+          type: "number"
         }, {
           name: "isKept",
           title: "Kept",
@@ -147,11 +147,11 @@
         }, {
           name: "deedNumber",
           title: "Deed Nr",
-          type: "text"
+          type: "number"
         }, {
           name: "deedYear",
           title: "Deed Year",
-          type: "text"
+          type: "number"
         }, {
           name: "sharingSpots",
           title: "On Same Deed",
@@ -161,15 +161,15 @@
         }, {
           name: "receiptNumber",
           title: "Receipt Nr",
-          type: "text"
+          type: "number"
         }, {
           name: "receiptYear",
           title: "Receipt Year",
-          type: "text"
+          type: "number"
         }, {
           name: "receiptValue",
           title: "Amount Paid",
-          type: "text"
+          type: "number"
         }
       ]
     },
@@ -203,11 +203,11 @@
         }, {
           name: "authorizationNumber",
           title: "Auth Nr",
-          type: "text"
+          type: "number"
         }, {
           name: "authorizationYear",
           title: "Auth Year",
-          type: "text"
+          type: "number"
         }, {
           name: "sharingAuthorization",
           title: "On Same Auth",
@@ -227,8 +227,16 @@
       fields: tableConfigs.spotFields.concat(configs.fields, tableConfigs.controlFields),
       controller: {
         loadData: function(filter) {
-          var d;
+          var d, key, val;
           d = $.Deferred();
+          for (key in filter) {
+            val = filter[key];
+            if (val === 0 && key.match(/(number|year|value)$/i)) {
+              console.log("key = " + key + ", val = " + val);
+              filter[key] = '';
+            }
+          }
+          console.log("filter = " + (JSON.stringify(filter, null, 2)));
           $.ajax({
             type: "GET",
             url: configs.url,

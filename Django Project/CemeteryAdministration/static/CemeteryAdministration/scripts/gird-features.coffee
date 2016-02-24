@@ -7,7 +7,6 @@ $ ->
 
 # TODO remove the debugging @
 @tableConfigs =
-
   # TODO widths
   spotFields: [
     {
@@ -42,19 +41,15 @@ $ ->
       {
         name: "year"
         title: "Year Paid"
-        # It's actually a number, but when sending the data, the default for an empty number is zero
-        # while the default for an empty text is the empty string
-        # which IS contained in everything
-        # TODO make a custom field that acts as a number and on empty sends ''?
-        type: "text" # number
+        type: "number"
 
-        align: "left"
+        align: "left" # FIXME
         headercss: "left-aligned-header"
       },
       {
         name: "value"
         title: "Paid Amount"
-        type: "text" # number
+        type: "number"
 
         align: "left"
         headercss: "left-aligned-header"
@@ -62,14 +57,14 @@ $ ->
       {
         name: "receiptNumber"
         title: "Receipt Nr"
-        type: "text" # number
+        type: "number"
 
         headercss: "left-aligned-header"
       },
       {
         name: "receiptYear"
         title: "Receipt Year"
-        type: "text" # number
+        type: "number"
 
         headercss: "left-aligned-header"
       }
@@ -108,7 +103,7 @@ $ ->
       {
         name: "year" # TODO date instead of year here?
         title: "Year"
-        type: "text" # number
+        type: "number"
       },
       {
         name: "note"
@@ -125,7 +120,7 @@ $ ->
       {
         name: "year"
         title: "Year"
-        type: "text"
+        type: "number"
       },
       {
         name: "isKept"
@@ -174,12 +169,12 @@ $ ->
       {
         name: "deedNumber"
         title: "Deed Nr"
-        type: "text" # number
+        type: "number"
       },
       {
         name: "deedYear"
         title: "Deed Year"
-        type: "text" # number
+        type: "number"
       },
       {
         # TODO auto-generate these when editing/inserting
@@ -193,17 +188,17 @@ $ ->
       {
         name: "receiptNumber"
         title: "Receipt Nr"
-        type: "text" # number
+        type: "number"
       },
       {
         name: "receiptYear"
         title: "Receipt Year"
-        type: "text" # number
+        type: "number"
       },
       {
         name: "receiptValue"
         title: "Amount Paid"
-        type: "text" # number
+        type: "number"
       }
     ]
 
@@ -235,12 +230,12 @@ $ ->
       {
         name: "authorizationNumber"
         title: "Auth Nr"
-        type: "text" # number
+        type: "number"
       },
       {
         name: "authorizationYear"
         title: "Auth Year"
-        type: "text" # number
+        type: "number"
       },
       {
         # TODO auto-generate these when editing/inserting
@@ -273,6 +268,17 @@ initJsGrid = (table) ->
     controller:
       loadData: (filter) ->
         d = $.Deferred()
+
+        # The default (when the input is empty) for a number is zero
+        # But on the backend we search for containment and 0 is not contained in 5 but '' is contained in '5'
+        # So we use this workaround to change before filtering every zero to the empty string ''
+        # Warning: if the user wants to search for the actual number zero, every result will be shown!
+        for key, val of filter
+          if val is 0 && key.match /(number|year|value)$/i
+            console.log "key = #{key}, val = #{val}"
+            filter[key] = ''
+
+        console.log "filter = #{JSON.stringify(filter, null, 2)}"
 
         $.ajax(
           type: "GET"
