@@ -1,10 +1,9 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
+*.pyc
 
 # Django stuff
-*.log
-*.pot
+migrations/
 
 # JetBrains IDE configs
 .idea
