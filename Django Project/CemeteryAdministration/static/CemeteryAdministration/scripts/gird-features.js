@@ -14,11 +14,19 @@
       {
         name: "parcel",
         title: "Parcel",
-        type: "text"
+        type: "text",
+        validate: {
+          validator: "required",
+          message: "parcel req"
+        }
       }, {
         name: "row",
         title: "Row",
-        type: "text"
+        type: "text",
+        validate: {
+          validator: "required",
+          message: "row req"
+        }
       }, {
         name: "column",
         title: "Column",
@@ -232,11 +240,9 @@
           for (key in filter) {
             val = filter[key];
             if (val === 0 && key.match(/(number|year|value)$/i)) {
-              console.log("key = " + key + ", val = " + val);
               filter[key] = '';
             }
           }
-          console.log("filter = " + (JSON.stringify(filter, null, 2)));
           $.ajax({
             type: "GET",
             url: configs.url,
@@ -285,7 +291,13 @@
       pagePrevText: "<i class=\"fa fa-chevron-left\"></i>",
       pageNextText: "<i class=\"fa fa-chevron-right\"></i>",
       pageFirstText: "First",
-      pageLastText: "Last"
+      pageLastText: "Last",
+      onItemInvalid: function(args) {
+        return console.log(args);
+      },
+      invalidNotify: function(args) {
+        return console.log(args);
+      }
     });
   };
 

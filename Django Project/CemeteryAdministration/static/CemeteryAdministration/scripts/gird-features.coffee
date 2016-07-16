@@ -13,16 +13,31 @@ $ ->
       name: "parcel"
       title: "Parcel"
       type: "text"
+
+      validate: {
+        validator: "required"
+        message: "parcel req"
+      }
     },
     {
       name: "row"
       title: "Row"
       type: "text"
+
+      validate: {
+        validator: "required"
+        message: "row req"
+      }
     },
     {
       name: "column"
       title: "Column"
       type: "text"
+
+#      validate: {
+#        validator: "required"
+#        message: "req"
+#      }
     }
   ]
 
@@ -45,6 +60,11 @@ $ ->
 
         align: "left" # FIXME
         headercss: "left-aligned-header"
+
+#        validate: {
+#          validator: "required"
+#          message: "req"
+#        }
       },
       {
         name: "value"
@@ -53,6 +73,11 @@ $ ->
 
         align: "left"
         headercss: "left-aligned-header"
+
+#        validate: {
+#          validator: "required"
+#          message: "req"
+#        }
       },
       {
         name: "receiptNumber"
@@ -60,6 +85,11 @@ $ ->
         type: "number"
 
         headercss: "left-aligned-header"
+
+#        validate: {
+#          validator: "required"
+#          message: "req"
+#        }
       },
       {
         name: "receiptYear"
@@ -67,6 +97,11 @@ $ ->
         type: "number"
 
         headercss: "left-aligned-header"
+
+#        validate: {
+#          validator: "required"
+#          message: "req"
+#        }
       }
     ]
 
@@ -275,10 +310,7 @@ initJsGrid = (table) ->
         # Warning: if the user wants to search for the actual number zero, every result will be shown!
         for key, val of filter
           if val is 0 && key.match /(number|year|value)$/i
-            console.log "key = #{key}, val = #{val}"
             filter[key] = ''
-
-        console.log "filter = #{JSON.stringify(filter, null, 2)}"
 
         $.ajax(
           type: "GET"
@@ -333,6 +365,12 @@ initJsGrid = (table) ->
     pageNextText: "<i class=\"fa fa-chevron-right\"></i>"
     pageFirstText: "First"
     pageLastText: "Last"
+
+    onItemInvalid: (args) ->
+      console.log args
+
+    invalidNotify: (args) ->
+      console.log args
 
 
 addTableSuperHeaders = (table) ->
