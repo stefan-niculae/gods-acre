@@ -1,0 +1,180 @@
+- model: cemetery.spot
+  pk: 1
+  fields: {parcel: C, row: '10', column: '111'}
+- model: cemetery.spot
+  pk: 2
+  fields: {parcel: A, row: '1', column: '2'}
+- model: cemetery.spot
+  pk: 3
+  fields: {parcel: B, row: '2', column: '5'}
+- model: cemetery.spot
+  pk: 5
+  fields: {parcel: Z, row: '9', column: '9'}
+- model: cemetery.deed
+  pk: 1
+  fields:
+    number: 1
+    year: 2016
+    cancel_reason: null
+    spots: [1]
+- model: cemetery.deed
+  pk: 2
+  fields:
+    number: 2
+    year: 2017
+    cancel_reason: null
+    spots: [2, 3]
+- model: cemetery.deed
+  pk: 4
+  fields:
+    number: 1
+    year: 2000
+    cancel_reason: d
+    spots: [1]
+- model: cemetery.ownershipreceipt
+  pk: 1
+  fields: {number: 1, year: 2015, deed: 1, value: 5.5}
+- model: cemetery.ownershipreceipt
+  pk: 2
+  fields: {number: 2, year: 2017, deed: 2, value: 10.0}
+- model: cemetery.ownershipreceipt
+  pk: 3
+  fields: {number: 3, year: 2017, deed: 2, value: 2.0}
+- model: cemetery.owner
+  pk: 1
+  fields:
+    name: Ion Sr
+    phone: null
+    address: null
+    deeds: [1]
+- model: cemetery.owner
+  pk: 2
+  fields:
+    name: Vasile
+    phone: '0722740466'
+    address: aaa
+    deeds: [2]
+- model: cemetery.owner
+  pk: 3
+  fields:
+    name: Ion Jr
+    phone: null
+    address: null
+    deeds: [4]
+- model: cemetery.maintenance
+  pk: 1
+  fields: {year: 2016, spot: 2, kept: false}
+- model: cemetery.maintenance
+  pk: 2
+  fields: {year: 2015, spot: 2, kept: true}
+- model: cemetery.maintenance
+  pk: 3
+  fields: {year: 2014, spot: 2, kept: true}
+- model: cemetery.maintenance
+  pk: 4
+  fields: {year: 2017, spot: 1, kept: true}
+- model: cemetery.maintenance
+  pk: 5
+  fields: {year: 2017, spot: 2, kept: false}
+- model: cemetery.operation
+  pk: 1
+  fields: {note: '', type: b, name: Pitagora, spot: 1, date: 2000-05-14}
+- model: cemetery.operation
+  pk: 2
+  fields: {note: '', type: e, name: Pitagora, spot: 1, date: 2009-05-14}
+- model: cemetery.operation
+  pk: 3
+  fields: {note: abcd efgh ijhkl abcd efgh ijhkl abcd efgh ijhkl abcd efgh ijhkl,
+    type: b, name: Leibniz, spot: 1, date: 2010-05-14}
+- model: cemetery.operation
+  pk: 4
+  fields: {note: abcd, type: b, name: Moisil, spot: 2, date: 2017-05-14}
+- model: cemetery.payment
+  pk: 1
+  fields:
+    year: 2017
+    spots: [2, 3]
+- model: cemetery.payment
+  pk: 2
+  fields:
+    year: 2016
+    spots: [2]
+- model: cemetery.payment
+  pk: 3
+  fields:
+    year: 2016
+    spots: [3]
+- model: cemetery.payment
+  pk: 4
+  fields:
+    year: 2001
+    spots: [1]
+- model: cemetery.payment
+  pk: 5
+  fields:
+    year: 2017
+    spots: [1]
+- model: cemetery.paymentreceipt
+  pk: 1
+  fields: {number: 100, year: 2017, value: 60.0, payment: 1}
+- model: cemetery.paymentreceipt
+  pk: 2
+  fields: {number: 101, year: 2017, value: 80.0, payment: 1}
+- model: cemetery.paymentreceipt
+  pk: 3
+  fields: {number: 100, year: 2016, value: 90.5, payment: 2}
+- model: cemetery.paymentreceipt
+  pk: 4
+  fields: {number: 101, year: 2016, value: 90.5, payment: 3}
+- model: cemetery.company
+  pk: 1
+  fields: {name: ACME}
+- model: cemetery.construction
+  pk: 1
+  fields:
+    type: b
+    company: 1
+    owner_builder: null
+    spots: [2, 3]
+- model: cemetery.construction
+  pk: 2
+  fields:
+    type: b
+    company: null
+    owner_builder: 1
+    spots: [1]
+- model: cemetery.construction
+  pk: 3
+  fields:
+    type: t
+    company: 1
+    owner_builder: null
+    spots: [1]
+- model: cemetery.authorization
+  pk: 1
+  fields:
+    number: 1
+    year: 2017
+    construction: 1
+    spots: [2]
+- model: cemetery.authorization
+  pk: 2
+  fields:
+    number: 15
+    year: 2010
+    construction: 2
+    spots: [1]
+- model: cemetery.authorization
+  pk: 3
+  fields:
+    number: 1
+    year: 2016
+    construction: 3
+    spots: [1]
+- model: cemetery.authorization
+  pk: 4
+  fields:
+    number: 2
+    year: 2016
+    construction: 3
+    spots: [1]
