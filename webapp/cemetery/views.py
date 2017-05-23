@@ -1,6 +1,8 @@
-from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponseRedirect
+from django.contrib.admin.views.decorators import staff_member_required
 
 
-def index(request):
-    return HttpResponse('hello')
+@staff_member_required
+def test_view(request):
+    print('>'*5, 'in test view')
+    return HttpResponseRedirect(request.META['HTTP_REFERER'])

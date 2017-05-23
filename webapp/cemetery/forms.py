@@ -1,4 +1,4 @@
-from django.forms import ModelForm, ModelMultipleChoiceField
+from django.forms import Form, ModelForm, ModelMultipleChoiceField, IntegerField, BooleanField
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.translation import ugettext_lazy as _
 
@@ -178,3 +178,18 @@ class PaymentReceiptForm(NrYearForm):
     class Meta:
         model = PaymentReceipt
         fields = '__all__'
+
+
+class MaintenanceBulkForm(Form):
+    year = IntegerField()
+    only_with_active_deed = BooleanField(initial=True)
+    unkept_spots = ModelMultipleChoiceField(
+        queryset=Spot.objects.all(),
+        required=False,
+        widget=FilteredSelectMultiple(
+            verbose_name=_('Spots'),
+            is_stacked=False
+        )
+    )
+
+    # TODO

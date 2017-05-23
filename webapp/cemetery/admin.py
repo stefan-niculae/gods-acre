@@ -1,10 +1,13 @@
 from django.db.models import Min, Sum, Case, When, Max
 from django.contrib.admin import ModelAdmin, register, AdminSite
+from django.contrib.messages import SUCCESS
+from django.conf.urls import url
+from django.template.response import TemplateResponse
 from easy import short, SimpleAdminField
 
 from .models import Spot, Deed, OwnershipReceipt, Owner, Maintenance, Operation, Payment, PaymentReceipt, Construction,\
     Authorization, Company
-from .forms import SpotForm, DeedForm, PaymentForm, OwnerForm, AuthorizationForm, PaymentReceiptForm
+from .forms import SpotForm, DeedForm, PaymentForm, OwnerForm, AuthorizationForm, PaymentReceiptForm, MaintenanceBulkForm
 from .inlines import OwnershipReceiptInline, MaintenanceInline, OperationInline, ConstructionInline, \
     AuthorizationInline, PaymentInline
 from .utils import rev, display_change_link, display_head_links, truncate
@@ -413,9 +416,25 @@ class MaintenanceAdmin(ModelAdmin):
     list_filter = rev(['year', 'spot', 'kept',
                        'spot__deeds__owners'])
 
+    actions = ['mark_kept', 'mark_unkept']
+
     def get_queryset(self, request):
         qs = super(MaintenanceAdmin, self).get_queryset(request)
         return qs.annotate(first_owner=Min('spot__deeds__owners'))
+
+    def get_urls(self):
+        urls = super(MaintenanceAdmin, self).get_urls()
+        custom_url = url(r'^test_view/$',
+                         self.admin_site.admin_view(self.test_view),
+                         name='add_bulk')
+        return [custom_url] + urls
+
+    def test_view(self, request):
+        context = {
+            **self.admin_site.each_context(request),
+            'form': MaintenanceBulkForm
+        }
+        return TemplateResponse(request, 'admin/cemetery/maintenance/add_bulk.html', context)
 
     @short(desc='Spot', order='spot')
     def display_spot(self, maintenance):
@@ -424,3 +443,25 @@ class MaintenanceAdmin(ModelAdmin):
     @short(desc='Owners', order='first_owner', tags=True)
     def display_owners(self, maintenance):
         return display_head_links(maintenance.owners)
+
+    @short(desc='Mark selected entries as kept')
+    def mark_kept(self, request, queryset):
+        n_updated = queryset.update(kept=True)
+
+        if n_updated == 1:
+            prefix = '1 entry was'
+        else:
+            prefix = f'{n_updated} entries were'
+        self.message_user(request, prefix + ' successfully marked as kept',
+                          level=SUCCESS)
+
+    @short(desc='Mark selected entries as unkept')
+    def mark_unkept(self, request, queryset):
+        n_updated = queryset.update(kept=False)
+
+        if n_updated == 1:
+            prefix = '1 entry was'
+        else:
+            prefix = f'{n_updated} entries were'
+        self.message_user(request, prefix + ' successfully marked as unkept',
+                          level=SUCCESS)
