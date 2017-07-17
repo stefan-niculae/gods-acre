@@ -1,0 +1,41 @@
+{% extends "admin/base.html" %}
+
+  {% block title %}Import entries{% endblock %}
+
+  {% block content %}
+
+    <h2>Import entries</h2>
+
+
+    <p>Expected sheets and their respective columns:</p>
+    <ul>
+{#      <li>Locuri veci</li>#}
+{#      <li>Acte concesiune</li>#}
+{#      <li>Proprietari</li>#}
+{#      <li>Constructii</li>#}
+      <li>Operatii</li>
+        <ul>
+          <li>Tip</li>
+          <li>Nume</li>
+          <li>Loc veci</li>
+          <li>Data</li>
+          <li>Nota</li>
+        </ul>
+{#      <li>Contributii</li>#}
+{#      <li>Intretinere</li>#}
+    </ul>
+
+    {% if form.errors %}
+      {# TODO style this #}
+      <p style="color: red">
+        Please correct the error{{ form.errors|pluralize }} below.
+      </p>
+    {% endif %}
+
+    <form action="" enctype="multipart/form-data"  method="post">
+      {{ form.as_p }}
+      {% csrf_token %}
+      <input type="submit" value="Submit">
+    </form>
+
+  {% endblock %}

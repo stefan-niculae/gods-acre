@@ -154,14 +154,18 @@ def truncate(string: Optional[str], max_len: int=20) -> Optional[str]:
     return string[:max_len] + ellipsis_str
 
 
-def title_case(string: str) -> str:
+def title_case(string: Optional[str]) -> Optional[str]:
     """
     :param string: string to convert into Title Case 
     :return:       converted string
     
     >>> title_case('abc  dEf')
     'Abc Def'
+    >>> title_case(None)
+    None
     """
+    if string is None:
+        return None
     return ' '.join(word.capitalize() for word in string.split())
 
 

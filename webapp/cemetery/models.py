@@ -2,8 +2,7 @@ from datetime import date
 from typing import Optional
 
 from django.db.models import Model, ForeignKey, TextField, IntegerField, CharField, \
-    ManyToManyField, FloatField, BooleanField, DateField, Sum, Max
-from django.contrib.auth.models import User
+    ManyToManyField, FloatField, BooleanField, DateField, Sum, Max, Manager
 
 from .validators import name_validator
 from .utils import display_head_tail_summary
@@ -40,14 +39,25 @@ class NrYear(Model):
 Spot - the central entity
 """
 
+class SpotManager(Manager):
+    def get_by_natural_key(self, parcel, row, column):
+        return self.get(parcel=parcel.upper(),
+                        row=row.upper(),
+                        column=column.upper())
+
 class Spot(Model):
     parcel  = CharField(max_length=5)  # TODO regex only alphanumeric
     row     = CharField(max_length=5)
     column  = CharField(max_length=5)
 
+    objects = SpotManager()
+
     class Meta:
         unique_together = ('parcel', 'row', 'column')  # they uniquely identify the spot
         ordering = ['parcel', 'row', 'column']
+
+    def natural_key(self):
+        return self.parcel, self.row, self.column
 
     def __str__(self):
         return f'{self.parcel}-{self.row}-{self.column}'

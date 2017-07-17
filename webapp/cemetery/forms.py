@@ -1,4 +1,4 @@
-from django.forms import Form, ModelForm, ModelMultipleChoiceField, IntegerField, BooleanField
+from django.forms import Form, ModelForm, ModelMultipleChoiceField, IntegerField, BooleanField, FileField
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.translation import ugettext_lazy as _
 
@@ -193,3 +193,7 @@ class MaintenanceBulkForm(Form):
     )
 
     # TODO
+
+
+class UploadFileForm(Form):
+    file = FileField()

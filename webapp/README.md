@@ -16,7 +16,7 @@ Enter virtualenv: `workon gods-acre`
 DB shell:
 - `./manage.py shell`
 - `from cemetery.models import *`
-- create
+- create: `Spot('A', '2', '5').save()`
 - read: `Spot.objects.all()` or `Spot.objects.get(id=1)` or `Spot.objects.filter(parcel__contains='a')`
 - update: `Spot.objects.first().parcel = 'b'`
 - delete
