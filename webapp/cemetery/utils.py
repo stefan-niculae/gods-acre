@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime
 
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
@@ -115,9 +116,6 @@ def display_head_links(query, head_length: Optional[int]=None) -> Optional[str]:
     
     :param query: Django query manager (or something that has .all = () -> list)
     :return:      html tag for anchor
-    
-    eg:
-    
     """
     if not query:
         return
@@ -194,6 +192,18 @@ def year_shorthand_to_full(shorthand: int, threshold: int=50) -> int:
         return 1900 + shorthand
     else:
         return 2000 + shorthand
+
+def display_date(date):
+    """
+    >>> display_date(datetime(year=2017, month=7, day=18))
+    datetime.datetime(2017, 7, 18, 0, 0)
+
+    >>> display_date(datetime(year=2017, month=1, day=1))
+    2017
+    """
+    if date.month == date.day == 1:
+        return date.year
+    return date
 
 
 if __name__ == '__main__':

@@ -10,7 +10,7 @@ from .models import Spot, Deed, OwnershipReceipt, Owner, Maintenance, Operation,
 from .forms import SpotForm, DeedForm, PaymentForm, OwnerForm, AuthorizationForm, PaymentReceiptForm, MaintenanceBulkForm
 from .inlines import OwnershipReceiptInline, MaintenanceInline, OperationInline, ConstructionInline, \
     AuthorizationInline, PaymentInline
-from .utils import rev, display_change_link, display_head_links, truncate
+from .utils import rev, display_change_link, display_head_links, truncate, display_date
 
 """
 Site
@@ -233,7 +233,7 @@ Operations
 
 @register(Operation)
 class OperationAdmin(ModelAdmin):
-    list_display = ['__str__', 'type', 'date', 'name', 'display_spot', 'display_note']
+    list_display = ['__str__', 'type', 'display_date', 'name', 'display_spot', 'display_note']
 
     date_hierarchy = 'date'
 
@@ -242,6 +242,10 @@ class OperationAdmin(ModelAdmin):
                      'spot__parcel', 'spot__row', 'spot__column', 'note']
 
     list_filter = rev(['type', 'name', 'spot'])
+
+    @short(desc='Date', order='date')
+    def display_date(self, operation):
+        return display_date(operation.date)
 
     @short(desc='Spot', order='spot', tags=True)
     def display_spot(self, operation):

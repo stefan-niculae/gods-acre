@@ -1,11 +1,13 @@
 from django.http import HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import render
 from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
 
 from .forms import UploadFileForm
 from .model_parsers import parse_file
 
 
+@staff_member_required
 def import_entries(request):
     if request.method == 'GET':
         context = {'form': UploadFileForm()}
@@ -15,7 +17,6 @@ def import_entries(request):
         if not form.is_valid():
             return HttpResponseBadRequest()
 
-        print('before parse')
         file = request.FILES['file']
         total_successful, total_failed = parse_file(file)
 
