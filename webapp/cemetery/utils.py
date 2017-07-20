@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime
 
 from django.core.urlresolvers import reverse
@@ -167,7 +167,7 @@ def title_case(string: Optional[str]) -> Optional[str]:
     return ' '.join(word.capitalize() for word in string.split())
 
 
-def year_shorthand_to_full(shorthand: int, threshold: int=50) -> int:
+def year_shorthand_to_full(shorthand: Union[int, str], threshold: int=50) -> int:
     """
     :param shorthand: last two digits in a year (eg: 99, 00, 15) 
     :param threshold: after what year it is considered 2000s not 1900s 
@@ -185,6 +185,8 @@ def year_shorthand_to_full(shorthand: int, threshold: int=50) -> int:
     >>> year_shorthand_to_full(2017)
     2017
     """
+    shorthand = int(shorthand)
+
     if shorthand >= 100:
         return shorthand  # not actually a shorthand
 
@@ -193,6 +195,7 @@ def year_shorthand_to_full(shorthand: int, threshold: int=50) -> int:
     else:
         return 2000 + shorthand
 
+# TODO break into utils.py (general) and display_utils.py
 def display_date(date):
     """
     >>> display_date(datetime(year=2017, month=7, day=18))
@@ -204,6 +207,19 @@ def display_date(date):
     if date.month == date.day == 1:
         return date.year
     return date
+
+
+def reverse_dict(d):
+    return {v: k for k, v in d.items()}
+
+def filter_dict(d, keys, inverse):
+    """ creates a copy of `d` with only the keys present in `keys` (and `d`) """
+    if inverse:
+        return {k: v for k, v in d.items() if k not in keys}  # note the `not in`
+    return {k: v for k, v in d.items() if k in keys}
+
+def show_dict(d):
+    return ', '.join(f'{k}: {v}' for k, v in d.items())
 
 
 if __name__ == '__main__':

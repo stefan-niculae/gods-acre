@@ -17,6 +17,9 @@ class Annotatable(Model):
     class Meta:
         abstract = True
 
+class NrYearManager(Manager):
+    def get_by_natural_key(self, number, year):
+        return self.get(number=number, year=year)
 
 class NrYear(Model):
     """
@@ -26,10 +29,15 @@ class NrYear(Model):
     year   = IntegerField(default=date.today().year)
     # todo warn if date too far from current year
 
+    objects = NrYearManager()  # TODO check if this is inherited properly (ie: each inherited class with its separate manager)
+
     class Meta:
         abstract = True
         unique_together = ('number', 'year')
         ordering = ['number', 'year']
+
+    def natural_key(self):
+        return self.number, self.year
 
     def __str__(self):
         return f'{self.number}/{self.year}'
@@ -180,6 +188,7 @@ Ownership
 
 class Deed(NrYear):
     spots = ManyToManyField(Spot, related_name='deeds')
+    # note: a spot can have multiple deeds in the same year so we can't enforce unique(spot, year)
 
     OWNER_DEAD = 'o'
     DONATED    = 'd'
@@ -192,11 +201,6 @@ class Deed(NrYear):
     # TODO when the name of the owner is the one in a burial operation, offer a suggestion to modify this
     # TODO add css to differentiate it from active ones
     cancel_reason = CharField(max_length=1, choices=CANCEL_REASON_CHOICES, blank=True, null=True)
-
-    # class Meta:
-    # TODO ask if this is true?
-    #     unique_together = ('year', 'spot')
-
 
 class OwnershipReceipt(NrYear):
     # todo warn if the deed's date is too far away from the receipt's date
@@ -213,6 +217,10 @@ class OwnershipReceipt(NrYear):
         # The receipt-owner relation goes through a deed
         return self.deed.owners
 
+class OwnerManager(Manager):
+    # TODO is the name enough to uniquely identify an owner?
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
 
 class Owner(Model):
     name    = CharField(max_length=100, unique=True, validators=[name_validator])
@@ -220,8 +228,13 @@ class Owner(Model):
     address = CharField(max_length=250, null=True, blank=True)
     deeds   = ManyToManyField(Deed, related_name='owners', blank=True)
 
+    objects = OwnerManager()
+
     class Meta:
         ordering = ['name']
+
+    def natural_key(self):
+        return self.name
 
     def __str__(self):
         return self.name

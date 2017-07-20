@@ -22,7 +22,7 @@
 
   plata:
 
-  - an
+-   an
   - loc
   - valoare stabilita
     o "plata" are o singura chitanta
@@ -35,7 +35,7 @@
 
 
   chitanta pt 
-  - plata 2017-locA (costa 20) si 
+- plata 2017-locA (costa 20) si 
   - plata 2016-locA (costa 30)
     ar trebui sa aiba si ea valoarea 20+30=50
 
@@ -55,18 +55,18 @@
   ​
 
   ### Maintenance
-  - add view to enable entering bulk maintenance entities
+- add view to enable entering bulk maintenance entities
     - spots: all, multi-select widget for entering parcels to exempt
     - checkmark only for spots with an active deed (default on)
     - enter which year (regex validation, warn if year too far from current)
     - checkmark on whether all should be set to kept or all to unkept (default yes)
     - multi-select widget to enter ones opposite to the default (big list)
-  - daca este al 7+ ani de neintretinere => este pierdut
+- daca este al 7+ ani de neintretinere => este pierdut
 
 
 
   ## Forms
-  - warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
+-   warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
   - change asterisk for required into something more verbose: http://stackoverflow.com/questions/4573355/django-admin-mandatory-fields-with
   - warning validation: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
   - keep values when pressing 'save and add another'
@@ -77,7 +77,7 @@
 
 
   ### Deeds
-  - upon adding a new deed for a spot, show info with all deeds previously active on each spot
+- upon adding a new deed for a spot, show info with all deeds previously active on each spot
 
 
   # Bugs
@@ -86,9 +86,9 @@
 
   # To clarify
 
-  -  whether every field should be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view
-      - owners: yes?
-  - whether the button should say "save and continue editing" or "save as new" `ModelAdmin.save_as`: if duplicating an entity is a frequent task
+-    whether every field should be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view
+     - owners: yes?
+- whether the button should say "save and continue editing" or "save as new" `ModelAdmin.save_as`: if duplicating an entity is a frequent task
   - column order preference
       - eg: always owners last, always spots next to last
   - groups order preference. right now it is: (in code structure in models.py & admin.py, fields order in SpotAdmin::list_display, fields order in forms.py, imports)
@@ -107,6 +107,16 @@
       > doar de feluri diferite
 
 
-  > a spot can have two different deeds on the same year
+- semn cand "unkept since" este mai mare de 7 ani
 
-  - semn cand "unkept since" este mai mare de 7 ani
+
+
+
+
+
+
+# July - clarify
+
+- defaults for parsing, right now they are:
+  - operations — type = burial
+  - deeds — cancel_reason = None
