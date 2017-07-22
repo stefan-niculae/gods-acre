@@ -19,6 +19,7 @@ def import_entries(request):
         sheet_feedbacks, counts = parse_file(file)
         context['sheet_feedbacks'] = sheet_feedbacks
         context['counts'] = counts
+        # TODO: link instead of plain textual representation for add/duplicate feedback
 
         # messages.success(request, f'{total_successful} entries successfully imported ({total_failed} failed)')  # TODO
 

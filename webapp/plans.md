@@ -1,56 +1,49 @@
-- # Add Data
+# TODO
 
-  - https://docs.google.com/spreadsheets/d/1F-O9bkiKSCuCwgHgdH_rlQ8k2ZK6jBdqldHQ7R9TTxI/edit#gid=809415598
-
-  # TODO
-
-  - model history: https://django-simple-history.readthedocs.io/en/latest/usage.html
-     - add date hierarchy `created at/modified at` to each model: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#django.contrib.admin.ModelAdmin.date_hierarchy or through `ModelAdmin.ordering`
-  - add some admin actions: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/
-     - set all kept/unkept?
-  - apply `RelatedOnlyFieldListFilter` to filters
-  - set `CustomAdminSite` in `urls.py` with `CustomAdminSite.urls` and other places: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#customizing-the-adminsite-class
-  - date range filter https://github.com/tzulberti/django-datefilterspec
-  - search for `spot.__str__` not just `.parcel`, `.row` and `.column` (same treatment for other fields as well)
-  - natural pks
-  - add help_text to model fields
-  - make sure all unique constraints are entered
-  - field validation!
+1. search for `spot.__str__` not just `.parcel`, `.row` and `.column` (same treatment for other fields as well)
+2. handle missing nr/year (part of pk)
+3. field validation
+   - dates: must be over 1900 and under 2100
 
 
-  plata:
 
--   an
-  - loc
-  - valoare stabilita
-    o "plata" are o singura chitanta
+## consolidation
 
-  chitanta:
-  - nr/an
-  - valoare platita
-    poti atribui o chitanta la mai multe "plati"
-    (la introducerea unei chitante noi, sa apara suma valorilor stabilite pt toate "platile" pt care este chitanta)
+1. make sure all unique constraints are entered
+2. apply `RelatedOnlyFieldListFilter` to filters
+3. set `CustomAdminSite` in `urls.py` with `CustomAdminSite.urls` and other places: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#customizing-the-adminsite-class
 
 
-  chitanta pt 
-- plata 2017-locA (costa 20) si 
-  - plata 2016-locA (costa 30)
-    ar trebui sa aiba si ea valoarea 20+30=50
+
+## data entry improvements
+
+1. la introducerea unui act nou, pt chitante, numarul default sa fie aceeasi cu cel al actului
+2. la introducerea unei chitante noi, valoarea default = suma valorilor stabilite pt toate "platile" pt care este chitanta
+3. keep values when pressing 'save and add another'
 
 
-  ​
 
-  la introducerea unui act nou,
-  valoarea default de la numarul chitantelor sa fie aceeasi cu cea introdusa la act
+## more features
 
-  ​
+- model history: https://django-simple-history.readthedocs.io/en/latest/usage.html
+   - add date hierarchy `created at/modified at` to each model: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#django.contrib.admin.ModelAdmin.date_hierarchy or through `ModelAdmin.ordering`
+- add some admin actions: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/
+   - set all kept/unkept?
+- date range filter https://github.com/tzulberti/django-datefilterspec
 
-  orice camp poate fi necompletat
-  data poate fi partiala (eg: doar anul)
-  chiar si nr/an poate lipsi la act ➡ afisam id-ul dat de bd
-  cu certitudine: parcela-rand-loc
 
-  ​
+
+## low priority
+
+1. operations: dupa adaugare, cu titlu informativ: pe locul A-1-2 mai sunt inmormantati si: A, B, C
+2. upon adding a new deed for a spot, show info with all deeds previously active on each spot
+3. warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
+   - warning validation: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
+4. add help_text to model fields
+5. no tabs in change-page, everything one under the other
+6. change asterisk for required into something more verbose: http://stackoverflow.com/questions/4573355/django-admin-mandatory-fields-with
+
+
 
   ### Maintenance
 - add view to enable entering bulk maintenance entities
@@ -63,26 +56,8 @@
 
 
 
-  ## Forms
--   warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
-  - change asterisk for required into something more verbose: http://stackoverflow.com/questions/4573355/django-admin-mandatory-fields-with
-  - warning validation: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
-  - keep values when pressing 'save and add another'
-  - no tabs in change-page, everything one after the other
 
-  ### Operations
-  - dupa adaugare, cu titlu informativ: pe locul A-1-2 mai sunt inmormantati si: A, B, C
-
-
-  ### Deeds
-- upon adding a new deed for a spot, show info with all deeds previously active on each spot
-
-
-  # Bugs
-
-  ​
-
-  # To clarify
+# To clarify
 
 -    whether every field should be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view
      - owners: yes?

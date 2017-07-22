@@ -6,7 +6,7 @@ from django.db.models import Model, ForeignKey, TextField, IntegerField, CharFie
 from django.core.exceptions import ValidationError
 
 from .validators import name_validator
-from .utils import display_head_tail_summary, parse_nr_year, title_case, initials
+from .utils import display_head_tail_summary, parse_nr_year, title_case, initials, year_to_shorthand
 
 optional = {'blank': True, 'null': True}  # to be passed in field definitions
 
@@ -34,8 +34,8 @@ class NrYear(Model):
     """
     For deeds, receipts and authorizations
     """
-    number = IntegerField()
-    year   = IntegerField(default=date.today().year)
+    number = IntegerField(**optional)
+    year   = IntegerField(default=date.today().year, **optional)
     # todo warn if date too far from current year
 
     objects = NrYearManager()  # TODO check if this is inherited properly (ie: each inherited class with its separate manager)
@@ -49,10 +49,7 @@ class NrYear(Model):
         return self.number, self.year
 
     def __str__(self):
-        year = str(self.year % 100)  # just the last two digits, eg: 1999 ~> 99
-        if len(year) < 2:  # show 2001 as 01 instead of just 1
-            year = '0' + year
-        return f'{self.number}/{year}'
+        return f'{self.number}/{year_to_shorthand(self.year)}'
 
 
 """
@@ -193,9 +190,10 @@ class Spot(Model):
         return self.operations.order_by('date').first()
 
     @property
-    def last_paid_year(self):
+    def last_paid_year(self) -> int:
         aggregation = self.payments.aggregate(Max('year'))
         return aggregation['year__max']
+    _last_paid_year = last_paid_year
 
 
 """
@@ -395,34 +393,8 @@ class Authorization(NrYear):
 Payments
 """
 
-class Payment(Model):
-    year = IntegerField()  # TODO warn if year too far away from current year, or ASK how it relates to deed
-    spot = ForeignKey(Spot, related_name='payments')
-
-    class Meta:
-        # there cannot be multiple payments in the same year for a spot
-        # (there can be multiple receipts)
-        unique_together = ('year', 'spot')
-        ordering = ['year', 'spot']
-
-    def __str__(self):
-        return f'{self.year} for {self.spot}'
-
-    @property
-    def owners(self):
-        # The payment-owners relation goes through a spot and a deed
-        # TODO this should be the owner for THIS year, not all previous and future ones
-        return Owner.objects.filter(deeds__spots=self.spot)
-
-    @property
-    def total_value(self):
-        aggregation = self.receipts.aggregate(Sum('value'))
-        return aggregation['value__sum']
-
-
 class PaymentReceipt(NrYear):
-    value    = FloatField()
-    payments = ManyToManyField(Payment, related_name='receipts')
+    value = FloatField(**optional)  # paid value
     # TODO warn if is already another receipt for the same payment, and link to it
 
     @property
@@ -439,6 +411,40 @@ class PaymentReceipt(NrYear):
         # .order_by is required to make .distinct work correctly since Meta::ordering is defined for Payments
         return self.payments.order_by().values_list('year', flat=True).distinct()
 
+    @property
+    def total_expected(self):
+        aggregation = self.payments.aggregate(Sum('expected'))
+        return aggregation['expected__sum']
+
+
+class Payment(Model):
+    year = IntegerField()  # TODO warn if year too far away from current year, or ASK how it relates to deed
+    spot = ForeignKey(Spot, related_name='payments')
+    expected = FloatField(**optional)  # expected value for this payment
+    # one receipt can cover for multiple years (payments)
+    # but there will not be a year (payment) spanning multiple receipts
+    receipt  = ForeignKey(PaymentReceipt, related_name='payments', **optional)
+
+    class Meta:
+        # there cannot be multiple payments in the same year for a spot
+        # (there can be multiple receipts)
+        unique_together = ('year', 'spot')
+        ordering = ['year', 'spot']
+
+    def __str__(self):
+        return f"{self.spot} for '{year_to_shorthand(self.year)}"
+
+    @property
+    def received_value(self):
+        if not self.receipt:
+            return None
+        return self.receipt.value
+
+    @property
+    def owners(self):
+        # The payment-owners relation goes through a spot and a deed
+        # TODO this should be the owner for THIS year, not all previous and future ones
+        return Owner.objects.filter(deeds__spots=self.spot)
 
 """
 Maintenance
@@ -454,7 +460,7 @@ class Maintenance(Model):
         ordering = ['year', 'spot']
 
     def __str__(self):
-        return f'{self.spot} in {self.year}'
+        return f"{self.spot} in '{year_to_shorthand(self.year)}"
 
     @property
     def owners(self):

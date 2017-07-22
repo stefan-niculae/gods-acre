@@ -117,37 +117,37 @@ class DeedForm(NrYearForm):
         return deed
 
 
-class PaymentForm(ModelForm):
-    receipts = ModelMultipleChoiceField(
-        queryset=PaymentReceipt.objects.all(),
-        required=False,
-        widget=FilteredSelectMultiple(
-            verbose_name=_('Receipts'),
-            is_stacked=False
-        )
-    )
-
-    class Meta:
-        model = Payment
-        fields = '__all__'
-
-    def __init__(self, *args, **kwargs):
-        super(PaymentForm, self).__init__(*args, **kwargs)
-
-        if self.instance and self.instance.pk:
-            self.fields['receipts'].initial = self.instance.receipts.all()
-
-    def save(self, commit=True):
-        payment = super(PaymentForm, self).save(commit=False)
-
-        if commit:
-            payment.save()
-
-        if payment.pk:
-            payment.receipts = self.cleaned_data['receipts']
-            self.save_m2m()
-
-        return payment
+# class PaymentForm(ModelForm):
+#     receipts = ModelMultipleChoiceField(
+#         queryset=PaymentReceipt.objects.all(),
+#         required=False,
+#         widget=FilteredSelectMultiple(
+#             verbose_name=_('Receipts'),
+#             is_stacked=False
+#         )
+#     )
+# 
+#     class Meta:
+#         model = Payment
+#         fields = '__all__'
+# 
+#     def __init__(self, *args, **kwargs):
+#         super(PaymentForm, self).__init__(*args, **kwargs)
+# 
+#         if self.instance and self.instance.pk:
+#             self.fields['receipts'].initial = self.instance.receipts.all()
+# 
+#     def save(self, commit=True):
+#         payment = super(PaymentForm, self).save(commit=False)
+# 
+#         if commit:
+#             payment.save()
+# 
+#         if payment.pk:
+#             payment.receipts = self.cleaned_data['receipts']
+#             self.save_m2m()
+# 
+#         return payment
 
 
 class OwnerForm(ModelForm):

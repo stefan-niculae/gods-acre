@@ -7,7 +7,7 @@ from easy import short, SimpleAdminField
 
 from .models import Spot, Deed, OwnershipReceipt, Owner, Maintenance, Operation, Payment, PaymentReceipt, Construction,\
     Authorization, Company
-from .forms import SpotForm, DeedForm, PaymentForm, OwnerForm, AuthorizationForm, PaymentReceiptForm, MaintenanceBulkForm
+from .forms import SpotForm, DeedForm, OwnerForm, AuthorizationForm, PaymentReceiptForm, MaintenanceBulkForm
 from .inlines import OwnershipReceiptInline, MaintenanceInline, OperationInline, ConstructionInline, \
     AuthorizationInline, PaymentInline
 from .utils import rev, display_change_link, display_head_links, truncate, display_date
@@ -34,7 +34,8 @@ class SpotAdmin(ModelAdmin):
     list_display = ['__str__', 'display_parcel', 'display_row', 'display_column',
                     'display_active_deed',
                     'display_shares_deed_with',
-                    'display_owners', # 'display_ownership_receipts',
+                    'display_owners',
+                    # 'display_ownership_receipts',  removed because TMI
                     'display_operations',
                     'display_constructions',
                     'display_shares_authorizations_with',
@@ -44,12 +45,19 @@ class SpotAdmin(ModelAdmin):
 
     # What filters are available at the top of the list-view page: "by field" combo-box
     list_filter = rev(['parcel', 'row', 'column',
-                       'deeds', 'deeds__owners', 'deeds__receipts'])
+                       'deeds', 'deeds__owners', 'deeds__receipts',
+                       # FIXME operations__type and constructions__type both read 'By type'
+                       # TODO filter by missing too (eg construction type: "?")
+                       'operations__type', 'constructions__type',
+                       'constructions__company'])
 
     search_fields = ['parcel', 'row', 'column',
                      'deeds__number', 'deeds__year',
                      'deeds__owners__name',
-                     'deeds__receipts__number', 'deeds__receipts__year']
+                     'deeds__receipts__number', 'deeds__receipts__year',
+                     # TODO make it possible to search for "burial" (field choice), not "b" (db value)
+                     'operations__type', 'constructions__type',
+                     'constructions__company__name']
 
     form = SpotForm
     inlines = [OperationInline, PaymentInline, MaintenanceInline]
@@ -237,11 +245,14 @@ class OperationAdmin(ModelAdmin):
 
     date_hierarchy = 'date'
 
-    # TODO search by month name?
-    search_fields = ['type', 'date', 'name',
-                     'spot__parcel', 'spot__row', 'spot__column', 'note']
+    list_filter = rev(['type', 'name', 'spot',
+                       'spot__parcel', 'spot__row', 'spot__column',
+                       'spot__deeds__owners'])
 
-    list_filter = rev(['type', 'name', 'spot'])
+    # TODO search by month name?
+    search_fields = ['type', 'date', 'name', 'note',
+                     'spot__parcel', 'spot__row', 'spot__column',
+                     'spot__deeds__owners__name']
 
     @short(desc='Date', order='date')
     def display_date(self, operation):
@@ -323,37 +334,39 @@ Payments
 
 @register(Payment)
 class PaymentAdmin(ModelAdmin):
-    list_display = ['__str__', 'year', 'display_spot', 'display_receipts', 'display_total_value',
+    list_display = ['__str__', 'year', 'display_spot', 'display_expected',
+                    'display_receipts', 'display_received',
                     'display_owners']
 
-    search_fields = ['year',
+    list_filter = rev(['year', 'expected',
+                       'spot', 'spot__parcel', 'spot__row', 'spot__column',
+                       'receipt', 'receipt__number', 'receipt__year',
+                       'spot__deeds__owners'])
+
+    search_fields = ['year', 'expected',
                      'spot__parcel', 'spot__row', 'spot__column',
-                     'spots__deeds__owners__name']
-
-    list_filter = rev(['year', 'spot',
-                       'spot__parcel', 'spot__row', 'spot__column',
-                       'receipts__number', 'spot__deeds__owners__name'])
-
-    form = PaymentForm
+                     'receipt__number', 'receipt__year',
+                     'spot__deeds__owners__name']
 
     def get_queryset(self, request):
         qs = super(PaymentAdmin, self).get_queryset(request)
-        return qs.annotate(first_receipt=Min('receipts'),
-                           first_owner=Min('spot__deeds__owners'),
-                           receipts_sum=Sum('receipts__value')
-                           )
+        return qs.annotate(first_owner=Min('spot__deeds__owners'))
 
     @short(desc='Spot', order='spot', tags=True)
     def display_spot(self, payment):
         return display_change_link(payment.spot)
 
-    @short(desc='Total Value', order='receipts_sum')
-    def display_total_value(self, payment):
-        return payment.total_value
+    @short(desc='Expected value', order='expected')
+    def display_expected(self, payment):
+        return payment.expected
 
-    @short(desc='Receipts', order='first_receipt', tags=True)
+    @short(desc='Receipt', order='receipt', tags=True)
     def display_receipts(self, payment):
-        return display_head_links(payment.receipts)
+        return display_change_link(payment.receipt)
+
+    @short(desc='Received value', order='receipt__value', tags=True)
+    def display_received(self, payment):
+        return payment.received_value
 
     @short(desc='Owners', order='first_owner', tags=True)
     def display_owners(self, payment):
@@ -362,16 +375,18 @@ class PaymentAdmin(ModelAdmin):
 
 @register(PaymentReceipt)
 class PaymentReceiptAdmin(ModelAdmin):
-    list_display = ['__str__', 'number', 'display_receipt_year', 'value', 'display_payments',
+    list_display = ['__str__', 'number', 'display_receipt_year',
+                    'display_value', 'display_payments', 'display_total_expected',
                     'display_spots', 'display_payments_years',
                     'display_owners']
 
-    search_fields = ['number', 'year', 'value', 'payment__spot',
+    list_filter = rev(['number', 'year', 'value',
+                       'payments__spot', 'payments__spot__parcel', 'payments__spot__row', 'payments__spot__column',
+                       'payments__spot__deeds__owners'])
+
+    search_fields = ['number', 'year', 'value',
                      'payments__spot__parcel', 'payments__spot__row', 'payments__spot__column',
                      'payments__spot__deeds__owners__name']
-
-    list_filter = rev(['number', 'year', 'value',
-                       'payments__spot', 'payments__spot__deeds__owners'])
 
     form = PaymentReceiptForm
 
@@ -390,6 +405,14 @@ class PaymentReceiptAdmin(ModelAdmin):
     @short(desc='Receipt Year', order='year')
     def display_receipt_year(self, receipt):
         return receipt.year
+
+    @short(desc='Paid', order='value')
+    def display_value(self, receipt):
+        return receipt.value
+
+    @short(desc='Total Expected', order='payments_sum')
+    def display_total_expected(self, receipt):
+        return receipt.total_expected
 
     @short(desc='Spots', order='first_spot', tags=True)
     def display_spots(self, receipt):
@@ -413,12 +436,14 @@ class MaintenanceAdmin(ModelAdmin):
     list_display = ['__str__', 'year', 'display_spot', 'kept',
                     'display_owners']
 
-    search_fields = ['year',
-                     'spot__parcel', 'spot__row', 'spot__column',
-                     'spot__deeds__owners__name']
-
-    list_filter = rev(['year', 'spot', 'kept',
+    list_filter = rev(['year', 'kept',  # TODO how to search by boolean (kept)?
+                       'spot', 'spot__parcel', 'spot__row', 'spot__column',
                        'spot__deeds__owners'])
+
+    search_fields = ['year', 'kept',
+                     'spot__parcel', 'spot__row', 'spot__column',
+                     # FIXME DisallowedModelAdminLookup: Filtering by spot__deeds__owners__isnull not allowed
+                     'spot__deeds__owners__name']
 
     actions = ['mark_kept', 'mark_unkept']
 

@@ -17,7 +17,7 @@ def rev(l: list) -> list:
     >>> rev([1, 2, 3])
     [3, 2, 1]
     """
-    return list(reversed(l))
+    return l[::-1]
 
 
 def add_link(model_name: str, popup: bool=True) -> str:
@@ -160,7 +160,10 @@ def title_case(string: Optional[str]) -> Optional[str]:
     >>> title_case('abc  dEf')
     'Abc Def'
     >>> title_case(None)
-    None
+    >>> title_case('mary-jane')  # TODO
+    Mary-Jane
+    >>> title_case('s.r.l')  # TODO
+    S.R.L
     """
     if string is None:
         return None
@@ -198,6 +201,13 @@ def year_shorthand_to_full(shorthand: Union[int, str], threshold: int=50) -> int
     else:
         return 2000 + shorthand
 
+def year_to_shorthand(year: int) -> str:
+    as_str = str(year % 100)  # just the last two digits, eg: 1999 ~> 99
+    if len(as_str) < 2:  # show 2001 as 01 instead of just 1
+        return '0' + as_str
+    return as_str
+
+
 # TODO break into utils.py (general) and display_utils.py
 def display_date(date):
     """
@@ -231,7 +241,7 @@ def show_dict(d):
     return ', '.join(f'{k}: {v}' for k, v in d.items())
 
 
-def parse_nr_year(identifier: str) -> Tuple[int, int]:
+def parse_nr_year(identifier: Optional[str]) -> Optional[Tuple[int, int]]:
     """
     >>> parse_nr_year('1/17')
     1, 2017
@@ -247,7 +257,11 @@ def parse_nr_year(identifier: str) -> Tuple[int, int]:
 
     >>> parse_nr_year('10/1994')
     1, 1994
+    
+    >>> parse_nr_year(None)
     """
+    if identifier is None:
+        return None
     number, year = identifier.split('/')
     return int(number), year_shorthand_to_full(year)
 
