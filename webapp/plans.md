@@ -132,3 +132,15 @@
 - adaugam un camp nou la Proprietar?
 
   > localitate?
+
+- comportament asteptat pt intrari duplicate la Proprietari? eg: 
+
+  - Stoian Constantin, Gheorghe Magheru 16
+  - Stoian Constantin, Gheorghe Magheru 17
+  - solutie: o singura intrare cu Gheorghe Magheru 16-17
+
+- care sa fie valoarea implicita pt tipul unei constructii?
+
+  > acum este bordura
+  >
+  > sa punem un nou tip, "necunoscut" in schimb?

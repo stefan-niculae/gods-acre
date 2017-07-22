@@ -3,6 +3,7 @@ from copy import deepcopy
 import logging
 from collections import namedtuple
 from itertools import zip_longest
+from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -10,7 +11,8 @@ from dateutil.parser import parse
 from datetime import datetime
 
 from .models import Spot, Operation, Deed, OwnershipReceipt, Owner
-from .utils import title_case, year_shorthand_to_full, reverse_dict, filter_dict, show_dict, map_dict, parse_nr_year
+from .utils import title_case, year_shorthand_to_full, reverse_dict, filter_dict, show_dict, map_dict, parse_nr_year, \
+    keep_only
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -151,13 +153,16 @@ def prepare_deed_fields(parsed_fields: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 ModelMetadata = namedtuple('ModelMetadata',
-                           'model sheet_name column_renames field_parsers prepare_fields relational_fields')
+                           'model sheet_name column_renames field_parsers '
+                           'prepare_fields non_identifying_fields relational_fields')
 """
     model (django.db.models.Model): class of the resulting object
     sheet_name (str): excel sheet name
     column_renames (dict<str: str>): code_field_name: excel_column_name
     field_parsers (dict<str: str -> Any>): type of the field - an entry for a field takes the cell content and 
         produces a value (eg: title-cased name, spot object from its textual representation)
+    non_identifying_fields ([str]): fields that should not be present in `get_or_create` args, instead in defaults kwarg
+        eg: address for Owner
     prepare_fields (dict<str: Any> -> dict<str: Any>): change the fields values/keys to fit the model's __init__ -
         takes dict of {input_field: parsed_value} and transforms it into {model_field: value} (eg: combine values and
         receipt_identifiers into receipts or split deed_identifier into number and year) 
@@ -194,6 +199,7 @@ MODELS_METADATA = [
           'date': parse_date
         },
         prepare_fields=as_is,
+        non_identifying_fields=['note'],
         relational_fields=[],
     ),
 
@@ -217,8 +223,27 @@ MODELS_METADATA = [
             'cancel_reason': translate(deed_cancel_reason_translations)
         },
         prepare_fields=prepare_deed_fields,
+        non_identifying_fields=[],
         relational_fields=['spots', 'owners', 'receipts'],
     ),
+
+    ModelMetadata(
+        model=Owner,
+        sheet_name='Proprietari',
+        column_renames={
+            'name':     'Nume',
+            'phone':    'Telefon',
+            'address':  'Adresa'
+        },
+        field_parsers={
+            'name':     title_case,
+            'phone':    partial(keep_only, condition=str.isdigit),
+            'address':  title_case,
+        },
+        prepare_fields=as_is,
+        non_identifying_fields=['phone', 'address'],
+        relational_fields=[],
+    )
 
 ]
 
@@ -252,12 +277,27 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
     try:
         # create the entity (if it doesn't already exist)
         fields_for_init = filter_dict(prepared_fields, metadata.relational_fields, inverse=True)
-        entity, created_now = metadata.model.objects.get_or_create(**fields_for_init)
+        non_identif = filter_dict(prepared_fields, metadata.non_identifying_fields, inverse=False)
+        identifying = filter_dict(prepared_fields, metadata.non_identifying_fields, inverse=True)
+        entity, created_now = metadata.model.objects.get_or_create(**identifying, defaults=non_identif)
     except Exception as error:
         info = f'Get/create {model_name} with init {{{show_dict(fields_for_init)}}}'
         return 'fail', info, repr(error)
 
     if not created_now:  # entity already existed
+        for field, value in prepared_fields.items():
+            try:
+                setattr(entity, field, value)
+            except Exception as error:
+                info = f'Update on duplicate "{field}": value'
+                return 'fail', info, repr(error)
+
+        try:
+            entity.save()
+        except Exception as error:
+            info = f'Save after updating fields on found-duplicate {entity}'
+            return 'fail', info, repr(error)
+
         return 'duplicate', model_name, entity
 
     # 4. save the entity
@@ -272,8 +312,13 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
         try:
             setattr(entity, field, prepared_fields[field])
         except Exception as error:
-            info = f'Add post save field {field}: {prepared_fields[field]}'
+            info = f'Set relational field {field}: {prepared_fields[field]}'
             return 'fail', info, repr(error)
+    try:
+        entity.save()
+    except Exception as error:
+        info = f'Save after setting relational fields on {entity}'
+        return 'fail', info, repr(error)
 
     # finally success
     return 'add', model_name, entity

@@ -1,4 +1,4 @@
-from typing import Optional, Union, Tuple, List
+from typing import Optional, Union, Tuple, Callable
 from datetime import datetime
 
 from django.core.urlresolvers import reverse
@@ -215,7 +215,7 @@ def display_date(date):
 def reverse_dict(d):
     return {v: k for k, v in d.items()}
 
-def filter_dict(d, keys, inverse):
+def filter_dict(d, keys, inverse=False):
     """ creates a copy of `d` with only the keys present in `keys` (and `d`) """
     if inverse:
         return {k: v for k, v in d.items() if k not in keys}  # note the `not in`
@@ -249,6 +249,15 @@ def parse_nr_year(identifier: str) -> Tuple[int, int]:
     number, year = identifier.split('/')
     return int(number), year_shorthand_to_full(year)
 
+
+def keep_only(x: Optional[str], condition: Callable[[str], bool]) -> Optional[str]:
+    """
+    >>> keep_only('0712 345 789', str.isdigit)
+    '0712345789'
+    """
+    if x is None:
+        return None
+    return ''.join(filter(condition, x))
 
 if __name__ == '__main__':
     import doctest
