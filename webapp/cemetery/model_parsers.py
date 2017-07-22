@@ -1,6 +1,5 @@
-import traceback
-
 from typing import Optional, Tuple, Dict, Callable, Any, List
+from copy import deepcopy
 import logging
 from collections import namedtuple
 from itertools import zip_longest
@@ -116,8 +115,13 @@ def parse_date(arg) -> Optional[datetime]:
                  default=datetime(year=2000, month=1, day=1))   # when only the year is given, set to Jan 1st
 
 def translate(dictionary: Dict[str, str], default=None):
-    def handler(string: str) -> str:
-        return dictionary.get(string, default)
+    def handler(string: Optional[str]) -> str:
+        try:
+            return dictionary[string]
+        except KeyError:
+            if string is None:  # no value entered
+                return default
+            raise ValueError(f'Wrong value: {string} is not one of {", ".join(dictionary.keys())}')
     return handler
 
 def as_is(x):
@@ -172,26 +176,26 @@ deed_cancel_reason_translations = {
 }
 
 MODELS_METADATA = [
-    # ModelMetadata(
-    #     model=Operation,
-    #     sheet_name='Operatii',
-    #     column_renames={
-    #       'type': 'Tip',
-    #       'name': 'Nume',
-    #       'spot': 'Loc veci',
-    #       'date': 'Data',
-    #       'note': 'Nota',
-    #     },
-    #     field_parsers={
-    #       'type': translate(operation_type_translations, default=Operation.BURIAL),
-    #       'note': as_is,
-    #       'spot': natural_getsert(Spot),
-    #       'name': title_case,
-    #       'date': parse_date
-    #     },
-    #     prepare_fields=as_is,
-    #     relational_fields=[],
-    # ),
+    ModelMetadata(
+        model=Operation,
+        sheet_name='Operatii',
+        column_renames={
+          'type': 'Tip',
+          'name': 'Nume',
+          'spot': 'Loc veci',
+          'date': 'Data',
+          'note': 'Nota',
+        },
+        field_parsers={
+          'type': translate(operation_type_translations, default=Operation.BURIAL),
+          'note': as_is,
+          'spot': natural_getsert(Spot),
+          'name': title_case,
+          'date': parse_date
+        },
+        prepare_fields=as_is,
+        relational_fields=[],
+    ),
 
     ModelMetadata(
         model=Deed,
@@ -208,7 +212,7 @@ MODELS_METADATA = [
             'deed_id':       parse_nr_year,
             'spots':         multiple(natural_getsert(Spot), required=True),
             'receipt_ids':   multiple(parse_nr_year),
-            'values':        multiple(int),
+            'values':        multiple(float),
             'owners':        multiple(natural_getsert(Owner)),
             'cancel_reason': translate(deed_cancel_reason_translations)
         },
@@ -287,7 +291,8 @@ def status_counts(feedbacks: [RowFeedback]) -> Dict[str, int]:
     return {status: statuses.count(status) for status in ['fail', 'duplicate', 'add']}
 
 def parse_file(file):
-    feedbacks = {metadata.sheet_name: parse_sheet(file, metadata) for metadata in MODELS_METADATA}
+    # send a copy of the file because the document gets consumed after reading a sheet
+    feedbacks = {metadata.sheet_name: parse_sheet(deepcopy(file), metadata) for metadata in MODELS_METADATA}
     return feedbacks, map_dict(feedbacks, status_counts)
 
 

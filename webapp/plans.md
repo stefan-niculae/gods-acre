@@ -125,6 +125,10 @@
   - eg: Popescu Ana Maria, Ion
   - solutie: introducere Popescu Ana, Popescu Ion
 
-- mai adaugam noi motive de anulare? (pe langa donat, proprietar decedat, pierdut)
+- adaugam noi motive de anulare? (pe langa donat, proprietar decedat, pierdut)
 
   > innoire?
+
+- adaugam un camp nou la Proprietar?
+
+  > localitate?
