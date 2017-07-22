@@ -1,5 +1,6 @@
 {% extends "admin/base.html" %}
 {% load static %}
+{% load custom_filters %}
 
   {% block title %}Import entries{% endblock %}
 
@@ -7,26 +8,14 @@
     <link rel="stylesheet" type="text/css" href="{% static 'extra-style.css' %}">
   {% endblock %}
 
+  {% block extrahead %}
+    {# FIXME not imported #}
+    <script type="text/javascript" href="{% static 'admin-extra.js' %}"></script>
+  {% endblock %}
+
   {% block content %}
     <h2>Import entries</h2>
-
-    <p>Expected sheets and their respective columns:</p>
-    <ul>
-{#      <li>Locuri veci</li>#}
-{#      <li>Acte concesiune</li>#}
-{#      <li>Proprietari</li>#}
-{#      <li>Constructii</li>#}
-      <li>Operatii</li>
-        <ul>
-          <li>Tip</li>
-          <li>Nume</li>
-          <li>Loc veci</li>
-          <li>Data</li>
-          <li>Nota</li>
-        </ul>
-{#      <li>Contributii</li>#}
-{#      <li>Intretinere</li>#}
-    </ul>
+    <p>See documentation for expected sheets, columns and values</p>
 
     {% if form.errors %}
       {# TODO style this #}
@@ -50,6 +39,15 @@
 
         {% for sheet_name, row_feedbacks in sheet_feedbacks.items %}
           <h3>{{ sheet_name }}</h3>
+          {% with counts|get_item:sheet_name as sheet_counts %}
+            {% for status, count in sheet_counts.items %}
+              <div class="status-toggler">
+                <input type="checkbox" name="{{ sheet_name }}-{{ status }}" checked>
+                <span class="status-{{ status }}">{{ count }} {{ status }}</span>
+              </div>
+            {% endfor %}
+          {% endwith %}
+
           {# TODO three checkboxes (initially checked) for show errors | warnings | sucesses, only unsolved #}
           {# TODO when a 'solved' checkbox is checked, apply strikethrough for the whole row #}
           <table class="hoverable-rows">

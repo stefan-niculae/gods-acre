@@ -1,4 +1,4 @@
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, List
 from datetime import datetime
 
 from django.core.urlresolvers import reverse
@@ -167,6 +167,9 @@ def title_case(string: Optional[str]) -> Optional[str]:
     return ' '.join(word.capitalize() for word in string.split())
 
 
+def initials(names: str) -> str:
+    return '.'.join(n[0] for n in names.split())
+
 def year_shorthand_to_full(shorthand: Union[int, str], threshold: int=50) -> int:
     """
     :param shorthand: last two digits in a year (eg: 99, 00, 15) 
@@ -217,6 +220,10 @@ def filter_dict(d, keys, inverse):
     if inverse:
         return {k: v for k, v in d.items() if k not in keys}  # note the `not in`
     return {k: v for k, v in d.items() if k in keys}
+
+def map_dict(d, func):
+    """ maps each value of d to func(d) """
+    return {k: func(v) for k, v in d.items()}
 
 def show_dict(d):
     return ', '.join(f'{k}: {v}' for k, v in d.items())

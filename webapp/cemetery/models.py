@@ -1,28 +1,32 @@
 from datetime import date
-from typing import Optional
+from typing import Optional, Dict
 
 from django.db.models import Model, ForeignKey, TextField, IntegerField, CharField, \
     ManyToManyField, FloatField, BooleanField, DateField, Sum, Max, Manager
 
 from .validators import name_validator
-from .utils import display_head_tail_summary, parse_nr_year, title_case
+from .utils import display_head_tail_summary, parse_nr_year, title_case, initials
+
+optional = {'blank': True, 'null': True}  # to be passed in field definitions
 
 """
 Mixins
 """
 
 class Annotatable(Model):
-    note = TextField(blank=True, null=True)
+    note = TextField(**optional)
 
     class Meta:
         abstract = True
 
 class NrYearManager(Manager):
-    def get_by_natural_key(self, *args):
-        if len(args) == 1:
-            number, year = parse_nr_year(args[0])
-        else:
-            number, year = args
+    @staticmethod
+    def prepare_natural_key(identifier: str) -> Dict[str, int]:
+        """ should be called before `get_by_natural_key` or `__init__` """
+        number, year = parse_nr_year(identifier)
+        return {'number': number, 'year': year}
+
+    def get_by_natural_key(self, number, year):
         return self.get(number=number, year=year)
 
 class NrYear(Model):
@@ -44,7 +48,10 @@ class NrYear(Model):
         return self.number, self.year
 
     def __str__(self):
-        return f'{self.number}/{self.year}'
+        year = str(self.year % 100)  # just the last two digits, eg: 1999 ~> 99
+        if len(year) < 2:  # show 2001 as 01 instead of just 1
+            year = '0' + year
+        return f'{self.number}/{year}'
 
 
 """
@@ -52,15 +59,14 @@ Spot - the central entity
 """
 
 class SpotManager(Manager):
-    def get_by_natural_key(self, *args):
-        if len(args) == 1:
-            parcel, row, column = args[0].strip().split('-')
-        else:
-            parcel, row, column = args
+    @staticmethod
+    def prepare_natural_key(identifier: str) -> Dict[str, str]:
+        """ should be called before `get_by_natural_key` or `__init__` """
+        parcel, row, column = identifier.strip().upper().split('-')
+        return {'parcel': parcel, 'row': row, 'column': column}
 
-        return self.get(parcel=parcel.upper(),
-                        row=row.upper(),
-                        column=column.upper())
+    def get_by_natural_key(self, parcel, row, column):
+        return self.get(parcel=parcel, row=row, column=column)
 
 class Spot(Model):
     parcel  = CharField(max_length=5)  # TODO regex only alphanumeric
@@ -209,32 +215,41 @@ class Deed(NrYear):
     ]
     # TODO when the name of the owner is the one in a burial operation, offer a suggestion to modify this
     # TODO add css to differentiate it from active ones
-    cancel_reason = CharField(max_length=1, choices=CANCEL_REASON_CHOICES, blank=True, null=True)
+    cancel_reason = CharField(max_length=1, choices=CANCEL_REASON_CHOICES, **optional)
 
 class OwnershipReceipt(NrYear):
     # todo warn if the deed's date is too far away from the receipt's date
-    deed  = ForeignKey(Deed, related_name='receipts')
-    value = FloatField()
+    deed  = ForeignKey(Deed, related_name='receipts', **optional)
+    value = FloatField(**optional)
 
     @property
     def spots(self):
         # The receipt-spot relation goes through a deed
+        if not self.deed:
+            return None
         return self.deed.spots
 
     @property
     def owners(self):
         # The receipt-owner relation goes through a deed
+        if not self.deed:
+            return None
         return self.deed.owners
 
 class OwnerManager(Manager):
+    @staticmethod
+    def prepare_natural_key(identifier: str) -> Dict[str, str]:
+        name = title_case(identifier)
+        return {'name': name}
+
     # TODO is the name enough to uniquely identify an owner?
     def get_by_natural_key(self, name):
-        return self.get(name=title_case(name))
+        return self.get(name=name)
 
 class Owner(Model):
     name    = CharField(max_length=100, unique=True, validators=[name_validator])
-    phone   = CharField(max_length=15,  null=True, blank=True)  # TODO regex validation
-    address = CharField(max_length=250, null=True, blank=True)
+    phone   = CharField(max_length=15, **optional)  # TODO regex validation
+    address = CharField(max_length=250, **optional)
     deeds   = ManyToManyField(Deed, related_name='owners', blank=True)
 
     objects = OwnerManager()
@@ -270,9 +285,13 @@ class Operation(Annotatable):
         (BURIAL,     'burial'),
         (EXHUMATION, 'exhumation')
     ]
+    TYPE_SYMBOLS = {
+        BURIAL:     '↓',
+        EXHUMATION: '↑',
+    }
     type = CharField(max_length=1, choices=TYPE_CHOICES, default=BURIAL)
     # TODO warning if exhumation is not the same as one buried
-    name = CharField(max_length=100, validators=[name_validator], null=True, blank=True)  # TODO what to display in admin when missing
+    name = CharField(max_length=100, validators=[name_validator], **optional)  # TODO what to display in admin when missing
     spot = ForeignKey(Spot, related_name='operations')
     date = DateField(default=date.today)  # TODO warn if date is too far from current
 
@@ -282,11 +301,8 @@ class Operation(Annotatable):
         ordering = ['date', 'spot']
 
     def __str__(self):
-        short_type = {
-            'b': 'bur',
-            'e': 'exh',
-        }
-        return f"{short_type[self.type]} on {self.spot} in '{self.date:%y}"
+        display_initials = initials(self.name) if self.name else ''
+        return f"'{self.date:%y}: {self.spot} {Operation.TYPE_SYMBOLS[self.type]} {display_initials}"
 
 
 """
@@ -319,8 +335,8 @@ class Construction(Model):
     # TODO warn if there is already a construction on the same spot
     type          = CharField(max_length=1, choices=TYPE_CHOICES)
     spots         = ManyToManyField(Spot)
-    company       = ForeignKey(Company, blank=True, null=True)
-    owner_builder = ForeignKey(Owner,   blank=True, null=True)
+    company       = ForeignKey(Company, **optional)
+    owner_builder = ForeignKey(Owner,   **optional)
     # TODO warn if owner entered is not one in spots.deeds.owners
 
     class Meta:
@@ -344,7 +360,7 @@ class Construction(Model):
 class Authorization(NrYear):
     # Construction authorization
     spots        = ManyToManyField(Spot,    related_name='authorizations')
-    construction = ForeignKey(Construction, related_name='authorizations', blank=True, null=True)
+    construction = ForeignKey(Construction, related_name='authorizations', **optional)
     # TODO warn if construction.spots differ from spots
 
 

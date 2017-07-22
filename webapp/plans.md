@@ -13,11 +13,9 @@
   - date range filter https://github.com/tzulberti/django-datefilterspec
   - search for `spot.__str__` not just `.parcel`, `.row` and `.column` (same treatment for other fields as well)
   - natural pks
-  - import from excel https://github.com/pyexcel/django-excel
   - add help_text to model fields
   - make sure all unique constraints are entered
   - field validation!
-  - receipt value: not required
 
 
   plata:
@@ -115,8 +113,18 @@
 
 
 
-# July - clarify
+# Iulie
 
-- defaults for parsing, right now they are:
-  - operations — type = burial
-  - deeds — cancel_reason = None
+- care sa fie valoarea implicita pt tipul de operatie?
+
+  > acum este inhumare
+
+- nume introduse in forma: Popescu Ana, Ion sunt greu de definit
+
+  - eg: Popescu Ana, Ion, Vasilescu Vasile
+  - eg: Popescu Ana Maria, Ion
+  - solutie: introducere Popescu Ana, Popescu Ion
+
+- mai adaugam noi motive de anulare? (pe langa donat, proprietar decedat, pierdut)
+
+  > innoire?

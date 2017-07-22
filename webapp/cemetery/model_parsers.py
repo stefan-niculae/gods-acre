@@ -1,8 +1,9 @@
-from typing import Optional, Tuple, Union
+import traceback
+
+from typing import Optional, Tuple, Dict, Callable, Any, List
 import logging
 from collections import namedtuple
 from itertools import zip_longest
-from enum import Enum
 
 import numpy as np
 import pandas as pd
@@ -10,25 +11,38 @@ from dateutil.parser import parse
 from datetime import datetime
 
 from .models import Spot, Operation, Deed, OwnershipReceipt, Owner
-from .utils import title_case, year_shorthand_to_full, reverse_dict, filter_dict, show_dict
+from .utils import title_case, year_shorthand_to_full, reverse_dict, filter_dict, show_dict, map_dict, parse_nr_year
 
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-def natural_getsert(model):
+def natural_getsert(model) -> Callable:  # takes a django model
     """ getsert = get or insert; natural = using natural key """
-    def get_or_create_by_natural_key(*args, **kwargs):
+    def handler(identifier: str):  # returns an entity
+        # prepare the natural key into a dict that can be passed to __init__
+        natural_key = model.objects.prepare_natural_key(identifier)
+
         try:
             # retrieve by natural key
-            entity = model.objects.get_by_natural_key(*args, **kwargs)
+            entity = model.objects.get_by_natural_key(**natural_key)
         except model.DoesNotExist:
             # create if it doesn't exist
-            entity = model(*args, **kwargs)
+            entity = model(**natural_key)
             entity.save()
         return entity
 
-    return get_or_create_by_natural_key
+    return handler
+
+def multiple(single_parser: Callable, separator: str=',', required=False) -> Callable:
+    """ makes a parser that works on a single element work on a list of elements, split by a separator """
+    def handler(inp: Optional[str]) -> Optional[List]:  # returns an entity
+        if inp is None:
+            if required:
+                raise ValueError('Expected at least one element for multiple parsing')
+            return []
+        return [single_parser(elem) for elem in str(inp).split(separator)]
+    return handler
 
 def parse_date(arg) -> Optional[datetime]:
     """
@@ -101,93 +115,36 @@ def parse_date(arg) -> Optional[datetime]:
                  dayfirst=True,  # for ambiguities like `10.10.1994`
                  default=datetime(year=2000, month=1, day=1))   # when only the year is given, set to Jan 1st
 
-
-class ParsingStatus(Enum):
-    ADDED   = 1
-    EXISTED = 2
-    FAILED  = 3
-
-
-def parse_operation_type(inp: Optional[str]):
-    translations = {
-        'inhumare': Operation.BURIAL,
-        'exhumare': Operation.EXHUMATION,
-    }
-    return translations.get(inp, Operation.BURIAL)
+def translate(dictionary: Dict[str, str], default=None):
+    def handler(string: str) -> str:
+        return dictionary.get(string, default)
+    return handler
 
 def as_is(x):
     """ identity function """
     return x
 
+def prepare_deed_fields(parsed_fields: Dict[str, Any]) -> Dict[str, Any]:
+        """ takes keys: deed_id, spots, receipts_ids, values, owners, cancel_reason 
+            returns keys: number, year, cancel_reason, spots, owners, receipts """
+        number, year = parsed_fields['deed_id']
 
-# def parse_deed(df: pd.DataFrame):
-#     n_successful = 0
-#
-#     df.cancel_reason.rename({
-#         'donat':              Deed.DONATED,
-#         'proprietar decedat': Deed.OWNER_DEAD,
-#         'pierdut':            Deed.LOST,
-#     }, inplace=True)
-#
-#     for index, row in df.iterrows():
-#         cancel_reason = row.cancel_reason
-#
-#         try:
-#             number, year = parse_nr_year(row.deed)
-#         except (AttributeError, TypeError):
-#             logger.warning(f'{index} couldnt parse nr/yr {row.deed}')
-#             continue
-#         spots = map(get_or_create_spot, row.spots.split(','))
-#
-#         # TODO surround with try/catch
-#         if row.receipts is None:
-#             receipt_identifiers = []
-#         else:
-#             try:
-#                 receipt_identifiers = row.receipts.split(',')
-#             except AttributeError:
-#                 logger.warning(f'{index} couldnt parse receipt identifiers {row.receipts}')
-#                 continue
-#
-#         if row.values_ is None:
-#             values = []
-#         else:
-#             values = str(row.values_).split(',')
-#
-#         if len(receipt_identifiers) > 0 or len(values) > 0:
-#             receipt_tuples = zip_longest(receipt_identifiers, values)
-#         else:
-#             receipt_tuples = []
-#         receipts = map(get_or_create_ownership_receipt, list(receipt_tuples))
-#
-#         # TODO surround with try/catch
-#         if row.owners is None:
-#             owners = []
-#         else:
-#             owners = map(get_or_create_owner, row.owners.split(','))
-#
-#         # TODO DRY
-#         try:
-#             # print(number, year, list(spots), cancel_reason, list(receipts), list(owners), sep='\n'+'>'*5)
-#             deed, created_now = Deed.objects.get_or_create(
-#                 number=number, year=year, cancel_reason=cancel_reason)
-#
-#             if created_now:
-#                 deed.spots = spots
-#                 deed.receipts = receipts
-#                 deed.owners = owners
-#                 deed.save()
-#                 logger.info(f'Successfully saved deed <{deed}>.')
-#
-#                 n_successful += 1
-#             else:
-#                 logger.info(f'Deed already existed <{deed}>.')
-#         except:
-#             logger.warning(f'{index} Failed to save deed. Skipping: \n{row}', exc_info=True)
-#             continue
-#
-#     return n_successful
+        receipt_ids = parsed_fields['receipt_ids']
+        values      = parsed_fields['values']
+        if len(values) > len(receipt_ids):  # make sure there no more than one value per receipt id
+            raise ValueError(f'More values ({len(values)} than receipts ({len(receipt_ids)})')
+        receipts = [OwnershipReceipt.objects.get_or_create(
+                        number=nr, year=yr, defaults={'value': val})[0]  # returns entity, created_now
+                    for (nr, yr), val in zip_longest(receipt_ids, values)]  # missing values will be None
 
+        return {
+            'number':        number,
+            'year':          year,
+            'cancel_reason': parsed_fields['cancel_reason'],
+            'spots':         parsed_fields['spots'],
+            'owners':        parsed_fields['owners'],
+            'receipts':      receipts,
+        }
 
 ModelMetadata = namedtuple('ModelMetadata',
                            'model sheet_name column_renames field_parsers prepare_fields relational_fields')
@@ -195,57 +152,75 @@ ModelMetadata = namedtuple('ModelMetadata',
     model (django.db.models.Model): class of the resulting object
     sheet_name (str): excel sheet name
     column_renames (dict<str: str>): code_field_name: excel_column_name
-    field_parsers (dict<str: str -> Any>): type of the field
-    prepare_fields (dict<str: Any> -> dict<str: Any>): how to change the fields values/keys to fit the model's __init__
-    relational_fields ([str]): fields that need to be assigned after a the object received its pk
+    field_parsers (dict<str: str -> Any>): type of the field - an entry for a field takes the cell content and 
+        produces a value (eg: title-cased name, spot object from its textual representation)
+    prepare_fields (dict<str: Any> -> dict<str: Any>): change the fields values/keys to fit the model's __init__ -
+        takes dict of {input_field: parsed_value} and transforms it into {model_field: value} (eg: combine values and
+        receipt_identifiers into receipts or split deed_identifier into number and year) 
+    relational_fields ([str]): fields that need to be assigned after a the object received its pk (eg: owners for deed)
 """
 
-#
-MODELS_METADATA = [
-    # spot
-    # # deed
-    # ModelMetadata(sheet_name='Acte concesiune',
-    #               column_renames={
-    #                   'Act': 'deed',
-    #                   'Locuri Veci': 'spots',
-    #                   'Chitante': 'receipts',
-    #                   'Valori': 'values_',
-    #                   'Proprietari': 'owners',
-    #                   'Motiv anulare': 'cancel_reason'
-    #               },
-    #               parse_function=parse_deed)
-    # owner
-    # construction
+operation_type_translations = {
+    'inhumare':     Operation.BURIAL,
+    'dezhumare':    Operation.EXHUMATION,
+}
 
-    # operation
+deed_cancel_reason_translations = {
+    'proprietar decedat': Deed.OWNER_DEAD,
+    'donat':              Deed.DONATED,
+    'pierdut':            Deed.LOST,
+}
+
+MODELS_METADATA = [
+    # ModelMetadata(
+    #     model=Operation,
+    #     sheet_name='Operatii',
+    #     column_renames={
+    #       'type': 'Tip',
+    #       'name': 'Nume',
+    #       'spot': 'Loc veci',
+    #       'date': 'Data',
+    #       'note': 'Nota',
+    #     },
+    #     field_parsers={
+    #       'type': translate(operation_type_translations, default=Operation.BURIAL),
+    #       'note': as_is,
+    #       'spot': natural_getsert(Spot),
+    #       'name': title_case,
+    #       'date': parse_date
+    #     },
+    #     prepare_fields=as_is,
+    #     relational_fields=[],
+    # ),
+
     ModelMetadata(
-        model=Operation,
-        sheet_name='Operatii',
+        model=Deed,
+        sheet_name='Acte concesiune',
         column_renames={
-          'type': 'Tip',
-          'name': 'Nume',
-          'spot': 'Loc veci',
-          'date': 'Data',
-          'note': 'Nota',
+            'deed_id':       'Act',
+            'spots':         'Locuri veci',
+            'receipt_ids':   'Chitante',
+            'values':        'Valori',
+            'owners':        'Proprietari',
+            'cancel_reason': 'Motiv anulare'
         },
         field_parsers={
-          'type': parse_operation_type,
-          'note': as_is,
-          'spot': natural_getsert(Spot),
-          'name': title_case,
-          'date': parse_date
+            'deed_id':       parse_nr_year,
+            'spots':         multiple(natural_getsert(Spot), required=True),
+            'receipt_ids':   multiple(parse_nr_year),
+            'values':        multiple(int),
+            'owners':        multiple(natural_getsert(Owner)),
+            'cancel_reason': translate(deed_cancel_reason_translations)
         },
-        prepare_fields=as_is,
-        relational_fields=[],
-    )
+        prepare_fields=prepare_deed_fields,
+        relational_fields=['spots', 'owners', 'receipts'],
+    ),
 
-    # payment
-    # maintenance
 ]
 
 RowFeedback = namedtuple('RowFeedback', 'status info additional')
 """
-    status (str):       fail            | add           | exist
+    status (str):       fail            | add           | duplicate
     info (str):         failure cause   | model name    | model name
     additional (str):   exception       | model repr    | model repr
 """
@@ -266,7 +241,7 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
     try:
         prepared_fields = metadata.prepare_fields(parsed_fields)
     except Exception as error:
-        info = f'Prepare the parsed fields {show_dict(parsed_fields)}'
+        info = f'Prepare the parsed fields {{{show_dict(parsed_fields)}}}'
         return 'fail', info, repr(error)
 
     # 3. use the prepared fields to build the model
@@ -279,7 +254,7 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
         return 'fail', info, repr(error)
 
     if not created_now:  # entity already existed
-        return 'exist', model_name, entity
+        return 'duplicate', model_name, entity
 
     # 4. save the entity
     try:
@@ -293,7 +268,7 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
         try:
             setattr(entity, field, prepared_fields[field])
         except Exception as error:
-            info = f'Add field {field} ({prepared_fields[field]}) post save'
+            info = f'Add post save field {field}: {prepared_fields[field]}'
             return 'fail', info, repr(error)
 
     # finally success
@@ -307,8 +282,13 @@ def parse_sheet(file, metadata) -> [RowFeedback]:
 
     return [RowFeedback(*parse_row(row, metadata)) for _, row in sheet.iterrows()]
 
+def status_counts(feedbacks: [RowFeedback]) -> Dict[str, int]:
+    statuses = [f.status for f in feedbacks]
+    return {status: statuses.count(status) for status in ['fail', 'duplicate', 'add']}
+
 def parse_file(file):
-    return {metadata.sheet_name: parse_sheet(file, metadata) for metadata in MODELS_METADATA}
+    feedbacks = {metadata.sheet_name: parse_sheet(file, metadata) for metadata in MODELS_METADATA}
+    return feedbacks, map_dict(feedbacks, status_counts)
 
 
 if __name__ == '__main__':

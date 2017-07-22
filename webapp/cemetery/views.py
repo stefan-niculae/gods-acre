@@ -16,7 +16,10 @@ def import_entries(request):
             return HttpResponseBadRequest()
 
         file = request.FILES['file']
-        context['sheet_feedbacks'] = parse_file(file)
+        sheet_feedbacks, counts = parse_file(file)
+        context['sheet_feedbacks'] = sheet_feedbacks
+        context['counts'] = counts
+
         # messages.success(request, f'{total_successful} entries successfully imported ({total_failed} failed)')  # TODO
 
     return render(request, 'import-entries.html', context)
