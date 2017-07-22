@@ -105,7 +105,7 @@ def display_head_tail_summary(entities, head_length: Optional[int]=None) -> (Opt
     head_length = head_length or DEFAULT_HEAD_LENGTH
 
     tail_length = len(entities) - head_length
-    tail_summary = '' if tail_length <= 0 else f'(+{tail_length})'
+    tail_summary = '' if tail_length <= 0 else f' (+{tail_length})'
 
     return entities[:head_length], tail_summary
 
@@ -126,7 +126,7 @@ def display_head_links(query, head_length: Optional[int]=None) -> Optional[str]:
         return
 
     links = map(display_change_link, head)
-    return ', '.join(links) + ' ' + others
+    return ', '.join(links) + others
 
 
 def truncate(string: Optional[str], max_len: int=20) -> Optional[str]:
@@ -221,8 +221,10 @@ def filter_dict(d, keys, inverse=False):
         return {k: v for k, v in d.items() if k not in keys}  # note the `not in`
     return {k: v for k, v in d.items() if k in keys}
 
-def map_dict(d, func):
+def map_dict(d, func, on_keys=False):
     """ maps each value of d to func(d) """
+    if on_keys:
+        return {func(k): v for k, v in d.items()}
     return {k: func(v) for k, v in d.items()}
 
 def show_dict(d):

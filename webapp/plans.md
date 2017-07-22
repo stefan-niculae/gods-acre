@@ -141,6 +141,4 @@
 
 - care sa fie valoarea implicita pt tipul unei constructii?
 
-  > acum este bordura
-  >
-  > sa punem un nou tip, "necunoscut" in schimb?
+  > acum este nimic

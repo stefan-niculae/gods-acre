@@ -10,7 +10,7 @@ import pandas as pd
 from dateutil.parser import parse
 from datetime import datetime
 
-from .models import Spot, Operation, Deed, OwnershipReceipt, Owner
+from .models import Spot, Operation, Deed, OwnershipReceipt, Owner, Construction, Authorization, Company
 from .utils import title_case, year_shorthand_to_full, reverse_dict, filter_dict, show_dict, map_dict, parse_nr_year, \
     keep_only
 
@@ -20,7 +20,10 @@ logger = logging.getLogger(__name__)
 
 def natural_getsert(model) -> Callable:  # takes a django model
     """ getsert = get or insert; natural = using natural key """
-    def handler(identifier: str):  # returns an entity
+    def handler(identifier: Optional[str]):  # returns an entity
+        if identifier is None:
+            return None
+
         # prepare the natural key into a dict that can be passed to __init__
         natural_key = model.objects.prepare_natural_key(identifier)
 
@@ -34,6 +37,25 @@ def natural_getsert(model) -> Callable:  # takes a django model
         return entity
 
     return handler
+
+
+def relational_get(model, fields: Dict, relational_keys: [str]):
+    try:
+        query_fields = {(k + '__in' if k in relational_keys else k): v for k, v in fields.items()}
+        entities = model.objects.filter(**query_fields)
+    except Exception:
+        raise ValueError(f'Filter by {{{show_dict(fields)}}}')
+
+    if len(entities) != 1:  # don't use get as it throws an error on multiple matches, but it is in fact not an error
+        return None
+
+    entity = entities[0]
+    lengths_equal = all(getattr(entity, f).count() == len(fields[f]) for f in fields)  # __in can return partials
+    if not lengths_equal:
+        return None
+
+    return entity
+
 
 def multiple(single_parser: Callable, separator: str=',', required=False) -> Callable:
     """ makes a parser that works on a single element work on a list of elements, split by a separator """
@@ -153,19 +175,19 @@ def prepare_deed_fields(parsed_fields: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 ModelMetadata = namedtuple('ModelMetadata',
-                           'model sheet_name column_renames field_parsers '
-                           'prepare_fields non_identifying_fields relational_fields')
+                           'model sheet_name column_renames field_parsers prepare_fields '
+                           'identifying_fields relational_fields')
 """
     model (django.db.models.Model): class of the resulting object
     sheet_name (str): excel sheet name
     column_renames (dict<str: str>): code_field_name: excel_column_name
     field_parsers (dict<str: str -> Any>): type of the field - an entry for a field takes the cell content and 
         produces a value (eg: title-cased name, spot object from its textual representation)
-    non_identifying_fields ([str]): fields that should not be present in `get_or_create` args, instead in defaults kwarg
-        eg: address for Owner
+    identifying_fields ([str]): fields that should be present in `get_or_create` args, others instead in defaults kwarg
+        eg: name Owner (but not address or phone)
     prepare_fields (dict<str: Any> -> dict<str: Any>): change the fields values/keys to fit the model's __init__ -
         takes dict of {input_field: parsed_value} and transforms it into {model_field: value} (eg: combine values and
-        receipt_identifiers into receipts or split deed_identifier into number and year) 
+        receipt_identifiers into receipts or split deed_identifier into number and year)
     relational_fields ([str]): fields that need to be assigned after a the object received its pk (eg: owners for deed)
 """
 
@@ -178,6 +200,11 @@ deed_cancel_reason_translations = {
     'proprietar decedat': Deed.OWNER_DEAD,
     'donat':              Deed.DONATED,
     'pierdut':            Deed.LOST,
+}
+
+construction_type_translations = {
+    'cavou':   Construction.TOMB,
+    'bordura': Construction.BORDER,
 }
 
 MODELS_METADATA = [
@@ -196,11 +223,11 @@ MODELS_METADATA = [
           'note': as_is,
           'spot': natural_getsert(Spot),
           'name': title_case,
-          'date': parse_date
+          'date': parse_date,
         },
         prepare_fields=as_is,
-        non_identifying_fields=['note'],
-        relational_fields=[],
+        identifying_fields={'type', 'name', 'spot', 'date'},
+        relational_fields=set(),
     ),
 
     ModelMetadata(
@@ -212,7 +239,7 @@ MODELS_METADATA = [
             'receipt_ids':   'Chitante',
             'values':        'Valori',
             'owners':        'Proprietari',
-            'cancel_reason': 'Motiv anulare'
+            'cancel_reason': 'Motiv anulare',
         },
         field_parsers={
             'deed_id':       parse_nr_year,
@@ -220,11 +247,11 @@ MODELS_METADATA = [
             'receipt_ids':   multiple(parse_nr_year),
             'values':        multiple(float),
             'owners':        multiple(natural_getsert(Owner)),
-            'cancel_reason': translate(deed_cancel_reason_translations)
+            'cancel_reason': translate(deed_cancel_reason_translations),
         },
         prepare_fields=prepare_deed_fields,
-        non_identifying_fields=[],
-        relational_fields=['spots', 'owners', 'receipts'],
+        identifying_fields={'number', 'year'},
+        relational_fields={'spots', 'owners', 'receipts'},
     ),
 
     ModelMetadata(
@@ -233,7 +260,7 @@ MODELS_METADATA = [
         column_renames={
             'name':     'Nume',
             'phone':    'Telefon',
-            'address':  'Adresa'
+            'address':  'Adresa',
         },
         field_parsers={
             'name':     title_case,
@@ -241,8 +268,30 @@ MODELS_METADATA = [
             'address':  title_case,
         },
         prepare_fields=as_is,
-        non_identifying_fields=['phone', 'address'],
-        relational_fields=[],
+        identifying_fields={'name'},
+        relational_fields=set(),
+    ),
+
+    ModelMetadata(
+        model=Construction,
+        sheet_name='Constructii',
+        column_renames={
+            'type':           'Tip',
+            'spots':          'Locuri veci',
+            'authorizations': 'Autorizatii',
+            'owner_builder':  'Constructor proprietar',
+            'company':        'Companie',
+        },
+        field_parsers={
+            'type':           translate(construction_type_translations),
+            'spots':          multiple(natural_getsert(Spot), required=True),
+            'authorizations': multiple(natural_getsert(Authorization)),
+            'owner_builder':  natural_getsert(Owner),
+            'company':        natural_getsert(Company),
+        },
+        prepare_fields=as_is,
+        identifying_fields={'type', 'spots'},
+        relational_fields={'spots', 'authorizations', 'company', 'owner_builder'}
     )
 
 ]
@@ -255,7 +304,8 @@ RowFeedback = namedtuple('RowFeedback', 'status info additional')
 """
 
 def parse_row(row, metadata) -> Tuple[str, str, str]:
-    model_name = metadata.model.__name__
+    model = metadata.model
+    model_name = model.__name__
 
     # 1. parse fields
     parsed_fields = {}
@@ -276,12 +326,28 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
     # 3. use the prepared fields to build the model
     try:
         # create the entity (if it doesn't already exist)
-        fields_for_init = filter_dict(prepared_fields, metadata.relational_fields, inverse=True)
-        non_identif = filter_dict(prepared_fields, metadata.non_identifying_fields, inverse=False)
-        identifying = filter_dict(prepared_fields, metadata.non_identifying_fields, inverse=True)
-        entity, created_now = metadata.model.objects.get_or_create(**identifying, defaults=non_identif)
+        identif_rel = metadata.identifying_fields & metadata.relational_fields  # identifying and relational
+        identif_items = filter_dict(prepared_fields, metadata.identifying_fields)
+        identif_non_rel_items = filter_dict(identif_items, metadata.relational_fields, inverse=True)
+
+        if not identif_rel:
+            # non identifiable and non relational
+            safe_defaults = filter_dict(prepared_fields,
+                                        metadata.identifying_fields | metadata.relational_fields, inverse=True)
+            entity, created_now  = model.objects.get_or_create(**identif_items, defaults=safe_defaults)
+
+        else:  # model has identifying and relational fields
+            identif_rel_items = filter_dict(prepared_fields, identif_rel)
+            entity = relational_get(model, identif_rel_items, metadata.relational_fields)
+            if not entity:  # there is not an entity that matches exactly the relational fields
+                entity = model(**identif_non_rel_items)
+                entity.save()
+                created_now = True
+            else:
+                created_now = False
+
     except Exception as error:
-        info = f'Get/create {model_name} with init {{{show_dict(fields_for_init)}}}'
+        info = f'Get/create {model_name} with init {{{show_dict(identif_items)}}}'
         return 'fail', info, repr(error)
 
     if not created_now:  # entity already existed
@@ -289,7 +355,7 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
             try:
                 setattr(entity, field, value)
             except Exception as error:
-                info = f'Update on duplicate "{field}": value'
+                info = f'Update on duplicate "{field}": {{value}}'
                 return 'fail', info, repr(error)
 
         try:
@@ -297,14 +363,13 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
         except Exception as error:
             info = f'Save after updating fields on found-duplicate {entity}'
             return 'fail', info, repr(error)
-
         return 'duplicate', model_name, entity
 
     # 4. save the entity
     try:
         entity.save()
     except Exception as error:
-        info = f'Save {metadata.model.__name}: {entity}'  # TODO check if this provides enough info
+        info = f'Save {model_name}: {entity}'  # TODO check if this provides enough info
         return 'fail', info, repr(error)
 
     # 5. set relational fields

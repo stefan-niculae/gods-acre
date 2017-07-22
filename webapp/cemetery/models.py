@@ -3,6 +3,7 @@ from typing import Optional, Dict
 
 from django.db.models import Model, ForeignKey, TextField, IntegerField, CharField, \
     ManyToManyField, FloatField, BooleanField, DateField, Sum, Max, Manager
+from django.core.exceptions import ValidationError
 
 from .validators import name_validator
 from .utils import display_head_tail_summary, parse_nr_year, title_case, initials
@@ -309,6 +310,15 @@ class Operation(Annotatable):
 Constructions
 """
 
+class CompanyManager(Manager):
+    @staticmethod
+    def prepare_natural_key(identifier: str) -> Dict[str, str]:
+        name = title_case(identifier)
+        return {'name': name}
+
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
+
 class Company(Model):
     """
     Construction company
@@ -316,6 +326,11 @@ class Company(Model):
     # No title-casing or restricting characters,
     # this is not a person's name, a company can be written in any way
     name = CharField(max_length=250, unique=True)
+
+    objects = CompanyManager()
+
+    def natural_key(self):
+        return self.name
 
     def __str__(self):
         return self.name
@@ -332,12 +347,21 @@ class Construction(Model):
         (TOMB,   'tomb'),
         (BORDER, 'border')
     ]
+    TYPE_SYMBOLS = {
+        TOMB:   'T',
+        BORDER: 'B',
+        None:   '?',
+    }
     # TODO warn if there is already a construction on the same spot
-    type          = CharField(max_length=1, choices=TYPE_CHOICES)
+    type          = CharField(max_length=1, choices=TYPE_CHOICES, **optional)
     spots         = ManyToManyField(Spot)
     company       = ForeignKey(Company, **optional)
     owner_builder = ForeignKey(Owner,   **optional)
     # TODO warn if owner entered is not one in spots.deeds.owners
+
+    def clean(self):
+        if not self.company and not self.owner_builder:
+            raise ValidationError('You must specify at least one of company or owner builder')
 
     class Meta:
         default_related_name = 'constructions'
@@ -346,8 +370,11 @@ class Construction(Model):
         ordering = ['type']  # TODO spots to ordering?
 
     def __str__(self):
-        [first_spot], more = display_head_tail_summary(self.spots.all(), head_length=1)
-        return f'{self.type.upper()} on {first_spot} {more}'
+        if not self.spots:
+            first_spot, more = '?', ''
+        else:
+            [first_spot], more = display_head_tail_summary(self.spots.all(), head_length=1)
+        return f'{Construction.TYPE_SYMBOLS[self.type]} on {first_spot}{more}'
 
     @property
     def authorization_spots(self):
