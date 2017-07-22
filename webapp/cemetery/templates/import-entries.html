@@ -9,70 +9,70 @@
   {% endblock %}
 
   {% block extrahead %}
-    {# FIXME not imported #}
-    <script type="text/javascript" href="{% static 'admin-extra.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin-extra.js' %}"></script>
   {% endblock %}
 
   {% block content %}
     <h2>Import entries</h2>
     <p>See documentation for expected sheets, columns and values</p>
 
-    {% if form.errors %}
-      {# TODO style this #}
-      <p style="color: red">
-        Please correct the error{{ form.errors|pluralize }} below.
-      </p>
-    {% endif %}
-
     <form action="" enctype="multipart/form-data"  method="post">
-      {{ form.as_p }}
       {% csrf_token %}
-      <input type="submit" value="Submit">
+      {{ form.file }} <input type="submit" value="Submit">
     </form>
+
     <section id="parsing-results">
       <h2>Parsing results</h2>
+
       {% if not sheet_feedbacks %}
         Parsing feedback (error/success for each row) will appear here after submitting the excel file.
       {% else %}
 
-        Rows with an error or already existing are skipped.
+        {# Rows with an error or already existing are skipped. #}
+
+        <ul class="changeform-tabs">
+        {% for sheet_name, row_feedbacks in sheet_feedbacks.items %}
+          <li class="changeform-tabs-item {% if forloop.first %}selected{% endif %}">
+            <a href="#">{{ sheet_name }}</a>
+          </li>
+        {% endfor %}
 
         {% for sheet_name, row_feedbacks in sheet_feedbacks.items %}
-          <h3>{{ sheet_name }}</h3>
-          {% with counts|get_item:sheet_name as sheet_counts %}
-            {% for status, count in sheet_counts.items %}
-              <div class="status-toggler">
-                <input type="checkbox" name="{{ sheet_name }}-{{ status }}" checked>
-                <span class="status-{{ status }}">{{ count }} {{ status }}</span>
-              </div>
-            {% endfor %}
-          {% endwith %}
-
-          {# TODO three checkboxes (initially checked) for show errors | warnings | sucesses, only unsolved #}
-          {# TODO when a 'solved' checkbox is checked, apply strikethrough for the whole row #}
-          <table class="hoverable-rows">
-            <thead>
-              <tr>
-                <th title="Row number in the original excel document">Row</th>
-                <th title="The result of parsing the row">Status</th>
-                <th title="Additional information based on parsing status">Info</th>
-                <th title="Technical information">Additional Info</th>
-                <th title="No impact on the system except. Used to help you remember which errors you have already solved">Solved</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for feedback in row_feedbacks %}
-                <tr>
-                  <td>{{ forloop.counter|add:1}}</td>  {# first row is for headers, data starts at 2 #}
-                  <td class="status-{{ feedback.status }}">{{ feedback.status }}</td>
-                  <td>{{ feedback.info }}</td>
-                  <td>{{ feedback.additional }}</td>
-                  <td><input type="checkbox" name="{{ sheet_name }}-{{ forloop.counter|add:1 }}"></td>
-                </tr>
+          <fieldset class="module {% if forloop.first %}selected{% endif %}">
+            {% with counts|get_item:sheet_name as sheet_counts %}
+              {% for status, count in sheet_counts.items %}
+                <div class="status-toggler">
+{#                  <input type="checkbox" name="{{ sheet_name }}-{{ status }}" checked>#}
+                  <span class="status-{{ status }}"><span class="count">{{ count }}</span> {{ status }}</span>
+                </div>
               {% endfor %}
-            </tbody>
-          </table>
+            {% endwith %}
+
+            <table class="hoverable-rows">
+              <thead>
+                <tr>
+                  <th title="Row number in the original excel document">Row</th>
+                  <th title="The result of parsing the row">Status</th>
+                  <th title="Additional information based on parsing status">Info</th>
+                  <th title="Technical information">Additional Info</th>
+{#                  <th title="No impact on the system except. Used to help you remember which errors you have already solved">Solved</th>#}
+                </tr>
+              </thead>
+              <tbody>
+                {% for feedback in row_feedbacks %}
+                  <tr>
+                    <td>{{ forloop.counter|add:1}}</td>  {# first row is for headers, data starts at 2 #}
+                    <td class="status-{{ feedback.status }}">{{ feedback.status }}</td>
+                    <td>{{ feedback.info }}</td>
+                    <td>{{ feedback.additional }}</td>
+{#                    <td><input type="checkbox" name="{{ sheet_name }}-{{ forloop.counter|add:1 }}"></td>#}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </fieldset>
         {% endfor %}
+        </ul>
 
       {% endif %}
 

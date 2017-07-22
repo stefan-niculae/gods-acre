@@ -14,3 +14,19 @@
   color: darkgreen;
 }
 
+#parsing-results table {
+  width: 100%;
+}
+
+#parsing-results .changeform-tabs .module.selected {
+  display: inherit;
+}
+
+#parsing-results .changeform-tabs .module {
+  display: none;
+}
+
+#parsing-results .status-toggler .count {
+  width: 20px;
+  display: inline-block;
+}
