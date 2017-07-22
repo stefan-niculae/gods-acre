@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 from datetime import datetime
 
 from django.core.urlresolvers import reverse
@@ -220,6 +220,27 @@ def filter_dict(d, keys, inverse):
 
 def show_dict(d):
     return ', '.join(f'{k}: {v}' for k, v in d.items())
+
+
+def parse_nr_year(identifier: str) -> Tuple[int, int]:
+    """
+    >>> parse_nr_year('1/17')
+    1, 2017
+
+    >>> parse_nr_year('10/17')
+    10, 2017
+
+    >>> parse_nr_year('10/2017')
+    10, 2017
+
+    >>> parse_nr_year('10/94')
+    1, 1994
+
+    >>> parse_nr_year('10/1994')
+    1, 1994
+    """
+    number, year = identifier.split('/')
+    return int(number), year_shorthand_to_full(year)
 
 
 if __name__ == '__main__':

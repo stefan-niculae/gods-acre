@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 from dateutil.parser import parse
 from datetime import datetime
-from django.db.utils import IntegrityError
 
 from .models import Spot, Operation, Deed, OwnershipReceipt, Owner
 from .utils import title_case, year_shorthand_to_full, reverse_dict, filter_dict, show_dict
@@ -17,62 +16,19 @@ from .utils import title_case, year_shorthand_to_full, reverse_dict, filter_dict
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+def natural_getsert(model):
+    """ getsert = get or insert; natural = using natural key """
+    def get_or_create_by_natural_key(*args, **kwargs):
+        try:
+            # retrieve by natural key
+            entity = model.objects.get_by_natural_key(*args, **kwargs)
+        except model.DoesNotExist:
+            # create if it doesn't exist
+            entity = model(*args, **kwargs)
+            entity.save()
+        return entity
 
-def parse_nr_year(identifier: str) -> Tuple[int, int]:
-    """
-    >>> parse_nr_year('1/17')
-    1, 2017
-
-    >>> parse_nr_year('10/17')
-    10, 2017
-
-    >>> parse_nr_year('10/2017')
-    10, 2017
-
-    >>> parse_nr_year('10/94')
-    1, 1994
-
-    >>> parse_nr_year('10/1994')
-    1, 1994
-    """
-    number, year = identifier.split('/')
-    return int(number), year_shorthand_to_full(year)
-
-
-def get_or_create_spot(identifier: str):
-    identifier = identifier.strip().upper()
-    parcel, row, column = identifier.split('-')
-
-    try:
-        # retrieve by natural key
-        return Spot.objects.get_by_natural_key(parcel, row, column)
-    except Spot.DoesNotExist:
-        # create if it doesn't exist
-        spot = Spot(parcel=parcel, row=row, column=column)
-        spot.save()
-        return spot
-
-def get_or_create_ownership_receipt(identifier: str, value: Union[str, float]):
-    number, year = parse_nr_year(identifier)
-
-    try:
-        return OwnershipReceipt.objects.get_by_natural_key(number, year)
-    except OwnershipReceipt.DoesNotExist:
-        receipt = OwnershipReceipt(number=number, year=year, value=value)
-        receipt.save()
-        return receipt
-
-
-def get_or_create_owner(name: str):
-    # TODO: dry get_or_create_by_natural_key?
-    name = title_case(name)
-    try:
-        return Owner.objects.get_by_natural_key(name=name)
-    except Owner.DoesNotExist:
-        owner = Owner(name=name)
-        owner.save()
-        return owner
-
+    return get_or_create_by_natural_key
 
 def parse_date(arg) -> Optional[datetime]:
     """
@@ -164,108 +120,84 @@ def as_is(x):
     return x
 
 
-def parse_operation(df: pd.DataFrame):
-    n_successful = 0
-
-    for index, row in df.iterrows():
-
-        # TODO DRY message system, show to user the rows that couldn't be converted on import page
-
-        # create the entity (if it doesn't already exist)
-        try:
-            operation, created_now = Operation.objects.get_or_create(
-                type=type_, name=name, spot=spot, date=date, note=note)
-
-            if created_now:
-                operation.save()
-                logger.info(f'Successfully saved operation <{operation}>.')
-            else:
-                logger.debug(f'Operation already existed <{operation}>.')
-            n_successful += 1
-        except IntegrityError:
-            logger.warning(f'Failed to save operation. Skipping: \n{row}', exc_info=True)
-            continue
-
-    return n_successful
-
-
-def parse_deed(df: pd.DataFrame):
-    n_successful = 0
-
-    df.cancel_reason.rename({
-        'donat':              Deed.DONATED,
-        'proprietar decedat': Deed.OWNER_DEAD,
-        'pierdut':            Deed.LOST,
-    }, inplace=True)
-
-    for index, row in df.iterrows():
-        cancel_reason = row.cancel_reason
-
-        try:
-            number, year = parse_nr_year(row.deed)
-        except (AttributeError, TypeError):
-            logger.warning(f'{index} couldnt parse nr/yr {row.deed}')
-            continue
-        spots = map(get_or_create_spot, row.spots.split(','))
-
-        # TODO surround with try/catch
-        if row.receipts is None:
-            receipt_identifiers = []
-        else:
-            try:
-                receipt_identifiers = row.receipts.split(',')
-            except AttributeError:
-                logger.warning(f'{index} couldnt parse receipt identifiers {row.receipts}')
-                continue
-
-        if row.values_ is None:
-            values = []
-        else:
-            values = str(row.values_).split(',')
-
-        if len(receipt_identifiers) > 0 or len(values) > 0:
-            receipt_tuples = zip_longest(receipt_identifiers, values)
-        else:
-            receipt_tuples = []
-        receipts = map(get_or_create_ownership_receipt, list(receipt_tuples))
-
-        # TODO surround with try/catch
-        if row.owners is None:
-            owners = []
-        else:
-            owners = map(get_or_create_owner, row.owners.split(','))
-
-        # TODO DRY
-        try:
-            # print(number, year, list(spots), cancel_reason, list(receipts), list(owners), sep='\n'+'>'*5)
-            deed, created_now = Deed.objects.get_or_create(
-                number=number, year=year, cancel_reason=cancel_reason)
-
-            if created_now:
-                deed.spots = spots
-                deed.receipts = receipts
-                deed.owners = owners
-                deed.save()
-                logger.info(f'Successfully saved deed <{deed}>.')
-
-                n_successful += 1
-            else:
-                logger.info(f'Deed already existed <{deed}>.')
-        except:
-            logger.warning(f'{index} Failed to save deed. Skipping: \n{row}', exc_info=True)
-            continue
-
-    return n_successful
+# def parse_deed(df: pd.DataFrame):
+#     n_successful = 0
+#
+#     df.cancel_reason.rename({
+#         'donat':              Deed.DONATED,
+#         'proprietar decedat': Deed.OWNER_DEAD,
+#         'pierdut':            Deed.LOST,
+#     }, inplace=True)
+#
+#     for index, row in df.iterrows():
+#         cancel_reason = row.cancel_reason
+#
+#         try:
+#             number, year = parse_nr_year(row.deed)
+#         except (AttributeError, TypeError):
+#             logger.warning(f'{index} couldnt parse nr/yr {row.deed}')
+#             continue
+#         spots = map(get_or_create_spot, row.spots.split(','))
+#
+#         # TODO surround with try/catch
+#         if row.receipts is None:
+#             receipt_identifiers = []
+#         else:
+#             try:
+#                 receipt_identifiers = row.receipts.split(',')
+#             except AttributeError:
+#                 logger.warning(f'{index} couldnt parse receipt identifiers {row.receipts}')
+#                 continue
+#
+#         if row.values_ is None:
+#             values = []
+#         else:
+#             values = str(row.values_).split(',')
+#
+#         if len(receipt_identifiers) > 0 or len(values) > 0:
+#             receipt_tuples = zip_longest(receipt_identifiers, values)
+#         else:
+#             receipt_tuples = []
+#         receipts = map(get_or_create_ownership_receipt, list(receipt_tuples))
+#
+#         # TODO surround with try/catch
+#         if row.owners is None:
+#             owners = []
+#         else:
+#             owners = map(get_or_create_owner, row.owners.split(','))
+#
+#         # TODO DRY
+#         try:
+#             # print(number, year, list(spots), cancel_reason, list(receipts), list(owners), sep='\n'+'>'*5)
+#             deed, created_now = Deed.objects.get_or_create(
+#                 number=number, year=year, cancel_reason=cancel_reason)
+#
+#             if created_now:
+#                 deed.spots = spots
+#                 deed.receipts = receipts
+#                 deed.owners = owners
+#                 deed.save()
+#                 logger.info(f'Successfully saved deed <{deed}>.')
+#
+#                 n_successful += 1
+#             else:
+#                 logger.info(f'Deed already existed <{deed}>.')
+#         except:
+#             logger.warning(f'{index} Failed to save deed. Skipping: \n{row}', exc_info=True)
+#             continue
+#
+#     return n_successful
 
 
-ModelMetadata = namedtuple('ModelMetadata', 'sheet_name column_renames field_parsers prepare_fields post_save_fields')
+ModelMetadata = namedtuple('ModelMetadata',
+                           'model sheet_name column_renames field_parsers prepare_fields relational_fields')
 """
-    model: django.db.models.Model (class of the resulting object)
-    sheet_name: str (excel sheet name)
-    column_renames: dict<str: str> (code_field_name: excel_column_name)
-    field_parsers:  dict<str: str -> Any> (the type of the field)
-    prepare_fields: dict<str: Any> -> dict<str: Any> (how to change the fields values/keys to fit the model's __init__)
-    post_save_fields: [str] (fields that need to be assigned after a the object received its pk)
+    model (django.db.models.Model): class of the resulting object
+    sheet_name (str): excel sheet name
+    column_renames (dict<str: str>): code_field_name: excel_column_name
+    field_parsers (dict<str: str -> Any>): type of the field
+    prepare_fields (dict<str: Any> -> dict<str: Any>): how to change the fields values/keys to fit the model's __init__
+    relational_fields ([str]): fields that need to be assigned after a the object received its pk
 """
 
 #
@@ -299,93 +231,84 @@ MODELS_METADATA = [
         field_parsers={
           'type': parse_operation_type,
           'note': as_is,
-          'spot': get_or_create_spot,
+          'spot': natural_getsert(Spot),
           'name': title_case,
           'date': parse_date
         },
         prepare_fields=as_is,
-        post_save_fields=[],
+        relational_fields=[],
     )
 
     # payment
     # maintenance
 ]
 
+RowFeedback = namedtuple('RowFeedback', 'status info additional')
+"""
+    status (str):       fail            | add           | exist
+    info (str):         failure cause   | model name    | model name
+    additional (str):   exception       | model repr    | model repr
+"""
+
+def parse_row(row, metadata) -> Tuple[str, str, str]:
+    model_name = metadata.model.__name__
+
+    # 1. parse fields
+    parsed_fields = {}
+    for field, parser in metadata.field_parsers.items():
+        try:
+            parsed_fields[field] = parser(row[field])
+        except Exception as error:
+            info = f'Parse column "{field}": {row[field]}'
+            return 'fail', info, repr(error)  # repr instead of str to get the exception type as well
+
+    # 2. prepare the parsed fields
+    try:
+        prepared_fields = metadata.prepare_fields(parsed_fields)
+    except Exception as error:
+        info = f'Prepare the parsed fields {show_dict(parsed_fields)}'
+        return 'fail', info, repr(error)
+
+    # 3. use the prepared fields to build the model
+    try:
+        # create the entity (if it doesn't already exist)
+        fields_for_init = filter_dict(prepared_fields, metadata.relational_fields, inverse=True)
+        entity, created_now = metadata.model.objects.get_or_create(**fields_for_init)
+    except Exception as error:
+        info = f'Get/create {model_name} with init {{{show_dict(fields_for_init)}}}'
+        return 'fail', info, repr(error)
+
+    if not created_now:  # entity already existed
+        return 'exist', model_name, entity
+
+    # 4. save the entity
+    try:
+        entity.save()
+    except Exception as error:
+        info = f'Save {metadata.model.__name}: {entity}'  # TODO check if this provides enough info
+        return 'fail', info, repr(error)
+
+    # 5. set relational fields
+    for field in metadata.relational_fields:
+        try:
+            setattr(entity, field, prepared_fields[field])
+        except Exception as error:
+            info = f'Add field {field} ({prepared_fields[field]}) post save'
+            return 'fail', info, repr(error)
+
+    # finally success
+    return 'add', model_name, entity
+
+
+def parse_sheet(file, metadata) -> [RowFeedback]:
+    sheet = pd.read_excel(file, sheetname=metadata.sheet_name)
+    sheet = sheet.rename(columns=reverse_dict(metadata.column_renames))  # translate
+    sheet = sheet.replace({np.nan: None})  # mostly not numerical data: None is easier to work with
+
+    return [RowFeedback(*parse_row(row, metadata)) for _, row in sheet.iterrows()]
 
 def parse_file(file):
-
-    for metadata in MODELS_METADATA:
-        sheet = pd.read_excel(file, sheetname=metadata.sheet_name)
-        sheet = sheet.rename(columns=reverse_dict(metadata.column_renames))  # translate
-        sheet = sheet.replace({np.nan: None})  # mostly not numerical data: None is easier to work with
-
-        for index, row in sheet.iterrows():
-            print(f'Parsing sheet {metadata.sheet_name}')
-
-            # 1. parse fields
-            parsed_fields = {}
-            for field, parser in metadata.field_parsers.items():
-                try:
-                    parsed_fields[field] = parser(row[field])
-                except Exception as e:
-                    # TODO dry exception
-                    # TODO sent to front-end
-                    print(f'[Row {index + 2}] failed to parse column "{metadata.column_renames(field)}" ({field}). '
-                          f'Error was {type(e).__name__}: {str(e)}. '
-                          f'Skipping row'
-                          )
-                    continue  # TODO continue outer loop
-
-            # 2. prepare the parsed fields
-            try:
-                prepared_fields = metadata.prepare_fields(parsed_fields)
-            except Exception as e:
-                print(f'[Row {index + 2}] failed to prepare the parsed fields {show_dict(parsed_fields)}. ' 
-                      f'Error was {type(e).__name__}: {str(e)}. '
-                      f'Skipping row'
-                      )
-                continue
-
-            # 3. use the prepared fields to build the model
-            try:
-                # create the entity (if it doesn't already exist)
-                fields_for_init = filter_dict(prepared_fields, metadata.post_save_fields, inverse=True)
-                entity, created_now = metadata.model.objects.get_or_create(**fields_for_init)
-            except Exception as e:
-                print(f'[Row {index + 2}] failed to get/create {metadata.model.__name__} with init {show_dict(fields_for_init)}. '
-                      f'Error was {type(e).__name__}: {str(e)}. '
-                      f'Skipping row'
-                      )
-                continue
-
-            if created_now:
-                try:
-                    entity.save()
-                except Exception as e:
-                    print(
-                        f'[Row {index + 2}] failed to save {entity}. '  # TODO check if this provides enough info
-                        f'Error was {type(e).__name__}: {str(e)}. '
-                        f'Skipping row'
-                        )
-
-                for field in metadata.post_save_fields:
-                    try:
-                        setattr(entity, field, prepared_fields[field])
-                    except Exception as e:
-                        print(
-                            f'[Row {index + 2}] failed add field {field} ({prepared_fields[field]}) post save'
-                            f'Error was {type(e).__name__}: {str(e)}. '
-                            f'Skipping row'
-                            )
-                        continue
-
-                print(f'[Row {index + 2}] successfully added: {entity}')
-            else:
-                print(f'[Row {index + 2}] {metadata.model.__name__} already existed: {entity}')
-
-        print(f'Done parsing sheet {metadata.sheet_name}')
-
-    return -1, -1
+    return {metadata.sheet_name: parse_sheet(file, metadata) for metadata in MODELS_METADATA}
 
 
 if __name__ == '__main__':

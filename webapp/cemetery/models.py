@@ -5,7 +5,7 @@ from django.db.models import Model, ForeignKey, TextField, IntegerField, CharFie
     ManyToManyField, FloatField, BooleanField, DateField, Sum, Max, Manager
 
 from .validators import name_validator
-from .utils import display_head_tail_summary
+from .utils import display_head_tail_summary, parse_nr_year, title_case
 
 """
 Mixins
@@ -18,7 +18,11 @@ class Annotatable(Model):
         abstract = True
 
 class NrYearManager(Manager):
-    def get_by_natural_key(self, number, year):
+    def get_by_natural_key(self, *args):
+        if len(args) == 1:
+            number, year = parse_nr_year(args[0])
+        else:
+            number, year = args
         return self.get(number=number, year=year)
 
 class NrYear(Model):
@@ -48,7 +52,12 @@ Spot - the central entity
 """
 
 class SpotManager(Manager):
-    def get_by_natural_key(self, parcel, row, column):
+    def get_by_natural_key(self, *args):
+        if len(args) == 1:
+            parcel, row, column = args[0].strip().split('-')
+        else:
+            parcel, row, column = args
+
         return self.get(parcel=parcel.upper(),
                         row=row.upper(),
                         column=column.upper())
@@ -220,7 +229,7 @@ class OwnershipReceipt(NrYear):
 class OwnerManager(Manager):
     # TODO is the name enough to uniquely identify an owner?
     def get_by_natural_key(self, name):
-        return self.get(name=name)
+        return self.get(name=title_case(name))
 
 class Owner(Model):
     name    = CharField(max_length=100, unique=True, validators=[name_validator])
@@ -263,7 +272,7 @@ class Operation(Annotatable):
     ]
     type = CharField(max_length=1, choices=TYPE_CHOICES, default=BURIAL)
     # TODO warning if exhumation is not the same as one buried
-    name = CharField(max_length=100, validators=[name_validator])
+    name = CharField(max_length=100, validators=[name_validator], null=True, blank=True)  # TODO what to display in admin when missing
     spot = ForeignKey(Spot, related_name='operations')
     date = DateField(default=date.today)  # TODO warn if date is too far from current
 
@@ -273,7 +282,11 @@ class Operation(Annotatable):
         ordering = ['date', 'spot']
 
     def __str__(self):
-        return f"{self.type.upper()}: {self.spot} in '{self.date:%y}"
+        short_type = {
+            'b': 'bur',
+            'e': 'exh',
+        }
+        return f"{short_type[self.type]} on {self.spot} in '{self.date:%y}"
 
 
 """

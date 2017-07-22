@@ -1,0 +1,16 @@
+.hoverable-rows tr:hover {
+  background-color: lightblue;
+}
+
+.status-fail {
+  color: darkred;
+}
+
+.status-exist {
+  color: darkorange;
+}
+
+.status-add {
+  color: darkgreen;
+}
+
