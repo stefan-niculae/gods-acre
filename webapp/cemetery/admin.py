@@ -127,14 +127,15 @@ class DeedAdmin(ModelAdmin):
     # TODO date hierarchy by date added?
     # date_hierarchy = 'pseudo_date'
 
+    list_filter = rev(['number', 'year', 'cancel_reason',
+                       'spots', 'spots__parcel', 'spots__row', 'spots__column',
+                       'owners',
+                       'receipts'])
+
     search_fields = ['number', 'year', 'cancel_reason',
                      'spots__parcel', 'spots__row', 'spots__column',
                      'owners__name',
                      'receipts__number', 'receipts__year']
-
-    list_filter = rev(['number', 'year', 'cancel_reason',
-                       'spots__parcel', 'spots__row', 'spots__column',
-                       'spots', 'owners', 'receipts'])
 
     inlines = [OwnershipReceiptInline]
 
@@ -162,12 +163,13 @@ class OwnershipReceiptAdmin(ModelAdmin):
     list_display = ['__str__', 'number', 'year', 'value',
                     'display_deed', 'display_spots', 'display_owners']
 
+    list_filter = rev(['number', 'year', 'value',
+                       'deed',
+                       'deed__spots', 'deed__spots__parcel', 'deed__spots__row', 'deed__spots__column'])
+
     search_fields = ['number', 'year', 'value',
                      'deed__year', 'deed__number',
                      'deed__spots__parcel', 'deed__spots__row', 'deed__spots__column']
-
-    list_filter = rev(['number', 'year', 'value',
-                       'deed', 'deed__spots'])
 
     def get_queryset(self, request):
         # http://stackoverflow.com/questions/2168475/django-admin-how-to-sort-by-one-of-the-custom-list-display-fields-that-has-no-d
@@ -194,14 +196,17 @@ class OwnershipReceiptAdmin(ModelAdmin):
 @register(Owner)
 class OwnerAdmin(ModelAdmin):
     list_display = ['name', 'display_phone', 'display_address',
-                    'display_deeds', 'display_receipts', 'display_spots']
+                    'display_deeds', 'display_receipts', 'display_spots', 'display_constructions']
+
+    list_filter = rev(['name', 'phone', 'address',
+                       'deeds',
+                       'deeds__spots', 'deeds__spots__parcel', 'deeds__spots__row', 'deeds__spots__column',
+                       'constructions_built'])
 
     search_fields = ['name', 'phone', 'address',
                      'deeds__number', 'deeds__year',
-                     'deeds__spots__parcel', 'deeds__spots__row', 'deeds__spots__column']
-
-    list_filter = rev(['name', 'phone', 'address',
-                       'deeds', 'deeds__spots'])
+                     'deeds__spots__parcel', 'deeds__spots__row', 'deeds__spots__column',
+                     'constructions_built__type']
 
     form = OwnerForm
     inlines = [ConstructionInline]
@@ -210,7 +215,8 @@ class OwnerAdmin(ModelAdmin):
         qs = super(OwnerAdmin, self).get_queryset(request)
         return qs.annotate(first_deed=Min('deeds'),
                            first_receipt=Min('deeds__receipts'),
-                           first_spot=Min('deeds__spots'))
+                           first_spot=Min('deeds__spots'),
+                           first_construction=Min('constructions_built'))
 
     @short(desc='Phone', order='phone')
     def display_phone(self, owner):
@@ -233,6 +239,10 @@ class OwnerAdmin(ModelAdmin):
     @short(desc='Spots', order='first_spot', tags=True)
     def display_spots(self, owner):
         return display_head_links(owner.spots)
+
+    @short(desc='Built', order='first_construction', tags=True)
+    def display_constructions(self, owner):
+        return display_head_links(owner.constructions_built)
 
 
 """
@@ -275,6 +285,14 @@ Constructions
 class AuthorizationAdmin(ModelAdmin):
     list_display = ['__str__', 'number', 'year', 'display_spots', 'display_construction']
 
+    list_filter = rev(['number', 'year',
+                       'construction', 'construction__type',
+                       'spots', 'spots__parcel', 'spots__row', 'spots__column'])
+
+    search_fields = ['number', 'year',
+                     'construction__type',
+                     'spots__parcel', 'spots__row', 'spots__column']
+
     form = AuthorizationForm
 
     @short(desc='Spots', order='spots', tags=True)
@@ -290,11 +308,14 @@ class AuthorizationAdmin(ModelAdmin):
 class ConstructionAdmin(ModelAdmin):
     list_display = ['__str__', 'type', 'display_authorizations', 'display_spots', 'owner_builder', 'company']
 
-    search_fields = ['type', 'owner_builder__name', 'company__name',
-                     'authorizations__number', 'authorizations__year',
-                     'spots__parcel', 'spots__row', 'spots__column']
+    list_filter = rev(['type', 'owner_builder', 'company',
+                       'spots', 'spots__parcel', 'spots__row', 'spots__column',
+                       'authorizations'])
 
-    list_filter = rev(['type', 'authorizations', 'spots', 'owner_builder', 'company'])
+    search_fields = ['type', 'owner_builder__name', 'company__name',
+                     'spots__parcel', 'spots__row', 'spots__column'
+                     'authorizations__number', 'authorizations__year']
+
     # TODO! constructions for spots
     inlines = [AuthorizationInline]
 
@@ -311,12 +332,18 @@ class ConstructionAdmin(ModelAdmin):
 class CompanyAdmin(ModelAdmin):
     list_display = ['__str__', 'display_n_constructions', 'display_constructions']
 
+    list_filter = rev(['name',
+                       'constructions', 'constructions__type',
+                       'constructions__spots',
+                       'constructions__spots__parcel', 'constructions__spots__row', 'constructions__spots__column',
+                       'constructions__authorizations',
+                       # FIXME say "auth nr" instead of "number'
+                       'constructions__authorizations__number', 'constructions__authorizations__year'])
+
     search_fields = ['name',
                      'constructions__type',
-                     'constructions__spots__parcel', 'constructions__spots__row', 'constructions__spots__column']
-
-    list_filter = rev(['name',
-                       'constructions', 'constructions__type', 'constructions__spots'])
+                     'constructions__spots__parcel', 'constructions__spots__row', 'constructions__spots__column',
+                     'constructions__authorizations__number', 'constructions__authorizations__year']
 
     inlines = [ConstructionInline]
 

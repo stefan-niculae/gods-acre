@@ -354,7 +354,7 @@ class Construction(Model):
     type          = CharField(max_length=1, choices=TYPE_CHOICES, **optional)
     spots         = ManyToManyField(Spot)
     company       = ForeignKey(Company, **optional)
-    owner_builder = ForeignKey(Owner,   **optional)
+    owner_builder = ForeignKey(Owner,   **optional, related_name='constructions_built')
     # TODO warn if owner entered is not one in spots.deeds.owners
 
     def clean(self):
