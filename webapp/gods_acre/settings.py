@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 
 import os
 from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -148,38 +149,38 @@ ADMIN_REORDER = (
     'auth',
 
     # General
-    {'app': 'cemetery', 'label': 'General', 'models': [
-        'cemetery.Spot',
+    {'app': 'cemetery', 'label': _('General'), 'models': [
+        {'model': 'cemetery.Spot',              'label': _('Spots')},
     ]},
 
     # Ownership
-    {'app': 'cemetery', 'label': 'Ownership', 'models': [
-        'cemetery.Deed',
-        {'model': 'cemetery.OwnershipReceipt', 'label': 'Receipts'},
-        'cemetery.Owner',
+    {'app': 'cemetery', 'label': _('Ownership'), 'models': [
+        {'model': 'cemetery.Deed',              'label': pgettext_lazy('short', 'Deeds')},
+        {'model': 'cemetery.OwnershipReceipt',  'label': _('Receipts')},
+        {'model': 'cemetery.Owner',             'label': _('Owners')},
     ]},
 
     # Operations
-    {'app': 'cemetery', 'label': 'Operations', 'models': [
-        'cemetery.Operation',
+    {'app': 'cemetery', 'label': _('Burials'), 'models': [
+        {'model': 'cemetery.Operation',         'label': _('Operations')},
     ]},
 
     # Constructions
-    {'app': 'cemetery', 'label': 'Constructions', 'models': [
-        'cemetery.Construction',
-        'cemetery.Authorization',
-        {'model': 'cemetery.Company', 'label': 'Companies'}
+    {'app': 'cemetery', 'label': _('Constructions'), 'models': [
+        {'model': 'cemetery.Construction',      'label': _('Constructions')},
+        {'model': 'cemetery.Authorization',     'label': _('Authorizations')},
+        {'model': 'cemetery.Company',           'label': _('Companies')}
     ]},
 
     # Payments
-    {'app': 'cemetery', 'label': 'Payments', 'models': [
-        'cemetery.Payment',
-        {'model': 'cemetery.PaymentReceipt', 'label': 'Receipts'},
+    {'app': 'cemetery', 'label': _('Payments'), 'models': [
+        {'model': 'cemetery.PaymentUnit',       'label': _('Units')},
+        {'model': 'cemetery.PaymentReceipt',    'label': _('Receipts')},
     ]},
 
     # Maintenance
-    {'app': 'cemetery', 'label': 'Maintenance', 'models': [
-        'cemetery.Maintenance',
+    {'app': 'cemetery', 'label': _('Maintenance'), 'models': [
+        {'model': 'cemetery.Maintenance',       'label': _('Maintenances')},
     ]},
 )
 
@@ -198,22 +199,22 @@ JET_THEMES = [
 
 JET_SIDE_MENU_ITEMS = [
     {'label': _('Models'), 'app_label': 'cemetery', 'items': [
-        {'name': 'spot'},
+        {'name': 'spot',            'label': _('Spots')},
 
-        {'name': 'deed'},
-        {'name': 'ownershipreceipt'},
-        {'name': 'owner'},
+        {'name': 'deed',            'label': _('Deeds')},
+        {'name': 'ownershipreceipt', 'label': _('Ownership Receipts')},
+        {'name': 'owner',           'label': _('Owners')},
 
-        {'name': 'construction'},
-        {'name': 'authorization'},
-        {'name': 'company'},
+        {'name': 'construction',    'label': _('Constructions')},
+        {'name': 'authorization',   'label': _('Authorizations')},
+        {'name': 'company',         'label': _('Companies')},
 
-        {'name': 'operation'},
+        {'name': 'operation',       'label': _('Operations')},
 
-        {'name': 'payment'},
-        {'name': 'paymentreceipt'},
+        {'name': 'paymentunit',     'label': _('Payment Units')},
+        {'name': 'paymentreceipt',  'label': _('Payment Receipts')},
 
-        {'name': 'maintenance'},
+        {'name': 'maintenance',     'label': _('Maintenance')},
     ]},
 
     {'label': _('Data'), 'items': [

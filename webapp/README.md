@@ -23,7 +23,7 @@ Enter virtualenv: `workon gods-acre`
 - changes aren't saved to db until commit: `spot.save()`
 
 ## translation
-- pull out all strings marked for translation: `./manage makemessages -l ro`
+- pull out all strings marked for translation: `./manage.py makemessages -l ro` (it will not overwrite existing translations)
   - install os dependencies before `brew install gettext` / `sudo apt-get install gettext`
 - open `locale/<your language code>/LC_MESSAGES/django.po` and provide a `msgstr` for each `msgid`
 - compile into `.mo` with `./manage.py compilemessages`

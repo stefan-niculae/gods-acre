@@ -23,7 +23,6 @@
 
 ## behaviour
 
-- rework payments into units and receipts
 - ? what happens when "unkept since" > 7 yrs
 - an ownership receipt can alternatively be "proces-verbal"
 
@@ -34,7 +33,10 @@
 ## behind the scenes
 
 1. make sure all unique constraints are entered
-2. if it impacts performance (too many values): load field autocompletes dynamically http://jet.readthedocs.io/en/latest/autocomplete.html#configuration
+2. make sure all models have `Meta#ordering` 
+3. add type hints
+4. check for unused imports
+5. if it impacts performance (too many values): load field autocompletes dynamically http://jet.readthedocs.io/en/latest/autocomplete.html#configuration
 
 
 
@@ -62,25 +64,45 @@
 1. handle missing
    - whole nr/year: #pk
    - ?/year: -> #pk/year
-2. warn if any of construction's spots is not among the spots on the authorization
-3. field validation
+2. ! when adding a new payment receipt, make it so you can add select existing units from the inline
+3. warnings
+   - any of construction's spots is not among the spots on the authorization
+   - more than one deed is active for a spot
+   - deed date too far away from receipt date
+   - exhumated person is not the same one that is buried (if there is one entered)
+   - operation date too far from current
+   - there is already a construction on the same spot
+   - construction: owner_builder is not one of spots.deeds.owners
+   - there is already another receipt for the same payment, and link to it
+   - maintenance year too far from current
+   - payment unit year: too far away from current year, or ASK how it relates to deed
+4. field validation
    - dates: must be over 1900 and under 2100
    - name: only letters & dashes
    - phone: romanian phone format
-4. la introducerea unui act nou, pt chitante, numarul default sa fie aceeasi cu cel al actului
-5. la introducerea unei chitante noi, valoarea default = suma valorilor stabilite pt toate "platile" pt care este chitanta
-6. keep values when pressing 'save and add another'
-7. add some admin actions: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/
+   - address: alphanum, dashes
+   - city: alpha, dashes
+   - parcel/row/column in the forms
+     - A-1-2
+     - A-1a-2
+     - A-1bis-2
+     - A2-2-3
+5. when the `name` of the `owner` is the one in a "burial" `operation`, suggest to modify the `cancel_reason` on the `deed`
+6. show how many there are currently burried when adding a new operation
+7. la introducerea unui act nou, pt chitante, numarul default sa fie aceeasi cu cel al actului
+8. la introducerea unei chitante noi, valoarea default = suma valorilor stabilite pt toate "platile" pt care este chitanta
+9. keep values when pressing 'save and add another'
+10. add some admin actions: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/
    - set all kept/unkept?
-8. operations: dupa adaugare, cu titlu informativ: pe locul A-1-2 mai sunt inmormantati si: A, B, C
-9. upon adding a new deed for a spot, show info with all deeds previously active on each spot
-10. warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
-  - warning validation: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
-11. add help_text to model fields
-12. ? should every field be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view?
+11. operations: dupa adaugare, cu titlu informativ: pe locul A-1-2 mai sunt inmormantati si: A, B, C
+12. upon adding a new deed for a spot, show info with all deeds previously active on each spot
+13. warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
+   - warning validation: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
+14. add help_text to model fields
+15. ? should every field be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view?
     - owner: yes
     - others: ?
-13. ? whether the button should say "save and continue editing" or "save as new" `ModelAdmin.save_as`: if duplicating an entity is a frequent task
+16. ? whether the button should say "save and continue editing" or "save as new" `ModelAdmin.save_as`: if duplicating an entity is a frequent task
 
 
 
@@ -89,10 +111,19 @@
 ## UI
 
 - translation
-  - provide `verbose_name` and `verbose_name_plural` for each model field (including foreign fields)
-  - `short_description` for model methods
-  - `desc` on admin fields
-  - urls
+  - "Deeds", "Constructions", "Authorizations" in spot change, General tab
+    - Owners in Deed change, general tab
+  - url paths
+  - model properties? (if needed)
+  - model relationships? related_name?
+  - model `__str__`
+  - in `settings.py`
+- semantic coloring:
+  - red if `Spot#unkept_since > 7`
+  - grey if `Deed#cancel_reason is not None`
+- replace spaces in name, address etc with nbsp
+- add link from payment units to payment receipts and vice-versa (and for other groupings as well)
+- things are not capitalized in romanian: eg [filtrare] "După Chitanță proprietate"
 - top page instead of "HOME > CEMETERY > OWNERS > Ana" with faded OWNERS, make it "HOME > OWNERS > Ana" with bold colors
 - logo
 - direct urls `/spot` instead of `/cemetery/spot`

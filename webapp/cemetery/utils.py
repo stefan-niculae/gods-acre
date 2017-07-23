@@ -6,6 +6,7 @@ from django.utils.safestring import mark_safe
 
 
 DEFAULT_HEAD_LENGTH = 2
+NBSP = '\u00A0'
 
 
 def rev(l: list) -> list:
@@ -105,7 +106,7 @@ def display_head_tail_summary(entities, head_length: Optional[int]=None) -> (Opt
     head_length = head_length or DEFAULT_HEAD_LENGTH
 
     tail_length = len(entities) - head_length
-    tail_summary = '' if tail_length <= 0 else f' (+{tail_length})'
+    tail_summary = '' if tail_length <= 0 else f'{NBSP}(+{tail_length})'
 
     return entities[:head_length], tail_summary
 
@@ -126,7 +127,7 @@ def display_head_links(query, head_length: Optional[int]=None) -> Optional[str]:
         return
 
     links = map(display_change_link, head)
-    return ', '.join(links) + others
+    return f',{NBSP}'.join(links) + others
 
 
 def truncate(string: Optional[str], max_len: int=20) -> Optional[str]:

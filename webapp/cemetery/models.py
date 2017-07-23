@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 from .validators import name_validator
-from .utils import display_head_tail_summary, parse_nr_year, title_case, initials, year_to_shorthand
+from .utils import display_head_tail_summary, parse_nr_year, title_case, initials, year_to_shorthand, NBSP
 
 optional = {'blank': True, 'null': True}  # to be passed in field definitions as additional kwargs
 
@@ -35,11 +35,10 @@ class NrYear(Model):
     """
     For deeds, receipts and authorizations
     """
-    number = IntegerField(**optional)
-    year   = IntegerField(default=date.today().year, **optional)
-    # todo warn if date too far from current year
+    number = IntegerField(**optional, verbose_name=_('number'))
+    year   = IntegerField(default=date.today().year, **optional, verbose_name=_('year'))
 
-    objects = NrYearManager()  # TODO check if this is inherited properly (ie: each inherited class with its separate manager)
+    objects = NrYearManager()
 
     class Meta:
         abstract = True
@@ -68,23 +67,24 @@ class SpotManager(Manager):
         return self.get(parcel=parcel, row=row, column=column)
 
 class Spot(Model):
-    parcel  = CharField(max_length=5)  # TODO regex only alphanumeric
-    row     = CharField(max_length=5)
-    column  = CharField(max_length=5)
+    parcel  = CharField(max_length=5, verbose_name=_('parcel'))
+    row     = CharField(max_length=5, verbose_name=_('row'))
+    column  = CharField(max_length=5, verbose_name=_('column'))
 
     objects = SpotManager()
 
     class Meta:
         unique_together = ('parcel', 'row', 'column')  # they uniquely identify the spot
         ordering = ['parcel', 'row', 'column']
+        verbose_name = _('Spot')
+        verbose_name_plural = _('Spots')
 
     def natural_key(self):
         return self.parcel, self.row, self.column
 
     def __str__(self):
-        return f'{self.parcel}-{self.row}-{self.column}'
+        return f'{self.parcel}‑{self.row}‑{self.column}'  # non-breaking space
 
-    # TODO add warning if more than one deed is active for a spot
     @property
     def active_deeds(self):
         """
@@ -119,14 +119,6 @@ class Spot(Model):
         """
         return Spot.objects.filter(authorizations__in=self.authorizations.all())\
             .distinct().exclude(id=self.id)
-
-    # @property
-    # def ownership_receipts(self):
-    #     # The receipt-spot relation goes through a deed
-    #     deed = self.active_deeds.first()
-    #     if not deed:
-    #         return
-    #     return deed.receipts
 
     @property
     def unkept_since(self) -> Optional[str]:
@@ -183,7 +175,6 @@ class Spot(Model):
 
         years_difference = date.today().year - smallest_unkept_year
 
-        # TODO red if bigger than 7
         return f'{smallest_unkept_year} ({years_difference} year{"s" if years_difference > 1 else ""})'
 
     @property
@@ -202,25 +193,31 @@ Ownership
 """
 
 class Deed(NrYear):
-    spots = ManyToManyField(Spot, related_name='deeds')
+    spots = ManyToManyField(Spot, related_name='deeds', verbose_name=_('spots'))
     # note: a spot can have multiple deeds in the same year so we can't enforce unique(spot, year)
 
     OWNER_DEAD = 'o'
     DONATED    = 'd'
     LOST       = 'l'
     CANCEL_REASON_CHOICES = [
-        (OWNER_DEAD, 'owner dead'),
-        (DONATED,    'donated'),
-        (LOST,       'lost')
+        (OWNER_DEAD, _('owner dead')),
+        (DONATED,    _('donated')),
+        (LOST,       _('lost'))
     ]
-    # TODO when the name of the owner is the one in a burial operation, offer a suggestion to modify this
-    # TODO add css to differentiate it from active ones
-    cancel_reason = CharField(max_length=1, choices=CANCEL_REASON_CHOICES, **optional)
+    cancel_reason = CharField(max_length=1, choices=CANCEL_REASON_CHOICES, **optional, verbose_name=_('cancel reason'))
+
+    class Meta:
+        verbose_name = _('Deed')
+        verbose_name_plural = _('Deeds')
+
 
 class OwnershipReceipt(NrYear):
-    # todo warn if the deed's date is too far away from the receipt's date
-    deed  = ForeignKey(Deed, related_name='receipts', **optional)
-    value = FloatField(**optional)
+    deed  = ForeignKey(Deed, related_name='receipts', **optional, verbose_name=_('deed'))
+    value = FloatField(**optional, verbose_name=_('value'))
+
+    class Meta:
+        verbose_name = _('Ownership Receipt')
+        verbose_name_plural = _('Ownership Receipts')
 
     @property
     def spots(self):
@@ -242,21 +239,22 @@ class OwnerManager(Manager):
         name = title_case(identifier)
         return {'name': name}
 
-    # TODO is the name enough to uniquely identify an owner?
     def get_by_natural_key(self, name):
         return self.get(name=name)
 
 class Owner(Model):
     name    = CharField(max_length=100, unique=True, validators=[name_validator], verbose_name=_('Name'))
-    phone   = CharField(max_length=15,  **optional)  # TODO regex validation phone, address, city
-    address = CharField(max_length=250, **optional)
-    city    = CharField(max_length=50,  **optional)
-    deeds   = ManyToManyField(Deed, related_name='owners', blank=True)
+    phone   = CharField(max_length=15,  **optional, verbose_name=_('phone'))
+    address = CharField(max_length=250, **optional, verbose_name=_('address'))
+    city    = CharField(max_length=50,  **optional, verbose_name=_('city'))
+    deeds   = ManyToManyField(Deed, related_name='owners', blank=True, verbose_name=_('deeds'))
 
     objects = OwnerManager()
 
     class Meta:
         ordering = ['name']
+        verbose_name = _('Owner')
+        verbose_name_plural = _('Owners')
 
     def natural_key(self):
         return self.name
@@ -283,29 +281,28 @@ class Operation(Model):
     BURIAL     = 'b'
     EXHUMATION = 'e'
     TYPE_CHOICES = [
-        (BURIAL,     'burial'),
-        (EXHUMATION, 'exhumation')
+        (BURIAL,     _('burial')),
+        (EXHUMATION, _('exhumation'))
     ]
     TYPE_SYMBOLS = {
         BURIAL:     '↓',
         EXHUMATION: '↑',
     }
-    type = CharField(max_length=1, choices=TYPE_CHOICES, default=BURIAL)
-    # TODO warning if exhumation is not the same as one buried
-    deceased = CharField(max_length=100, validators=[name_validator], **optional)
-    spot     = ForeignKey(Spot, related_name='operations')
-    date     = DateField(default=date.today)  # TODO warn if date is too far from current
-    exhumation_written_report = CharField(max_length=20, **optional)
-    remains_brought_from      = CharField(max_length=50, **optional)
-
-    # TODO show how many there are currently burried when adding a new operation
+    type = CharField(max_length=1, choices=TYPE_CHOICES, default=BURIAL, verbose_name=_('type'))
+    deceased = CharField(max_length=100, validators=[name_validator], **optional, verbose_name=_('deceased'))
+    spot     = ForeignKey(Spot, related_name='operations', verbose_name=_('spot'))
+    date     = DateField(default=date.today, verbose_name=_('date'))
+    exhumation_written_report = CharField(max_length=20, **optional, verbose_name=_('exhumation written report'))
+    remains_brought_from      = CharField(max_length=50, **optional, verbose_name=_('remains brought from'))
 
     class Meta:
         ordering = ['date', 'spot']
+        verbose_name = _('Operation')
+        verbose_name_plural = _('Operations')
 
     def __str__(self):
         display_initials = initials(self.deceased) if self.deceased else ''
-        return f"'{self.date:%y}: {self.spot} {Operation.TYPE_SYMBOLS[self.type]} {display_initials}"
+        return f"'{self.date:%y}:{NBSP}{self.spot}{NBSP}{Operation.TYPE_SYMBOLS[self.type]}{NBSP}{display_initials}"
 
 
 """
@@ -327,9 +324,13 @@ class Company(Model):
     """
     # No title-casing or restricting characters,
     # this is not a person's name, a company can be written in any way
-    name = CharField(max_length=250, unique=True)
+    name = CharField(max_length=250, unique=True, verbose_name=_('name'))
 
     objects = CompanyManager()
+
+    class Meta:
+        verbose_name = _('Company')
+        verbose_name_plural = _('Companies')
 
     def natural_key(self):
         return self.name
@@ -346,20 +347,18 @@ class Construction(Model):
     TOMB   = 't'
     BORDER = 'b'
     TYPE_CHOICES = [
-        (TOMB,   'tomb'),
-        (BORDER, 'border')
+        (TOMB,   _('tomb')),
+        (BORDER, _('border'))
     ]
     TYPE_SYMBOLS = {
         TOMB:   'T',
         BORDER: 'B',
         None:   '?',
     }
-    # TODO warn if there is already a construction on the same spot
-    type          = CharField(max_length=1, choices=TYPE_CHOICES, **optional)
-    spots         = ManyToManyField(Spot)
-    company       = ForeignKey(Company, **optional)
-    owner_builder = ForeignKey(Owner,   **optional, related_name='constructions_built')
-    # TODO warn if owner entered is not one in spots.deeds.owners
+    type          = CharField(max_length=1, choices=TYPE_CHOICES, **optional, verbose_name=_('type'))
+    spots         = ManyToManyField(Spot, verbose_name=_('spots'))
+    company       = ForeignKey(Company, **optional, verbose_name=_('company'))
+    owner_builder = ForeignKey(Owner,   **optional, related_name='constructions_built', verbose_name=_('owner builder'))
 
     def clean(self):
         if not self.company and not self.owner_builder:
@@ -370,13 +369,15 @@ class Construction(Model):
         # TODO a spot can only have as many as one construction of each type
         # unique_together = ('type', 'spots')
         ordering = ['type']  # TODO spots to ordering?
+        verbose_name = _('Construction')
+        verbose_name_plural = _('Constructions')
 
     def __str__(self):
         if not self.spots:
             first_spot, more = '?', ''
         else:
             [first_spot], more = display_head_tail_summary(self.spots.all(), head_length=1)
-        return f'{Construction.TYPE_SYMBOLS[self.type]} on {first_spot}{more}'
+        return f'{Construction.TYPE_SYMBOLS[self.type]}{NBSP}on{NBSP}{first_spot}{more}'
 
     @property
     def authorization_spots(self):
@@ -388,18 +389,21 @@ class Construction(Model):
 
 class Authorization(NrYear):
     # Construction authorization
-    spots        = ManyToManyField(Spot,    related_name='authorizations')
-    construction = ForeignKey(Construction, related_name='authorizations', **optional)
-    # TODO warn if construction.spots differ from spots
+    spots        = ManyToManyField(Spot,    related_name='authorizations', verbose_name=_('spots'))
+    construction = ForeignKey(Construction, related_name='authorizations', **optional, verbose_name=_('construction'))
+
+    class Meta:
+        verbose_name = _('Authorization')
+        verbose_name_plural = _('Authorizations')
 
 
 """
 Payments
 """
-
 class PaymentReceipt(NrYear):
-    value = FloatField(**optional)  # paid value
-    # TODO warn if is already another receipt for the same payment, and link to it
+    class Meta:
+        verbose_name = _('Payment Receipt')
+        verbose_name_plural = _('Payment Receipts')
 
     @property
     def spots(self):
@@ -416,33 +420,28 @@ class PaymentReceipt(NrYear):
         return self.payments.order_by().values_list('year', flat=True).distinct()
 
     @property
-    def total_expected(self):
-        aggregation = self.payments.aggregate(Sum('expected'))
-        return aggregation['expected__sum']
+    def total_value(self):
+        aggregation = self.payments.aggregate(Sum('value'))
+        return aggregation['value__sum']
 
 
-class Payment(Model):
-    year = IntegerField()  # TODO warn if year too far away from current year, or ASK how it relates to deed
-    spot = ForeignKey(Spot, related_name='payments')
-    expected = FloatField(**optional)  # expected value for this payment
-    # one receipt can cover for multiple years (payments)
-    # but there will not be a year (payment) spanning multiple receipts
-    receipt  = ForeignKey(PaymentReceipt, related_name='payments', **optional)
+class PaymentUnit(Model):
+    """ one unit is for a single year-date combination. one receipt can have multiple units """
+    year    = IntegerField(verbose_name=_('year'))
+    spot    = ForeignKey(Spot, related_name='payments', verbose_name=_('spot'))
+    value   = FloatField(**optional, verbose_name=_('value'))  # expected value for this year, for this spot
+    receipt = ForeignKey(PaymentReceipt, related_name='payments', **optional, verbose_name=_('receipt'))
 
     class Meta:
         # there cannot be multiple payments in the same year for a spot
         # (there can be multiple receipts)
         unique_together = ('year', 'spot')
         ordering = ['year', 'spot']
+        verbose_name = _('Payment Unit')
+        verbose_name_plural = _('Payment Units')
 
     def __str__(self):
-        return f"{self.spot} for '{year_to_shorthand(self.year)}"
-
-    @property
-    def received_value(self):
-        if not self.receipt:
-            return None
-        return self.receipt.value
+        return f"{self.spot}{NBSP}for{NBSP}'{year_to_shorthand(self.year)}"
 
     @property
     def owners(self):
@@ -455,16 +454,18 @@ Maintenance
 """
 
 class Maintenance(Model):
-    year = IntegerField()  # TODO warn if year too far away from current year
-    spot = ForeignKey(Spot, related_name='maintenances')
-    kept = BooleanField()
+    year = IntegerField(verbose_name=_('year'))
+    spot = ForeignKey(Spot, related_name='maintenances', verbose_name=_('spot'))
+    kept = BooleanField(verbose_name=_('kept'))
 
     class Meta:
         unique_together = ('year', 'spot')  # only one entry in the table for the spot
         ordering = ['year', 'spot']
+        verbose_name = _('Maintenance')
+        verbose_name_plural = _('Maintenances')
 
     def __str__(self):
-        return f"{self.spot} in '{year_to_shorthand(self.year)}"
+        return f"{self.spot}{NBSP}in{NBSP}'{year_to_shorthand(self.year)}"
 
     @property
     def owners(self):
@@ -478,6 +479,6 @@ ALL_MODELS = [
     Deed, OwnershipReceipt, Owner,
     Operation,
     Construction, Authorization, Company,
-    Payment, PaymentReceipt,
+    PaymentUnit, PaymentReceipt,
     Maintenance,
 ]

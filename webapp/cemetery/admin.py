@@ -4,21 +4,23 @@ from django.contrib.messages import SUCCESS
 from django.conf.urls import url
 from django.template.response import TemplateResponse
 from easy import short, SimpleAdminField
+from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
-from .models import Spot, Deed, OwnershipReceipt, Owner, Maintenance, Operation, Payment, PaymentReceipt, Construction,\
-    Authorization, Company
+from .models import Spot, Deed, OwnershipReceipt, Owner, Maintenance, Operation, PaymentUnit, PaymentReceipt, \
+    Construction, Authorization, Company
 from .forms import SpotForm, DeedForm, OwnerForm, AuthorizationForm, PaymentReceiptForm, MaintenanceBulkForm
 from .inlines import OwnershipReceiptInline, MaintenanceInline, OperationInline, ConstructionInline, \
-    AuthorizationInline, PaymentInline
-from .utils import rev, display_change_link, display_head_links, truncate, display_date
+    AuthorizationInline, PaymentUnitInline
+from .utils import rev, display_change_link, display_head_links, truncate, display_date, year_to_shorthand
 
 """
 Site
 """
 
-site.site_header = "God's Acre"  # in the menus
-site.site_title = "God's Acre"  # in the tab's title
-site.index_title = "Cemetery Administration"  # in the tab's title, for the home page
+site.site_header = _("God's Acre")  # in the menus
+site.site_title  = _("God's Acre")  # in the tab's title
+site.index_title = _("Cemetery Administration")  # in the tab's title, for the home page
 site.site_url = None  # remove the "View Site" link
 
 
@@ -38,8 +40,7 @@ class SpotAdmin(ModelAdmin):
                     'display_constructions',
                     'display_shares_authorizations_with',
                     'display_last_paid_year',  # TODO sortable, filter-able
-                    'unkept_since',  # TODO order
-                    ]
+                    'display_unkept_since']
 
     # What filters are available at the top of the list-view page: "by field" combo-box
     list_filter = rev(['parcel', 'row', 'column',
@@ -58,7 +59,7 @@ class SpotAdmin(ModelAdmin):
                      'constructions__company__name']
 
     form = SpotForm
-    inlines = [OperationInline, PaymentInline, MaintenanceInline]
+    inlines = [OperationInline, PaymentUnitInline, MaintenanceInline]
 
     def get_queryset(self, request):
         qs = super(SpotAdmin, self).get_queryset(request)
@@ -78,37 +79,41 @@ class SpotAdmin(ModelAdmin):
     display_row    = SimpleAdminField(lambda spot: spot.row,    'R', 'row')
     display_column = SimpleAdminField(lambda spot: spot.column, 'C', 'column')
 
-    @short(desc='Active Deed', order='first_active_deed', tags=True)
+    @short(desc=_('Active Deed'), order='first_active_deed', tags=True)
     def display_active_deed(self, spot):
         return display_head_links(spot.active_deeds, 1)
 
-    @short(desc='Sharing Deed', tags=True)
+    @short(desc=_('Sharing Deed'), tags=True)
     def display_shares_deed_with(self, spot):
         return display_head_links(spot.shares_deed_with)
 
-    # @short(desc='Deed Receipts', order='deeds_receipts', tags=True)
+    # @short(desc=_('Deed Receipts'), order='deeds_receipts', tags=True)
     # def display_ownership_receipts(self, spot):
     #     return display_head_links(spot.ownership_receipts)
 
-    @short(desc='Active Owners', order='first_active_owner', tags=True)
+    @short(desc=_('Active Owners'), order='first_active_owner', tags=True)
     def display_owners(self, spot):
         return display_head_links(spot.active_owners)
 
-    @short(desc='Operations', order='first_operation', tags=True)
+    @short(desc=_('Operations'), order='first_operation', tags=True)
     def display_operations(self, spot):
         return display_head_links(spot.operations, 1)
 
-    @short(desc='Constructions', order='first_construction', tags=True)
+    @short(desc=_('Constructions'), order='first_construction', tags=True)
     def display_constructions(self, spot):
         return display_head_links(spot.constructions, 1)
 
-    @short(desc='Sharing Auth.', tags=True)  # TODO order
+    @short(desc=_('Sharing Auth.'), tags=True)  # TODO order
     def display_shares_authorizations_with(self, spot):
         return display_head_links(spot.shares_authorization_with)
 
-    @short(desc='Last Paid', order='max_payments_year')
+    @short(desc=_('Last Paid'), order='max_payments_year')
     def display_last_paid_year(self, spot):
         return spot.last_paid_year
+
+    @short(desc=_('Unkept Since'))  # TODO order
+    def display_unkept_since(self, spot):
+        return spot.unkept_since
 
 
 """
@@ -119,7 +124,7 @@ Ownership
 class DeedAdmin(ModelAdmin):
     form = DeedForm
 
-    list_display = ['__str__', 'number', 'year', 'cancel_reason',
+    list_display = ['display_repr', 'number', 'year', 'cancel_reason',
                     'display_spots', 'display_receipts', 'display_owners']
 
     # TODO date hierarchy by date added?
@@ -143,22 +148,26 @@ class DeedAdmin(ModelAdmin):
                            first_receipt=Min('receipts'),
                            first_owner=Min('owners'))
 
-    @short(desc='Spots', order='first_spot', tags=True)
+    @short(desc=pgettext_lazy('short', 'Deed'), order='__str__')
+    def display_repr(self, deed):
+        return str(deed)
+
+    @short(desc=_('Spots'), order='first_spot', tags=True)
     def display_spots(self, deed):
         return display_head_links(deed.spots)
 
-    @short(desc='Receipts', order='first_receipt', tags=True)
+    @short(desc=_('Receipts'), order='first_receipt', tags=True)
     def display_receipts(self, deed):
         return display_head_links(deed.receipts)
 
-    @short(desc='Owners', order='first_owner', tags=True)
+    @short(desc=_('Owners'), order='first_owner', tags=True)
     def display_owners(self, deed):
         return display_head_links(deed.owners)
 
 
 @register(OwnershipReceipt)
 class OwnershipReceiptAdmin(ModelAdmin):
-    list_display = ['__str__', 'number', 'year', 'value',
+    list_display = ['display_repr', 'number', 'year', 'value',
                     'display_deed', 'display_spots', 'display_owners']
 
     list_filter = rev(['number', 'year', 'value',
@@ -178,15 +187,19 @@ class OwnershipReceiptAdmin(ModelAdmin):
         return qs.annotate(first_spot=Min('deed__spots'),
                            first_owner=Min('deed__owners'))
 
-    @short(desc='Deed', order='deed', tags=True)
+    @short(desc=_('Receipt'), order='__str__')
+    def display_repr(self, receipt):
+        return str(receipt)
+
+    @short(desc=pgettext_lazy('short', 'Deed'), order='deed', tags=True)
     def display_deed(self, receipt):
         return display_change_link(receipt.deed)
 
-    @short(desc='Spots', order='first_spot', tags=True)
+    @short(desc=_('Spots'), order='first_spot', tags=True)
     def display_spots(self, receipt):
         return display_head_links(receipt.spots)
 
-    @short(desc='Owners', order='first_owner', tags=True)
+    @short(desc=_('Owners'), order='first_owner', tags=True)
     def display_owners(self, receipt):
         return display_head_links(receipt.owners)
 
@@ -219,33 +232,33 @@ class OwnerAdmin(ModelAdmin):
                            # first_construction=Min('constructions_built')
                            )
 
-    @short(desc='Phone', order='phone')
+    @short(desc=_('Phone'), order='phone')
     def display_phone(self, owner):
         if not owner.phone:
             return
         return f'{owner.phone[0:3]} {owner.phone[3:6]} {owner.phone[6:9]}'
 
-    @short(desc='Address', order='address')
+    @short(desc=_('Address'), order='address')
     def display_address(self, owner):
         return truncate(owner.address)
 
-    @short(desc='City', order='city')
+    @short(desc=_('City'), order='city')
     def display_city(self, owner):
         return truncate(owner.city)
 
-    @short(desc='Deeds', order='first_deed', tags=True)
+    @short(desc=pgettext_lazy('short', 'Deeds'), order='first_deed', tags=True)
     def display_deeds(self, owner):
         return display_head_links(owner.deeds)
 
-    @short(desc='Receipts', order='first_receipt', tags=True)
+    @short(desc=_('Receipts'), order='first_receipt', tags=True)
     def display_receipts(self, owner):
         return display_head_links(owner.receipts)
 
-    @short(desc='Spots', order='first_spot', tags=True)
+    @short(desc=_('Spots'), order='first_spot', tags=True)
     def display_spots(self, owner):
         return display_head_links(owner.spots)
 
-    # @short(desc='Built', order='first_construction', tags=True)
+    # @short(desc=_('Built'), order='first_construction', tags=True)
     # def display_constructions(self, owner):
     #     return display_head_links(owner.constructions_built)
 
@@ -275,15 +288,15 @@ class OperationAdmin(ModelAdmin):
         # TODO only active owners
         return qs.annotate(first_owner=Min('spot__deeds__owners'))
 
-    @short(desc='Date', order='date')
+    @short(desc=_('Date'), order='date')
     def display_date(self, operation):
         return display_date(operation.date)
 
-    @short(desc='Owner', order='first_owner', tags=True)
+    @short(desc=_('Owner'), order='first_owner', tags=True)
     def display_owner(self, operation):
         return display_head_links(operation.spot.active_owners)
 
-    @short(desc='Spot', order='spot', tags=True)
+    @short(desc=_('Spot'), order='spot', tags=True)
     def display_spot(self, operation):
         return display_change_link(operation.spot)
 
@@ -305,11 +318,11 @@ class AuthorizationAdmin(ModelAdmin):
 
     form = AuthorizationForm
 
-    @short(desc='Spots', order='spots', tags=True)
+    @short(desc=_('Spots'), order='spots', tags=True)
     def display_spots(self, authorization):
         return display_head_links(authorization.spots)
 
-    @short(desc='Construction', order='construction', tags=True)
+    @short(desc=_('Construction'), order='construction', tags=True)
     def display_construction(self, authorization):
         return display_change_link(authorization.construction)
 
@@ -330,19 +343,19 @@ class ConstructionAdmin(ModelAdmin):
     # TODO! constructions for spots
     inlines = [AuthorizationInline]
 
-    @short(desc='Authorizations', order='authorizations', tags=True)
+    @short(desc=_('Authorizations'), order='authorizations', tags=True)
     def display_authorizations(self, construction):
         return display_head_links(construction.authorizations)
 
-    @short(desc='Spots', order='authorizations__spots', tags=True)
+    @short(desc=_('Spots'), order='authorizations__spots', tags=True)
     def display_spots(self, construction):
         return display_head_links(construction.spots)
 
-    @short(desc='Owner Builder', order='owner_builder', tags=True)
+    @short(desc=_('Owner Builder'), order='owner_builder', tags=True)
     def display_company(self, construction):
         return display_change_link(construction.company)
 
-    @short(desc='Company', order='company', tags=True)
+    @short(desc=_('Company'), order='company', tags=True)
     def display_owner_builder(self, construction):
         return display_change_link(construction.owner_builder)
 
@@ -367,9 +380,9 @@ class CompanyAdmin(ModelAdmin):
     inlines = [ConstructionInline]
 
     display_n_constructions = SimpleAdminField(lambda company: company.n_constructions,
-                                               '#Constructions')  # TODO order
+                                               _('#Constructions'))  # TODO order
 
-    @short(desc='Constructions', order='constructions', tags=True)
+    @short(desc=_('Constructions'), order='constructions', tags=True)
     def display_constructions(self, company):
         return display_head_links(company.constructions, 5)
 
@@ -378,43 +391,35 @@ class CompanyAdmin(ModelAdmin):
 Payments
 """
 
-@register(Payment)
-class PaymentAdmin(ModelAdmin):
-    list_display = ['__str__', 'year', 'display_spot', 'display_expected',
-                    'display_receipts', 'display_received',
+@register(PaymentUnit)
+class PaymentUnitAdmin(ModelAdmin):
+    list_display = ['__str__', 'year', 'display_spot', 'value',
+                    'display_receipts',
                     'display_owners']
 
-    list_filter = rev(['year', 'expected',
+    list_filter = rev(['year', 'value',
                        'spot', 'spot__parcel', 'spot__row', 'spot__column',
                        'receipt', 'receipt__number', 'receipt__year',
                        'spot__deeds__owners'])
 
-    search_fields = ['year', 'expected',
+    search_fields = ['year', 'value',
                      'spot__parcel', 'spot__row', 'spot__column',
                      'receipt__number', 'receipt__year',
                      'spot__deeds__owners__name']
 
     def get_queryset(self, request):
-        qs = super(PaymentAdmin, self).get_queryset(request)
+        qs = super(PaymentUnitAdmin, self).get_queryset(request)
         return qs.annotate(first_owner=Min('spot__deeds__owners'))
 
-    @short(desc='Spot', order='spot', tags=True)
+    @short(desc=_('Spot'), order='spot', tags=True)
     def display_spot(self, payment):
         return display_change_link(payment.spot)
 
-    @short(desc='Expected value', order='expected')
-    def display_expected(self, payment):
-        return payment.expected
-
-    @short(desc='Receipt', order='receipt', tags=True)
+    @short(desc=_('Receipt'), order='receipt', tags=True)
     def display_receipts(self, payment):
         return display_change_link(payment.receipt)
 
-    @short(desc='Received value', order='receipt__value', tags=True)
-    def display_received(self, payment):
-        return payment.received_value
-
-    @short(desc='Owners', order='first_owner', tags=True)
+    @short(desc=_('Owners'), order='first_owner', tags=True)
     def display_owners(self, payment):
         return display_head_links(payment.owners)
 
@@ -422,19 +427,21 @@ class PaymentAdmin(ModelAdmin):
 @register(PaymentReceipt)
 class PaymentReceiptAdmin(ModelAdmin):
     list_display = ['__str__', 'number', 'display_receipt_year',
-                    'display_value', 'display_payments', 'display_total_expected',
+                    'total_value', 'display_payments',
                     'display_spots', 'display_payments_years',
                     'display_owners']
 
-    list_filter = rev(['number', 'year', 'value',
+    list_filter = rev(['number', 'year',  # 'total_value',
                        'payments__spot', 'payments__spot__parcel', 'payments__spot__row', 'payments__spot__column',
                        'payments__spot__deeds__owners'])
 
-    search_fields = ['number', 'year', 'value',
+    search_fields = ['number', 'year',  # 'total_value',
                      'payments__spot__parcel', 'payments__spot__row', 'payments__spot__column',
                      'payments__spot__deeds__owners__name']
 
     form = PaymentReceiptForm
+
+    inlines = [PaymentUnitInline]
 
     def get_queryset(self, request):
         qs = super(PaymentReceiptAdmin, self).get_queryset(request)
@@ -444,33 +451,25 @@ class PaymentReceiptAdmin(ModelAdmin):
                            # first payment-year not the year in which the first payment was made
                            first_payment_year=Min('payments__year'))
 
-    @short(desc='Payments', order='first_payment', tags=True)
+    @short(desc=_('Payments'), order='first_payment', tags=True)
     def display_payments(self, receipt):
         return display_head_links(receipt.payments)
 
-    @short(desc='Receipt Year', order='year')
+    @short(desc=_('Receipt Year'), order='year')
     def display_receipt_year(self, receipt):
         return receipt.year
 
-    @short(desc='Paid', order='value')
-    def display_value(self, receipt):
-        return receipt.value
-
-    @short(desc='Total Expected', order='payments_sum')
-    def display_total_expected(self, receipt):
-        return receipt.total_expected
-
-    @short(desc='Spots', order='first_spot', tags=True)
+    @short(desc=_('Spots'), order='first_spot', tags=True)
     def display_spots(self, receipt):
-        return display_head_links(receipt.spots)
+        return display_head_links(receipt.spots.distinct())
 
-    @short(desc='Payments Years', order='first_payment_year')
+    @short(desc=_('Payments Years'), order='first_payment_year')
     def display_payments_years(self, receipt):
-        return ', '.join(map(str, receipt.payments_years.all()))
+        return ', '.join(map(lambda y: "'" + year_to_shorthand(y), receipt.payments_years.all()))
 
-    @short(desc='Owners', order='first_owner', tags=True)
+    @short(desc=_('Owners'), order='first_owner', tags=True)
     def display_owners(self, receipt):
-        return display_head_links(receipt.owners)
+        return display_head_links(receipt.owners.distinct())
 
 
 """
@@ -511,15 +510,15 @@ class MaintenanceAdmin(ModelAdmin):
         }
         return TemplateResponse(request, 'admin/cemetery/maintenance/add_bulk.html', context)
 
-    @short(desc='Spot', order='spot')
+    @short(desc=_('Spot'), order='spot')
     def display_spot(self, maintenance):
         return display_change_link(maintenance.spot)
 
-    @short(desc='Owners', order='first_owner', tags=True)
+    @short(desc=_('Owners'), order='first_owner', tags=True)
     def display_owners(self, maintenance):
         return display_head_links(maintenance.owners)
 
-    @short(desc='Mark selected entries as kept')
+    @short(desc=_('Mark selected entries as kept'))
     def mark_kept(self, request, queryset):
         n_updated = queryset.update(kept=True)
 
@@ -530,7 +529,7 @@ class MaintenanceAdmin(ModelAdmin):
         self.message_user(request, prefix + ' successfully marked as kept',
                           level=SUCCESS)
 
-    @short(desc='Mark selected entries as unkept')
+    @short(desc=_('Mark selected entries as unkept'))
     def mark_unkept(self, request, queryset):
         n_updated = queryset.update(kept=False)
 

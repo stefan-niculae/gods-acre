@@ -3,8 +3,8 @@ from django.conf.urls.i18n import i18n_patterns
 
 
 urlpatterns = [
-    url(r'^jet',        include('jet.urls', 'jet')),    # django-jet
-    url(r'^rosetta',    include('rosetta.urls')),       # django-rosetta
+    url(r'^jet',            include('jet.urls', 'jet')),    # django-jet
+    url(r'^translations',   include('rosetta.urls')),       # django-rosetta
 ]
 
 # TODO

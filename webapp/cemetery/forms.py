@@ -2,7 +2,7 @@ from django.forms import Form, ModelForm, ModelMultipleChoiceField, IntegerField
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.translation import ugettext_lazy as _
 
-from .models import Spot, Deed, Payment, Owner, Construction, Authorization, PaymentReceipt, Operation, NrYear
+from .models import Spot, Deed, PaymentUnit, Owner, Construction, Authorization, PaymentReceipt, Operation, NrYear
 from .utils import title_case, year_shorthand_to_full
 
 
