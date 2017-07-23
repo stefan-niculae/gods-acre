@@ -1,6 +1,5 @@
 {% extends "admin/base.html" %}
-{% load static %}
-{% load custom_filters %}
+{% load static i18n custom_filters %}
 
   {% block title %}Import entries{% endblock %}
 
@@ -13,8 +12,8 @@
   {% endblock %}
 
   {% block content %}
-    <h2>Import entries</h2>
-    <p>See documentation for expected sheets, columns and values</p>
+    <h2>{% trans 'Import entries' %}</h2>
+    <p>{% trans 'See documentation for expected sheets, columns and values' %}</p>
 
     <form name="import" enctype="multipart/form-data" method="post" onsubmit="askConfirmationIfWiping()">
       {% csrf_token %}
@@ -23,13 +22,11 @@
     </form>
 
     <section id="parsing-results">
-      <h2>Parsing results</h2>
+      <h2>{% trans 'Parsing results' %}</h2>
 
       {% if not sheet_feedbacks %}
-        Parsing feedback (error/success for each row) will appear here after submitting the excel file.
+        <p>{% trans 'Parsing feedback (error/success for each row) will appear here after submitting the excel file.' %}</p>
       {% else %}
-
-        {# Rows with an error or already existing are skipped. #}
 
         <ul class="changeform-tabs">
         {% for sheet_name, row_feedbacks in sheet_feedbacks.items %}
@@ -44,7 +41,7 @@
               {% for status, count in sheet_counts.items %}
                 <div class="status-toggler">
 {#                  <input type="checkbox" name="{{ sheet_name }}-{{ status }}" checked>#}
-                  <span class="status-{{ status }}"><span class="count">{{ count }}</span> {{ status }}</span>
+                  <span class="status-{{ status }}"><span class="count">{{ count }}</span> {% trans status %}</span>
                 </div>
               {% endfor %}
             {% endwith %}
@@ -52,10 +49,10 @@
             <table class="hoverable-rows">
               <thead>
                 <tr>
-                  <th title="Row number in the original excel document">Row</th>
-                  <th title="The result of parsing the row">Status</th>
-                  <th title="Additional information based on parsing status">Info</th>
-                  <th title="Technical information">Additional Info</th>
+                  <th title="{% trans 'Row number in the original excel document' %}">{% trans 'Row' %}</th>
+                  <th title="{% trans 'The result of parsing the row' %}">{% trans 'Status' %}</th>
+                  <th title="{% trans 'Additional information based on parsing status' %}">{% trans 'Info' %}</th>
+                  <th title="{% trans 'Technical information' %}">{% trans 'Additional Info' %}</th>
 {#                  <th title="No impact on the system except. Used to help you remember which errors you have already solved">Solved</th>#}
                 </tr>
               </thead>
@@ -63,7 +60,7 @@
                 {% for feedback in row_feedbacks %}
                   <tr>
                     <td>{{ forloop.counter|add:1}}</td>  {# first row is for headers, data starts at 2 #}
-                    <td class="status-{{ feedback.status }}">{{ feedback.status }}</td>
+                    <td class="status-{{ feedback.status }}">{% trans feedback.status %}</td>
                     <td>{{ feedback.info }}</td>
                     <td>{{ feedback.additional }}</td>
 {#                    <td><input type="checkbox" name="{{ sheet_name }}-{{ forloop.counter|add:1 }}"></td>#}

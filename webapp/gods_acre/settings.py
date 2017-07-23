@@ -146,8 +146,6 @@ STATIC_URL = '/static/'
 # https://github.com/mishbahr/django-modeladmin-reorder
 # TODO fix breadcrumb to say "cemetery" at http://127.0.0.1:8000/admin/cemetery/ instead of "general ownership"
 ADMIN_REORDER = (
-    'auth',
-
     # General
     {'app': 'cemetery', 'label': _('General'), 'models': [
         {'model': 'cemetery.Spot',              'label': _('Spots')},
@@ -182,6 +180,8 @@ ADMIN_REORDER = (
     {'app': 'cemetery', 'label': _('Maintenance'), 'models': [
         {'model': 'cemetery.Maintenance',       'label': _('Maintenances')},
     ]},
+
+    'auth',
 )
 
 # django-jet

@@ -196,5 +196,5 @@ class MaintenanceBulkForm(Form):
 
 
 class ImportForm(Form):
-    document = FileField()
-    wipe_beforehand = BooleanField(required=False)
+    document = FileField(label=_('Document'))
+    wipe_beforehand = BooleanField(required=False, label=_('Wipe beforehand'))

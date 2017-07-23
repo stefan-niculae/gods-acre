@@ -1,0 +1,4 @@
+.breadcrumbs.initialized a:nth-of-type(2),
+.breadcrumbs.initialized span:nth-of-type(2) {
+  display: none
+}

@@ -8,16 +8,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-07-24 01:03+0300\n"
-"PO-Revision-Date: 2017-07-24 00:57+0144\n"
+"POT-Creation-Date: 2017-07-24 01:55+0300\n"
+"PO-Revision-Date: 2017-07-24 01:56+0144\n"
 "Last-Translator: b'  <>'\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: ro\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?"
-"2:1));\n"
+"Plural-Forms: nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));\n"
 "X-Translated-Using: django-rosetta 0.7.13\n"
 
 #: cemetery/admin.py:21 cemetery/admin.py:22
@@ -28,324 +27,346 @@ msgstr "Hectarul lui Dumnezeu"
 msgid "Cemetery Administration"
 msgstr "Administrare cimitir"
 
-#: cemetery/admin.py:82
+#: cemetery/admin.py:94
 msgid "Active Deed"
 msgstr "Act curent"
 
-#: cemetery/admin.py:86
+#: cemetery/admin.py:98
 msgid "Sharing Deed"
 msgstr "Împart actul"
 
-#: cemetery/admin.py:94
+#: cemetery/admin.py:106
 msgid "Active Owners"
 msgstr "Proprietari curenți"
 
-#: cemetery/admin.py:98 cemetery/models.py:301 gods_acre/settings.py:165
+#: cemetery/admin.py:110 cemetery/models.py:306 gods_acre/settings.py:163
 #: gods_acre/settings.py:212
 msgid "Operations"
 msgstr "Operații"
 
-#: cemetery/admin.py:102 cemetery/admin.py:385 cemetery/forms.py:34
-#: cemetery/models.py:373 gods_acre/settings.py:169 gods_acre/settings.py:170
+#: cemetery/admin.py:114 cemetery/admin.py:397 cemetery/forms.py:34
+#: cemetery/models.py:378 gods_acre/settings.py:167 gods_acre/settings.py:168
 #: gods_acre/settings.py:208
 msgid "Constructions"
 msgstr "Construcții"
 
-#: cemetery/admin.py:106
+#: cemetery/admin.py:118
 msgid "Sharing Auth."
 msgstr "Împart autorizația"
 
-#: cemetery/admin.py:110
+#: cemetery/admin.py:122
 msgid "Last Paid"
 msgstr "Ultima plată"
 
-#: cemetery/admin.py:114
+#: cemetery/admin.py:126
 msgid "Unkept Since"
 msgstr "Neîntreținut din"
 
-#: cemetery/admin.py:151 cemetery/admin.py:194
+#: cemetery/admin.py:163 cemetery/admin.py:206
 msgctxt "short"
 msgid "Deed"
 msgstr "Act"
 
-#: cemetery/admin.py:155 cemetery/admin.py:198 cemetery/admin.py:257
-#: cemetery/admin.py:321 cemetery/admin.py:350 cemetery/admin.py:462
-#: cemetery/forms.py:190 cemetery/models.py:80 gods_acre/settings.py:153
+#: cemetery/admin.py:167 cemetery/admin.py:210 cemetery/admin.py:269
+#: cemetery/admin.py:333 cemetery/admin.py:362 cemetery/admin.py:474
+#: cemetery/forms.py:190 cemetery/models.py:85 gods_acre/settings.py:151
 #: gods_acre/settings.py:202
 msgid "Spots"
 msgstr "Locuri de veci"
 
-#: cemetery/admin.py:159 cemetery/admin.py:253 gods_acre/settings.py:159
-#: gods_acre/settings.py:178
+#: cemetery/admin.py:171 cemetery/admin.py:265 gods_acre/settings.py:157
+#: gods_acre/settings.py:176
 msgid "Receipts"
 msgstr "Chitanțe"
 
-#: cemetery/admin.py:163 cemetery/admin.py:202 cemetery/admin.py:422
-#: cemetery/admin.py:470 cemetery/admin.py:517 cemetery/forms.py:92
-#: cemetery/models.py:257 gods_acre/settings.py:160 gods_acre/settings.py:206
+#: cemetery/admin.py:175 cemetery/admin.py:214 cemetery/admin.py:434
+#: cemetery/admin.py:482 cemetery/admin.py:529 cemetery/forms.py:92
+#: cemetery/models.py:262 gods_acre/settings.py:158 gods_acre/settings.py:206
 msgid "Owners"
 msgstr "Proprietari"
 
-#: cemetery/admin.py:190 cemetery/admin.py:418
+#: cemetery/admin.py:202 cemetery/admin.py:430
 msgid "Receipt"
 msgstr "Chitanță"
 
-#: cemetery/admin.py:235
+#: cemetery/admin.py:247
 msgid "Phone"
 msgstr "Telefon"
 
-#: cemetery/admin.py:241
+#: cemetery/admin.py:253
 msgid "Address"
 msgstr "Adresă"
 
-#: cemetery/admin.py:245
+#: cemetery/admin.py:257
 msgid "City"
 msgstr "Localitate"
 
-#: cemetery/admin.py:249 gods_acre/settings.py:158
+#: cemetery/admin.py:261 gods_acre/settings.py:156
 msgctxt "short"
 msgid "Deeds"
 msgstr "Acte"
 
-#: cemetery/admin.py:291
+#: cemetery/admin.py:303
 msgid "Date"
 msgstr "Dată"
 
-#: cemetery/admin.py:295 cemetery/models.py:256
+#: cemetery/admin.py:307 cemetery/models.py:261
 msgid "Owner"
 msgstr "Proprietar"
 
-#: cemetery/admin.py:299 cemetery/admin.py:414 cemetery/admin.py:513
-#: cemetery/models.py:79 cemetery/templates/test.html:5
+#: cemetery/admin.py:311 cemetery/admin.py:426 cemetery/admin.py:525
+#: cemetery/models.py:84 cemetery/templates/test.html:5
 msgid "Spot"
 msgstr "Loc de veci"
 
-#: cemetery/admin.py:325 cemetery/models.py:372
+#: cemetery/admin.py:337 cemetery/models.py:377
 msgid "Construction"
 msgstr "Construcție"
 
-#: cemetery/admin.py:346 cemetery/forms.py:42 cemetery/models.py:397
-#: gods_acre/settings.py:171 gods_acre/settings.py:209
+#: cemetery/admin.py:358 cemetery/forms.py:42 cemetery/models.py:402
+#: gods_acre/settings.py:169 gods_acre/settings.py:209
 msgid "Authorizations"
 msgstr "Autorizații"
 
-#: cemetery/admin.py:354
+#: cemetery/admin.py:366
 msgid "Owner Builder"
 msgstr "Constructor proprietar"
 
-#: cemetery/admin.py:358 cemetery/models.py:332
+#: cemetery/admin.py:370 cemetery/models.py:337
 msgid "Company"
 msgstr "Companie"
 
-#: cemetery/admin.py:383
+#: cemetery/admin.py:395
 msgid "#Constructions"
 msgstr "Nr construcții"
 
-#: cemetery/admin.py:454 gods_acre/settings.py:176
+#: cemetery/admin.py:466 gods_acre/settings.py:174
 msgid "Payments"
 msgstr "Contribuții"
 
-#: cemetery/admin.py:458
+#: cemetery/admin.py:470
 msgid "Receipt Year"
 msgstr "Anul chitanței"
 
-#: cemetery/admin.py:466
+#: cemetery/admin.py:478
 msgid "Payments Years"
 msgstr "Anii plătiți"
 
-#: cemetery/admin.py:521
+#: cemetery/admin.py:533
 msgid "Mark selected entries as kept"
 msgstr "Marchează intrările selectate ca întreținute"
 
-#: cemetery/admin.py:532
+#: cemetery/admin.py:544
 msgid "Mark selected entries as unkept"
 msgstr "Marchează intrările selectate ca neîntreținute"
 
-#: cemetery/apps.py:6
+#: cemetery/apps.py:7
 msgid "cemetery"
 msgstr "cimitir"
 
-#: cemetery/forms.py:26 cemetery/models.py:211 gods_acre/settings.py:204
+#: cemetery/forms.py:26 cemetery/models.py:216 gods_acre/settings.py:204
 msgid "Deeds"
 msgstr "Acte de concesiune"
 
-#: cemetery/models.py:38
+#: cemetery/forms.py:199
+#| msgid "document"
+msgid "Document"
+msgstr "Document"
+
+#: cemetery/forms.py:200
+#| msgid "wipe beforehand"
+msgid "Wipe beforehand"
+msgstr "Șterge tot înainte"
+
+#: cemetery/models.py:13
+msgid "on"
+msgstr "pe"
+
+#: cemetery/models.py:14
+msgid "for"
+msgstr "pt"
+
+#: cemetery/models.py:15
+msgid "in"
+msgstr "în"
+
+#: cemetery/models.py:43
 msgid "number"
 msgstr "număr"
 
-#: cemetery/models.py:39 cemetery/models.py:430 cemetery/models.py:457
+#: cemetery/models.py:44 cemetery/models.py:435 cemetery/models.py:462
 msgid "year"
 msgstr "an"
 
-#: cemetery/models.py:70
+#: cemetery/models.py:75
 msgid "parcel"
 msgstr "parcelă"
 
-#: cemetery/models.py:71
+#: cemetery/models.py:76
 msgid "row"
 msgstr "rând"
 
-#: cemetery/models.py:72
+#: cemetery/models.py:77
 msgid "column"
 msgstr "coloană"
 
-#: cemetery/models.py:196 cemetery/models.py:359 cemetery/models.py:392
+#: cemetery/models.py:201 cemetery/models.py:364 cemetery/models.py:397
 msgid "spots"
 msgstr "locuri de veci"
 
-#: cemetery/models.py:203
+#: cemetery/models.py:208
 msgid "owner dead"
 msgstr "proprietar decedat"
 
-#: cemetery/models.py:204
+#: cemetery/models.py:209
 msgid "donated"
 msgstr "donat"
 
-#: cemetery/models.py:205
+#: cemetery/models.py:210
 msgid "lost"
 msgstr "pierdut"
 
-#: cemetery/models.py:207
+#: cemetery/models.py:212
 msgid "cancel reason"
 msgstr "motiv anulare"
 
-#: cemetery/models.py:210
+#: cemetery/models.py:215
 msgid "Deed"
 msgstr "Act de concesiune"
 
-#: cemetery/models.py:215
+#: cemetery/models.py:220
 msgid "deed"
 msgstr "act de concesiune"
 
-#: cemetery/models.py:216 cemetery/models.py:432
+#: cemetery/models.py:221 cemetery/models.py:437
 msgid "value"
 msgstr "valoare"
 
-#: cemetery/models.py:219
+#: cemetery/models.py:224
 msgid "Ownership Receipt"
 msgstr "Chitanță proprietate"
 
-#: cemetery/models.py:220 gods_acre/settings.py:205
+#: cemetery/models.py:225 gods_acre/settings.py:205
 msgid "Ownership Receipts"
 msgstr "Chitanțe proprietate"
 
-#: cemetery/models.py:246 cemetery/templates/test.html:4
+#: cemetery/models.py:251 cemetery/templates/test.html:4
 msgid "Name"
 msgstr "Nume"
 
-#: cemetery/models.py:247
+#: cemetery/models.py:252
 msgid "phone"
 msgstr "telefon"
 
-#: cemetery/models.py:248
+#: cemetery/models.py:253
 msgid "address"
 msgstr "adresă"
 
-#: cemetery/models.py:249
+#: cemetery/models.py:254
 msgid "city"
 msgstr "oraș"
 
-#: cemetery/models.py:250
+#: cemetery/models.py:255
 msgid "deeds"
 msgstr "acte de concesiune"
 
-#: cemetery/models.py:284
+#: cemetery/models.py:289
 msgid "burial"
 msgstr "înhumare"
 
-#: cemetery/models.py:285
+#: cemetery/models.py:290
 msgid "exhumation"
 msgstr "dezhumare"
 
-#: cemetery/models.py:291 cemetery/models.py:358
+#: cemetery/models.py:296 cemetery/models.py:363
 msgid "type"
 msgstr "tip"
 
-#: cemetery/models.py:292
+#: cemetery/models.py:297
 msgid "deceased"
 msgstr "decedat"
 
-#: cemetery/models.py:293 cemetery/models.py:431 cemetery/models.py:458
+#: cemetery/models.py:298 cemetery/models.py:436 cemetery/models.py:463
 msgid "spot"
 msgstr "loc de veci"
 
-#: cemetery/models.py:294
+#: cemetery/models.py:299
 msgid "date"
 msgstr "dată"
 
-#: cemetery/models.py:295
+#: cemetery/models.py:300
 msgid "exhumation written report"
 msgstr "proces verbal exhumare"
 
-#: cemetery/models.py:296
+#: cemetery/models.py:301
 msgid "remains brought from"
 msgstr "oseminte aduse din"
 
-#: cemetery/models.py:300
+#: cemetery/models.py:305
 msgid "Operation"
 msgstr "Operație"
 
-#: cemetery/models.py:327
+#: cemetery/models.py:332
 msgid "name"
 msgstr "nume"
 
-#: cemetery/models.py:333 gods_acre/settings.py:172 gods_acre/settings.py:210
+#: cemetery/models.py:338 gods_acre/settings.py:170 gods_acre/settings.py:210
 msgid "Companies"
 msgstr "Companii"
 
-#: cemetery/models.py:350
+#: cemetery/models.py:355
 msgid "tomb"
 msgstr "cavou"
 
-#: cemetery/models.py:351
+#: cemetery/models.py:356
 msgid "border"
 msgstr "bordură"
 
-#: cemetery/models.py:360
+#: cemetery/models.py:365
 msgid "company"
 msgstr "companie"
 
-#: cemetery/models.py:361
+#: cemetery/models.py:366
 msgid "owner builder"
 msgstr "constructor proprietar"
 
-#: cemetery/models.py:393
+#: cemetery/models.py:398
 msgid "construction"
 msgstr "construcție"
 
-#: cemetery/models.py:396
+#: cemetery/models.py:401
 msgid "Authorization"
 msgstr "Autorizație"
 
-#: cemetery/models.py:405
+#: cemetery/models.py:410
 msgid "Payment Receipt"
 msgstr "Chitanță contribuție"
 
-#: cemetery/models.py:406 gods_acre/settings.py:215
+#: cemetery/models.py:411 gods_acre/settings.py:215
 msgid "Payment Receipts"
 msgstr "Chitanțe contribuții"
 
-#: cemetery/models.py:433
+#: cemetery/models.py:438
 msgid "receipt"
 msgstr "chitanță"
 
-#: cemetery/models.py:440
+#: cemetery/models.py:445
 msgid "Payment Unit"
 msgstr "Unitate de plată"
 
-#: cemetery/models.py:441 gods_acre/settings.py:214
+#: cemetery/models.py:446 gods_acre/settings.py:214
 msgid "Payment Units"
 msgstr "Unități de plată"
 
-#: cemetery/models.py:459
+#: cemetery/models.py:464
 msgid "kept"
 msgstr "întreținut"
 
-#: cemetery/models.py:464 gods_acre/settings.py:182 gods_acre/settings.py:217
+#: cemetery/models.py:469 gods_acre/settings.py:180 gods_acre/settings.py:217
 msgid "Maintenance"
 msgstr "Întreținere"
 
-#: cemetery/models.py:465 gods_acre/settings.py:183
+#: cemetery/models.py:470 gods_acre/settings.py:181
 msgid "Maintenances"
 msgstr "Întreținere"
 
@@ -354,9 +375,73 @@ msgstr "Întreținere"
 msgid "Add bulk %(name)ss"
 msgstr "Adaugă multiple %(name)"
 
+#: cemetery/templates/import-entries.html:15
+msgid "Import entries"
+msgstr "Importare înregistrări"
+
+#: cemetery/templates/import-entries.html:16
+msgid "See documentation for expected sheets, columns and values"
+msgstr "Vezi documentația pentru pagini, coloane si valori așteptate"
+
+#: cemetery/templates/import-entries.html:25
+msgid "Parsing results"
+msgstr "Rezultate parsare"
+
+#: cemetery/templates/import-entries.html:28
+msgid ""
+"Parsing feedback (error/success for each row) will appear here after "
+"submitting the excel file."
+msgstr ""
+"Feedback după parsare (eroare/succes pt fiecare rănd) va apărea aici după "
+"încărcarea fisierului excel"
+
+#: cemetery/templates/import-entries.html:52
+msgid "Row number in the original excel document"
+msgstr "Numărul rândului în documentul original excel"
+
+#: cemetery/templates/import-entries.html:52
+msgid "Row"
+msgstr "Rând"
+
+#: cemetery/templates/import-entries.html:53
+msgid "The result of parsing the row"
+msgstr "Rezultatul parsării rândului"
+
+#: cemetery/templates/import-entries.html:53
+msgid "Status"
+msgstr "Statut"
+
+#: cemetery/templates/import-entries.html:54
+msgid "Additional information based on parsing status"
+msgstr "Informații adiționale pe baza rezultatului parsării"
+
+#: cemetery/templates/import-entries.html:54
+msgid "Info"
+msgstr "Informații"
+
+#: cemetery/templates/import-entries.html:55
+msgid "Technical information"
+msgstr "Informații tehnice"
+
+#: cemetery/templates/import-entries.html:55
+msgid "Additional Info"
+msgstr "Informații adiționale"
+
 #: cemetery/validators.py:5
 msgid "A name can contain only letters or a dash (-)"
 msgstr "Numele poate conține numai litere sau cratime (-)"
+
+#: cemetery/views.py:18
+msgid "fail"
+msgstr "eșuat"
+
+#: cemetery/views.py:18
+msgid "add"
+msgstr "adăugat"
+
+#: cemetery/views.py:18
+msgid "duplicate"
+msgstr "duplicat"
 
 #: gods_acre/settings.py:120
 msgid "English"
@@ -366,19 +451,19 @@ msgstr "Engleză"
 msgid "Romanian"
 msgstr "Română"
 
-#: gods_acre/settings.py:152
+#: gods_acre/settings.py:150
 msgid "General"
 msgstr "General"
 
-#: gods_acre/settings.py:157
+#: gods_acre/settings.py:155
 msgid "Ownership"
 msgstr "Proprietate"
 
-#: gods_acre/settings.py:164
+#: gods_acre/settings.py:162
 msgid "Burials"
 msgstr "Înhumări"
 
-#: gods_acre/settings.py:177
+#: gods_acre/settings.py:175
 msgid "Units"
 msgstr "Unități"
 
@@ -393,6 +478,9 @@ msgstr "Date"
 #: gods_acre/settings.py:221
 msgid "Import"
 msgstr "Importare"
+
+#~ msgid "^spot/$"
+#~ msgstr "^loc/$"
 
 #, fuzzy
 #~ msgid "Payment"

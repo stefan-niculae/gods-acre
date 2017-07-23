@@ -24,12 +24,20 @@ site.index_title = _("Cemetery Administration")  # in the tab's title, for the h
 site.site_url = None  # remove the "View Site" link
 
 
+class CustomModelAdmin(ModelAdmin):
+    class Media:
+        css = {
+            # HACK
+            'all': ['remove-second-breadcrumb.css']
+        }
+
+
 """
 Spot
 """
 
 @register(Spot)
-class SpotAdmin(ModelAdmin):
+class SpotAdmin(CustomModelAdmin):
     # What columns the list-view has
     list_display = ['__str__', 'display_parcel', 'display_row', 'display_column',
                     'display_active_deed',
@@ -72,8 +80,12 @@ class SpotAdmin(ModelAdmin):
                            # TODO "shares deed with" order
                            # first_sharing_deed_spot=Min(
                            #     When(Q(deeds__spots__deeds=spot.deeds) & Q(~deeds__spots=spot)), then='deeds__spots'),
-                           max_payments_year=Max('payments__year')
-                           )
+                           max_payments_year=Max('payments__year'))
+
+    # def get_urls(self):
+    #     urls = super(SpotAdmin, self).get_urls()
+    #     custom_url = url(_(r'^spot/$'), self.admin_site.admin_view(self.change_view))
+    #     return [custom_url] + urls
 
     display_parcel = SimpleAdminField(lambda spot: spot.parcel, 'P', 'parcel')
     display_row    = SimpleAdminField(lambda spot: spot.row,    'R', 'row')
@@ -121,7 +133,7 @@ Ownership
 """
 
 @register(Deed)
-class DeedAdmin(ModelAdmin):
+class DeedAdmin(CustomModelAdmin):
     form = DeedForm
 
     list_display = ['display_repr', 'number', 'year', 'cancel_reason',
@@ -166,7 +178,7 @@ class DeedAdmin(ModelAdmin):
 
 
 @register(OwnershipReceipt)
-class OwnershipReceiptAdmin(ModelAdmin):
+class OwnershipReceiptAdmin(CustomModelAdmin):
     list_display = ['display_repr', 'number', 'year', 'value',
                     'display_deed', 'display_spots', 'display_owners']
 
@@ -205,7 +217,7 @@ class OwnershipReceiptAdmin(ModelAdmin):
 
 
 @register(Owner)
-class OwnerAdmin(ModelAdmin):
+class OwnerAdmin(CustomModelAdmin):
     list_display = ['name', 'display_phone', 'display_address', 'display_city',
                     'display_spots', 'display_deeds', 'display_receipts',
                     # 'display_constructions'
@@ -268,7 +280,7 @@ Operations
 """
 
 @register(Operation)
-class OperationAdmin(ModelAdmin):
+class OperationAdmin(CustomModelAdmin):
     list_display = ['__str__', 'type', 'display_date', 'deceased', 'display_owner',
                     'display_spot', 'exhumation_written_report', 'remains_brought_from']
 
@@ -305,7 +317,7 @@ Constructions
 """
 
 @register(Authorization)
-class AuthorizationAdmin(ModelAdmin):
+class AuthorizationAdmin(CustomModelAdmin):
     list_display = ['__str__', 'number', 'year', 'display_spots', 'display_construction']
 
     list_filter = rev(['number', 'year',
@@ -328,7 +340,7 @@ class AuthorizationAdmin(ModelAdmin):
 
 
 @register(Construction)
-class ConstructionAdmin(ModelAdmin):
+class ConstructionAdmin(CustomModelAdmin):
     list_display = ['__str__', 'type', 'display_authorizations', 'display_spots',
                     'display_owner_builder', 'display_company']
 
@@ -361,7 +373,7 @@ class ConstructionAdmin(ModelAdmin):
 
 
 @register(Company)
-class CompanyAdmin(ModelAdmin):
+class CompanyAdmin(CustomModelAdmin):
     list_display = ['__str__', 'display_n_constructions', 'display_constructions']
 
     list_filter = rev(['name',
@@ -392,7 +404,7 @@ Payments
 """
 
 @register(PaymentUnit)
-class PaymentUnitAdmin(ModelAdmin):
+class PaymentUnitAdmin(CustomModelAdmin):
     list_display = ['__str__', 'year', 'display_spot', 'value',
                     'display_receipts',
                     'display_owners']
@@ -425,7 +437,7 @@ class PaymentUnitAdmin(ModelAdmin):
 
 
 @register(PaymentReceipt)
-class PaymentReceiptAdmin(ModelAdmin):
+class PaymentReceiptAdmin(CustomModelAdmin):
     list_display = ['__str__', 'number', 'display_receipt_year',
                     'total_value', 'display_payments',
                     'display_spots', 'display_payments_years',
@@ -477,7 +489,7 @@ Maintenance
 """
 
 @register(Maintenance)
-class MaintenanceAdmin(ModelAdmin):
+class MaintenanceAdmin(CustomModelAdmin):
     list_display = ['__str__', 'year', 'display_spot', 'kept',
                     'display_owners']
 

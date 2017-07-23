@@ -9,6 +9,11 @@ from django.utils.translation import ugettext_lazy as _
 from .validators import name_validator
 from .utils import display_head_tail_summary, parse_nr_year, title_case, initials, year_to_shorthand, NBSP
 
+# translations
+ON_TRANS  = _('on')
+FOR_TRANS = _('for')
+IN_TRANS  = _('in')
+
 optional = {'blank': True, 'null': True}  # to be passed in field definitions as additional kwargs
 
 """
@@ -377,7 +382,7 @@ class Construction(Model):
             first_spot, more = '?', ''
         else:
             [first_spot], more = display_head_tail_summary(self.spots.all(), head_length=1)
-        return f'{Construction.TYPE_SYMBOLS[self.type]}{NBSP}on{NBSP}{first_spot}{more}'
+        return f'{Construction.TYPE_SYMBOLS[self.type]}{NBSP}{ON_TRANS}{NBSP}{first_spot}{more}'
 
     @property
     def authorization_spots(self):
@@ -441,7 +446,7 @@ class PaymentUnit(Model):
         verbose_name_plural = _('Payment Units')
 
     def __str__(self):
-        return f"{self.spot}{NBSP}for{NBSP}'{year_to_shorthand(self.year)}"
+        return f"{self.spot}{NBSP}{FOR_TRANS}{NBSP}'{year_to_shorthand(self.year)}"
 
     @property
     def owners(self):
@@ -465,7 +470,7 @@ class Maintenance(Model):
         verbose_name_plural = _('Maintenances')
 
     def __str__(self):
-        return f"{self.spot}{NBSP}in{NBSP}'{year_to_shorthand(self.year)}"
+        return f"{self.spot}{NBSP}{IN_TRANS}{NBSP}'{year_to_shorthand(self.year)}"
 
     @property
     def owners(self):

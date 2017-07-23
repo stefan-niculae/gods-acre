@@ -113,18 +113,17 @@
 - translation
   - "Deeds", "Constructions", "Authorizations" in spot change, General tab
     - Owners in Deed change, general tab
-  - url paths
+  - url paths https://stackoverflow.com/questions/5680405/override-django-admin-urls-for-specific-model
   - model properties? (if needed)
   - model relationships? related_name?
-  - model `__str__`
-  - in `settings.py`
+  - js https://docs.djangoproject.com/en/1.11/topics/i18n/translation/#internationalization-in-javascript-code
 - semantic coloring:
   - red if `Spot#unkept_since > 7`
   - grey if `Deed#cancel_reason is not None`
 - replace spaces in name, address etc with nbsp
 - add link from payment units to payment receipts and vice-versa (and for other groupings as well)
 - things are not capitalized in romanian: eg [filtrare] "După Chitanță proprietate"
-- top page instead of "HOME > CEMETERY > OWNERS > Ana" with faded OWNERS, make it "HOME > OWNERS > Ana" with bold colors
+- more spacing in import
 - logo
 - direct urls `/spot` instead of `/cemetery/spot`
 - center things & more styling
