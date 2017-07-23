@@ -10,3 +10,10 @@ migrations/
 
 # IDE
 .idea
+
+# excel
+~$*.xlsx
+
+# translations
+*.mo
+
