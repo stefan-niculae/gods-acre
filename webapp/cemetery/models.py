@@ -247,8 +247,9 @@ class OwnerManager(Manager):
 
 class Owner(Model):
     name    = CharField(max_length=100, unique=True, validators=[name_validator])
-    phone   = CharField(max_length=15, **optional)  # TODO regex validation
+    phone   = CharField(max_length=15,  **optional)  # TODO regex validation phone, address, city
     address = CharField(max_length=250, **optional)
+    city    = CharField(max_length=50,  **optional)
     deeds   = ManyToManyField(Deed, related_name='owners', blank=True)
 
     objects = OwnerManager()
@@ -277,7 +278,7 @@ class Owner(Model):
 Operations
 """
 
-class Operation(Annotatable):
+class Operation(Model):
     BURIAL     = 'b'
     EXHUMATION = 'e'
     TYPE_CHOICES = [
@@ -290,9 +291,11 @@ class Operation(Annotatable):
     }
     type = CharField(max_length=1, choices=TYPE_CHOICES, default=BURIAL)
     # TODO warning if exhumation is not the same as one buried
-    name = CharField(max_length=100, validators=[name_validator], **optional)  # TODO what to display in admin when missing
-    spot = ForeignKey(Spot, related_name='operations')
-    date = DateField(default=date.today)  # TODO warn if date is too far from current
+    deceased = CharField(max_length=100, validators=[name_validator], **optional)
+    spot     = ForeignKey(Spot, related_name='operations')
+    date     = DateField(default=date.today)  # TODO warn if date is too far from current
+    exhumation_written_report = CharField(max_length=20, **optional)
+    remains_brought_from      = CharField(max_length=50, **optional)
 
     # TODO show how many there are currently burried when adding a new operation
 
@@ -300,7 +303,7 @@ class Operation(Annotatable):
         ordering = ['date', 'spot']
 
     def __str__(self):
-        display_initials = initials(self.name) if self.name else ''
+        display_initials = initials(self.deceased) if self.deceased else ''
         return f"'{self.date:%y}: {self.spot} {Operation.TYPE_SYMBOLS[self.type]} {display_initials}"
 
 
@@ -363,7 +366,7 @@ class Construction(Model):
 
     class Meta:
         default_related_name = 'constructions'
-        # TODO ask about unique
+        # TODO a spot can only have as many as one construction of each type
         # unique_together = ('type', 'spots')
         ordering = ['type']  # TODO spots to ordering?
 
@@ -467,3 +470,13 @@ class Maintenance(Model):
         # The maintenance-owner relation goes through a spot and a deed
         # TODO this should be the owner for THIS year, not all previous and future ones
         return Owner.objects.filter(deeds__spots__maintenances=self)
+
+
+ALL_MODELS = [
+    Spot,
+    Deed, OwnershipReceipt, Owner,
+    Operation,
+    Construction, Authorization, Company,
+    Payment, PaymentReceipt,
+    Maintenance,
+]

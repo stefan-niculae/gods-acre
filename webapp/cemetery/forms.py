@@ -195,5 +195,6 @@ class MaintenanceBulkForm(Form):
     # TODO
 
 
-class UploadFileForm(Form):
-    file = FileField()
+class ImportForm(Form):
+    document = FileField()
+    wipe_beforehand = BooleanField(required=False)

@@ -22,3 +22,10 @@ document.addEventListener("DOMContentLoaded", function() {
     // TODO: toggle for sheet-wise fail, duplicate, add, selected
     // TODO: line-through for row-wise selected
 })
+
+function askConfirmationIfWiping(e) {
+    var wiping_checked = document.forms.import.wipe_beforehand.checked
+    if (wiping_checked)
+        return confirm('Are you sure you want to delete everything from the database before importing?')
+    return true
+}

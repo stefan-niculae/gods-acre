@@ -16,9 +16,10 @@
     <h2>Import entries</h2>
     <p>See documentation for expected sheets, columns and values</p>
 
-    <form action="" enctype="multipart/form-data"  method="post">
+    <form name="import" enctype="multipart/form-data" method="post" onsubmit="askConfirmationIfWiping()">
       {% csrf_token %}
-      {{ form.file }} <input type="submit" value="Submit">
+      {{ form.as_p }}
+      <input type="submit" value="Submit">
     </form>
 
     <section id="parsing-results">

@@ -1,27 +1,32 @@
 from django.contrib.admin import TabularInline
+from jet.admin import CompactInline
 
 from .models import OwnershipReceipt, Maintenance, Operation,  Payment, Construction, Authorization
 
 
-class CustomInline(TabularInline):
+class SmallInline(TabularInline):
     extra = 1
     show_change_link = True
 
-class OwnershipReceiptInline(CustomInline):
+class LargeInline(CompactInline):  # yeah, the name they chose, "Compact", can lead to confusion
+    extra = 1
+    show_change_link = True
+
+
+class OwnershipReceiptInline(SmallInline):
     model = OwnershipReceipt
 
-class MaintenanceInline(CustomInline):
+class MaintenanceInline(SmallInline):
     model = Maintenance
 
-# TODO make the textarea smaller intially, and move the note to the last position
-class OperationInline(CustomInline):
+class OperationInline(LargeInline):
     model = Operation
 
-class ConstructionInline(CustomInline):
+class ConstructionInline(SmallInline):
     model = Construction
 
-class AuthorizationInline(CustomInline):
+class AuthorizationInline(SmallInline):
     model = Authorization
 
-class PaymentInline(CustomInline):
+class PaymentInline(SmallInline):
     model = Payment

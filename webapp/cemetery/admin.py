@@ -1,5 +1,5 @@
 from django.db.models import Min, Sum, Case, When, Max
-from django.contrib.admin import ModelAdmin, register, AdminSite
+from django.contrib.admin import ModelAdmin, register, AdminSite, site
 from django.contrib.messages import SUCCESS
 from django.conf.urls import url
 from django.template.response import TemplateResponse
@@ -16,12 +16,10 @@ from .utils import rev, display_change_link, display_head_links, truncate, displ
 Site
 """
 
-class CustomAdminSite(AdminSite):
-    # TODO use this instead of the default admin site
-    site_header = "God's Acre"  # in the menus
-    site_title = "God's Acre"  # in the tab's title
-    index_title = "Cemetery Administration"  # in the tab's title, for the home page
-    site_url = None  # remove the "View Site" link
+site.site_header = "God's Acre"  # in the menus
+site.site_title = "God's Acre"  # in the tab's title
+site.index_title = "Cemetery Administration"  # in the tab's title, for the home page
+site.site_url = None  # remove the "View Site" link
 
 
 """
@@ -80,7 +78,7 @@ class SpotAdmin(ModelAdmin):
     display_row    = SimpleAdminField(lambda spot: spot.row,    'R', 'row')
     display_column = SimpleAdminField(lambda spot: spot.column, 'C', 'column')
 
-    @short(desc='Deed', order='first_active_deed', tags=True)
+    @short(desc='Active Deed', order='first_active_deed', tags=True)
     def display_active_deed(self, spot):
         return display_head_links(spot.active_deeds, 1)
 
@@ -92,7 +90,7 @@ class SpotAdmin(ModelAdmin):
     # def display_ownership_receipts(self, spot):
     #     return display_head_links(spot.ownership_receipts)
 
-    @short(desc='Owners', order='first_active_owner', tags=True)
+    @short(desc='Active Owners', order='first_active_owner', tags=True)
     def display_owners(self, spot):
         return display_head_links(spot.active_owners)
 
@@ -195,15 +193,17 @@ class OwnershipReceiptAdmin(ModelAdmin):
 
 @register(Owner)
 class OwnerAdmin(ModelAdmin):
-    list_display = ['name', 'display_phone', 'display_address',
-                    'display_deeds', 'display_receipts', 'display_spots', 'display_constructions']
+    list_display = ['name', 'display_phone', 'display_address', 'display_city',
+                    'display_spots', 'display_deeds', 'display_receipts',
+                    # 'display_constructions'
+                    ]
 
-    list_filter = rev(['name', 'phone', 'address',
+    list_filter = rev(['name', 'phone', 'address', 'city',
                        'deeds',
                        'deeds__spots', 'deeds__spots__parcel', 'deeds__spots__row', 'deeds__spots__column',
                        'constructions_built'])
 
-    search_fields = ['name', 'phone', 'address',
+    search_fields = ['name', 'phone', 'address', 'city',
                      'deeds__number', 'deeds__year',
                      'deeds__spots__parcel', 'deeds__spots__row', 'deeds__spots__column',
                      'constructions_built__type']
@@ -216,7 +216,8 @@ class OwnerAdmin(ModelAdmin):
         return qs.annotate(first_deed=Min('deeds'),
                            first_receipt=Min('deeds__receipts'),
                            first_spot=Min('deeds__spots'),
-                           first_construction=Min('constructions_built'))
+                           # first_construction=Min('constructions_built')
+                           )
 
     @short(desc='Phone', order='phone')
     def display_phone(self, owner):
@@ -227,6 +228,10 @@ class OwnerAdmin(ModelAdmin):
     @short(desc='Address', order='address')
     def display_address(self, owner):
         return truncate(owner.address)
+
+    @short(desc='City', order='city')
+    def display_city(self, owner):
+        return truncate(owner.city)
 
     @short(desc='Deeds', order='first_deed', tags=True)
     def display_deeds(self, owner):
@@ -240,9 +245,9 @@ class OwnerAdmin(ModelAdmin):
     def display_spots(self, owner):
         return display_head_links(owner.spots)
 
-    @short(desc='Built', order='first_construction', tags=True)
-    def display_constructions(self, owner):
-        return display_head_links(owner.constructions_built)
+    # @short(desc='Built', order='first_construction', tags=True)
+    # def display_constructions(self, owner):
+    #     return display_head_links(owner.constructions_built)
 
 
 """
@@ -251,31 +256,36 @@ Operations
 
 @register(Operation)
 class OperationAdmin(ModelAdmin):
-    list_display = ['__str__', 'type', 'display_date', 'name', 'display_spot', 'display_note']
+    list_display = ['__str__', 'type', 'display_date', 'deceased', 'display_owner',
+                    'display_spot', 'exhumation_written_report', 'remains_brought_from']
 
     date_hierarchy = 'date'
 
-    list_filter = rev(['type', 'name', 'spot',
+    list_filter = rev(['type', 'deceased', 'spot', 'exhumation_written_report', 'remains_brought_from',
                        'spot__parcel', 'spot__row', 'spot__column',
                        'spot__deeds__owners'])
 
     # TODO search by month name?
-    search_fields = ['type', 'date', 'name', 'note',
+    search_fields = ['type', 'date', 'deceased', 'note', 'exhumation_written_report', 'remains_brought_from',
                      'spot__parcel', 'spot__row', 'spot__column',
                      'spot__deeds__owners__name']
+
+    def get_queryset(self, request):
+        qs = super(OperationAdmin, self).get_queryset(request)
+        # TODO only active owners
+        return qs.annotate(first_owner=Min('spot__deeds__owners'))
 
     @short(desc='Date', order='date')
     def display_date(self, operation):
         return display_date(operation.date)
 
+    @short(desc='Owner', order='first_owner', tags=True)
+    def display_owner(self, operation):
+        return display_head_links(operation.spot.active_owners)
+
     @short(desc='Spot', order='spot', tags=True)
     def display_spot(self, operation):
         return display_change_link(operation.spot)
-
-    @short(desc='Note', order='note')
-    def display_note(self, operation):
-        return truncate(operation.note)
-
 
 """
 Constructions
@@ -306,7 +316,8 @@ class AuthorizationAdmin(ModelAdmin):
 
 @register(Construction)
 class ConstructionAdmin(ModelAdmin):
-    list_display = ['__str__', 'type', 'display_authorizations', 'display_spots', 'owner_builder', 'company']
+    list_display = ['__str__', 'type', 'display_authorizations', 'display_spots',
+                    'display_owner_builder', 'display_company']
 
     list_filter = rev(['type', 'owner_builder', 'company',
                        'spots', 'spots__parcel', 'spots__row', 'spots__column',
@@ -326,6 +337,14 @@ class ConstructionAdmin(ModelAdmin):
     @short(desc='Spots', order='authorizations__spots', tags=True)
     def display_spots(self, construction):
         return display_head_links(construction.spots)
+
+    @short(desc='Owner Builder', order='owner_builder', tags=True)
+    def display_company(self, construction):
+        return display_change_link(construction.company)
+
+    @short(desc='Company', order='company', tags=True)
+    def display_owner_builder(self, construction):
+        return display_change_link(construction.owner_builder)
 
 
 @register(Company)

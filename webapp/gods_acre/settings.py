@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+from django.utils.translation import ugettext_lazy as _
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -63,6 +64,9 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                # 'apptemplates.Loader',  # django-apploader
+                # 'django.template.loaders.filesystem.Loader',
+                # 'django.template.loaders.app_directories.Loader',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
@@ -166,3 +170,41 @@ ADMIN_REORDER = (
         'cemetery.Maintenance',
     ]},
 )
+
+# django-jet
+JET_SIDE_MENU_COMPACT = True  # when False, models for each app will be hidden in a flowing menu
+
+JET_THEMES = [
+    # theme folder name; color of the theme's button in user menu; theme title
+    {'theme': 'default',        'color': '#47bac1',     'title': 'Default'},
+    {'theme': 'green',          'color': '#44b78b',     'title': 'Green'},
+    {'theme': 'light-green',    'color': '#2faa60',     'title': 'Light Green'},
+    {'theme': 'light-violet',   'color': '#a464c4',     'title': 'Light Violet'},
+    {'theme': 'light-blue',     'color': '#5EADDE',     'title': 'Light Blue'},
+    {'theme': 'light-gray',     'color': '#222',        'title': 'Light Gray'},
+]
+
+JET_SIDE_MENU_ITEMS = [
+    {'label': _('Models'), 'app_label': 'cemetery', 'items': [
+        {'name': 'spot'},
+
+        {'name': 'deed'},
+        {'name': 'ownershipreceipt'},
+        {'name': 'owner'},
+
+        {'name': 'construction'},
+        {'name': 'authorization'},
+        {'name': 'company'},
+
+        {'name': 'operation'},
+
+        {'name': 'payment'},
+        {'name': 'paymentreceipt'},
+
+        {'name': 'maintenance'},
+    ]},
+
+    {'label': _('Data'), 'items': [
+        {'label': _('Import'), 'url': '/import'}  # FIXME
+    ]},
+]

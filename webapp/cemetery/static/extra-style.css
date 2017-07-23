@@ -1,3 +1,7 @@
+form input[type=checkbox] {
+  display: inline; /* it is hidden by forms.scss */
+}
+
 .hoverable-rows tr:hover {
   background-color: lightblue;
 }
