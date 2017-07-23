@@ -1,0 +1,73 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-07-23 20:37+0300\n"
+"PO-Revision-Date: 2017-07-23 21:15+0144\n"
+"Last-Translator: b'  <>'\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: ro\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));\n"
+"X-Translated-Using: django-rosetta 0.7.13\n"
+
+#: cemetery/forms.py:26
+msgid "Deeds"
+msgstr "Acte de concesiune"
+
+#: cemetery/forms.py:34
+msgid "Constructions"
+msgstr "Constructii"
+
+#: cemetery/forms.py:42
+msgid "Authorizations"
+msgstr "Autorizatii"
+
+#: cemetery/forms.py:92
+msgid "Owners"
+msgstr "Proprietari"
+
+#: cemetery/forms.py:190
+msgid "Spots"
+msgstr "Locuri de veci"
+
+#: cemetery/models.py:250
+msgid "Name"
+msgstr "Nume"
+
+#: cemetery/templates/admin/cemetery/maintenance/change_list.html:9
+#, python-format
+msgid "Add bulk %(name)ss"
+msgstr ""
+
+#: cemetery/validators.py:5
+msgid "A name can contain only letters or a dash (-)"
+msgstr ""
+
+#: gods_acre/settings.py:118
+msgid "English"
+msgstr "Engleză"
+
+#: gods_acre/settings.py:119
+msgid "Romanian"
+msgstr "Română"
+
+#: gods_acre/settings.py:199
+msgid "Models"
+msgstr "Modele"
+
+#: gods_acre/settings.py:218
+msgid "Data"
+msgstr "Date"
+
+#: gods_acre/settings.py:219
+msgid "Import"
+msgstr "Importare"

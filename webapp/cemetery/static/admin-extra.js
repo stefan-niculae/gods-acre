@@ -26,6 +26,7 @@ document.addEventListener("DOMContentLoaded", function() {
 function askConfirmationIfWiping(e) {
     var wiping_checked = document.forms.import.wipe_beforehand.checked
     if (wiping_checked)
+        // TODO: internationalization https://docs.djangoproject.com/en/1.11/topics/i18n/translation/#internationalization-in-javascript-code
         return confirm('Are you sure you want to delete everything from the database before importing?')
     return true
 }

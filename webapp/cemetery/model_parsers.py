@@ -5,6 +5,8 @@ from collections import namedtuple
 from itertools import zip_longest
 from functools import partial
 
+from django.forms.models import model_to_dict
+
 import numpy as np
 import pandas as pd
 from dateutil.parser import parse
@@ -12,7 +14,7 @@ from datetime import datetime
 
 from .models import Spot, Operation, Deed, OwnershipReceipt, Owner, Construction, Authorization, Company
 from .utils import title_case, year_shorthand_to_full, reverse_dict, filter_dict, show_dict, map_dict, parse_nr_year, \
-    keep_only
+    keep_only, display_change_link
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -302,10 +304,14 @@ MODELS_METADATA = [
 
 RowFeedback = namedtuple('RowFeedback', 'status info additional')
 """
-    status (str):       fail            | add           | duplicate
-    info (str):         failure cause   | model name    | model name
-    additional (str):   exception       | model repr    | model repr
+    status (str):       fail            | add / duplicate
+    info (str):         failure cause   | entity link
+    additional (str):   exception       | fields as dict
 """
+
+def entity2dict_str(entity) -> str:
+    d = model_to_dict(entity)
+    return '{' + show_dict(d) + '}'
 
 def parse_row(row, metadata) -> Tuple[str, str, str]:
     model = metadata.model
@@ -367,7 +373,7 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
         except Exception as error:
             info = f'Save after updating fields on found-duplicate {entity}'
             return 'fail', info, repr(error)
-        return 'duplicate', model_name, entity
+        return 'duplicate', display_change_link(entity), entity2dict_str(entity)
 
     # 4. save the entity
     try:
@@ -390,7 +396,7 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
         return 'fail', info, repr(error)
 
     # finally success
-    return 'add', model_name, entity
+    return 'add', display_change_link(entity), entity2dict_str(entity)
 
 
 def parse_sheet(file, metadata) -> [RowFeedback]:

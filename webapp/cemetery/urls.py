@@ -1,12 +1,11 @@
-from django.conf.urls import include, url
+from django.conf.urls import url
 from django.contrib import admin
 
-from .views import import_entries
+from .views import import_entries, test_view
 
-
+# TODO translate urls
 urlpatterns = [
-    url(r'^jet', include('jet.urls', 'jet')),  # Django JET
     url(r'^', admin.site.urls),
-    # TODO add link to import page on main page
     url(r'^import$', import_entries, name='import'),
+    url(r'^test$', test_view, name='test')
 ]

@@ -4,11 +4,12 @@ from typing import Optional, Dict
 from django.db.models import Model, ForeignKey, TextField, IntegerField, CharField, \
     ManyToManyField, FloatField, BooleanField, DateField, Sum, Max, Manager
 from django.core.exceptions import ValidationError
+from django.utils.translation import ugettext_lazy as _
 
 from .validators import name_validator
 from .utils import display_head_tail_summary, parse_nr_year, title_case, initials, year_to_shorthand
 
-optional = {'blank': True, 'null': True}  # to be passed in field definitions
+optional = {'blank': True, 'null': True}  # to be passed in field definitions as additional kwargs
 
 """
 Mixins
@@ -246,7 +247,7 @@ class OwnerManager(Manager):
         return self.get(name=name)
 
 class Owner(Model):
-    name    = CharField(max_length=100, unique=True, validators=[name_validator])
+    name    = CharField(max_length=100, unique=True, validators=[name_validator], verbose_name=_('Name'))
     phone   = CharField(max_length=15,  **optional)  # TODO regex validation phone, address, city
     address = CharField(max_length=250, **optional)
     city    = CharField(max_length=50,  **optional)

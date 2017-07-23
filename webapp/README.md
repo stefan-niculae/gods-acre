@@ -13,7 +13,7 @@
 # Dev
 Enter virtualenv: `workon gods-acre`
 
-DB shell:
+## shell
 - `./manage.py shell`
 - `from cemetery.models import *`
 - create: `Spot(parcel='A', row=2, column=5).save()`
@@ -21,4 +21,10 @@ DB shell:
 - update: `Spot.objects.first().parcel = 'b'`
 - delete
 - changes aren't saved to db until commit: `spot.save()`
+
+## translation
+- pull out all strings marked for translation: `./manage makemessages -l ro`
+  - install os dependencies before `brew install gettext` / `sudo apt-get install gettext`
+- open `locale/<your language code>/LC_MESSAGES/django.po` and provide a `msgstr` for each `msgid`
+- compile into `.mo` with `./manage.py compilemessages`
 

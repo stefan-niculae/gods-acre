@@ -1,11 +1,19 @@
-from django.http import HttpResponseBadRequest
-from django.shortcuts import render
+from django.http import HttpResponseBadRequest, HttpResponse
+from django.shortcuts import render, render_to_response
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.utils.translation import ugettext as _
+from django.conf import settings
 
 from .forms import ImportForm
 from .model_parsers import parse_file
 from .models import ALL_MODELS
+
+
+def test_view(request):
+    response = render_to_response('test.html')
+    response.set_cookie('django-language', 'ro')
+    return response
 
 
 @staff_member_required

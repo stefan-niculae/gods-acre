@@ -51,7 +51,7 @@
    - https://github.com/tzulberti/django-datefilterspec
 
 
-   - http://jet.readthedocs.io/en/latest/filters.html#django-admin-rangefilter
+- http://jet.readthedocs.io/en/latest/filters.html#django-admin-rangefilter
 
 
 
@@ -62,26 +62,25 @@
 1. handle missing
    - whole nr/year: #pk
    - ?/year: -> #pk/year
-2. in the feedback table, show a link for successfully added/duplicate entities
-3. warn if any of construction's spots is not among the spots on the authorization
-4. field validation
+2. warn if any of construction's spots is not among the spots on the authorization
+3. field validation
    - dates: must be over 1900 and under 2100
    - name: only letters & dashes
    - phone: romanian phone format
-5. la introducerea unui act nou, pt chitante, numarul default sa fie aceeasi cu cel al actului
-6. la introducerea unei chitante noi, valoarea default = suma valorilor stabilite pt toate "platile" pt care este chitanta
-7. keep values when pressing 'save and add another'
-8. add some admin actions: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/
+4. la introducerea unui act nou, pt chitante, numarul default sa fie aceeasi cu cel al actului
+5. la introducerea unei chitante noi, valoarea default = suma valorilor stabilite pt toate "platile" pt care este chitanta
+6. keep values when pressing 'save and add another'
+7. add some admin actions: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/
    - set all kept/unkept?
-9. operations: dupa adaugare, cu titlu informativ: pe locul A-1-2 mai sunt inmormantati si: A, B, C
-10. upon adding a new deed for a spot, show info with all deeds previously active on each spot
-11. warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
-    - warning validation: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
-12. add help_text to model fields
-13. ? should every field be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view?
+8. operations: dupa adaugare, cu titlu informativ: pe locul A-1-2 mai sunt inmormantati si: A, B, C
+9. upon adding a new deed for a spot, show info with all deeds previously active on each spot
+10. warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
+  - warning validation: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
+11. add help_text to model fields
+12. ? should every field be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view?
     - owner: yes
     - others: ?
-14. ? whether the button should say "save and continue editing" or "save as new" `ModelAdmin.save_as`: if duplicating an entity is a frequent task
+13. ? whether the button should say "save and continue editing" or "save as new" `ModelAdmin.save_as`: if duplicating an entity is a frequent task
 
 
 
@@ -89,6 +88,12 @@
 
 ## UI
 
+- translation
+  - provide `verbose_name` and `verbose_name_plural` for each model field (including foreign fields)
+  - `short_description` for model methods
+  - `desc` on admin fields
+  - urls
+- top page instead of "HOME > CEMETERY > OWNERS > Ana" with faded OWNERS, make it "HOME > OWNERS > Ana" with bold colors
 - logo
 - direct urls `/spot` instead of `/cemetery/spot`
 - center things & more styling
