@@ -1,18 +1,17 @@
-from django.db.models import Min, Sum, Case, When, Max
-from django.contrib.admin import ModelAdmin, register, AdminSite, site
+from django.utils.translation import pgettext_lazy, ugettext_lazy as _
+
+from django.contrib.admin import ModelAdmin, register, site
+from django.db.models import Min, Case, When, Max
 from django.contrib.messages import SUCCESS
-from django.conf.urls import url
-from django.template.response import TemplateResponse
 from easy import short, SimpleAdminField
-from django.utils.translation import ugettext_lazy as _
-from django.utils.translation import pgettext_lazy
 
 from .models import Spot, Deed, OwnershipReceipt, Owner, Maintenance, Operation, PaymentUnit, PaymentReceipt, \
     Construction, Authorization, Company
-from .forms import SpotForm, DeedForm, OwnerForm, AuthorizationForm, PaymentReceiptForm, MaintenanceBulkForm
+from .forms import SpotForm, DeedForm, OwnerForm, AuthorizationForm, PaymentReceiptForm
 from .inlines import OwnershipReceiptInline, MaintenanceInline, OperationInline, ConstructionInline, \
     AuthorizationInline, PaymentUnitInline
-from .utils import rev, display_change_link, display_head_links, truncate, display_date, year_to_shorthand
+from .utils import rev
+from .display_helpers import entity_tag, display_head_links, truncate, display_date, year_to_shorthand
 
 """
 Site
@@ -47,14 +46,12 @@ class SpotAdmin(CustomModelAdmin):
                     'display_operations',
                     'display_constructions',
                     'display_shares_authorizations_with',
-                    'display_last_paid_year',  # TODO sortable, filter-able
+                    'display_last_paid_year',
                     'display_unkept_since']
 
     # What filters are available at the top of the list-view page: "by field" combo-box
     list_filter = rev(['parcel', 'row', 'column',
                        'deeds', 'deeds__owners', 'deeds__receipts',
-                       # FIXME operations__type and constructions__type both read 'By type'
-                       # TODO filter by missing too (eg construction type: "?")
                        'operations__type', 'constructions__type',
                        'constructions__company'])
 
@@ -62,7 +59,6 @@ class SpotAdmin(CustomModelAdmin):
                      'deeds__number', 'deeds__year',
                      'deeds__owners__name',
                      'deeds__receipts__number', 'deeds__receipts__year',
-                     # TODO make it possible to search for "burial" (field choice), not "b" (db value)
                      'operations__type', 'constructions__type',
                      'constructions__company__name']
 
@@ -77,15 +73,9 @@ class SpotAdmin(CustomModelAdmin):
                                When(deeds__cancel_reason__isnull=True, then='deeds'))),
                            first_active_owner=Min(Case(
                                When(deeds__cancel_reason__isnull=True, then='deeds__owners__name'))),
-                           # TODO "shares deed with" order
                            # first_sharing_deed_spot=Min(
                            #     When(Q(deeds__spots__deeds=spot.deeds) & Q(~deeds__spots=spot)), then='deeds__spots'),
                            max_payments_year=Max('payments__year'))
-
-    # def get_urls(self):
-    #     urls = super(SpotAdmin, self).get_urls()
-    #     custom_url = url(_(r'^spot/$'), self.admin_site.admin_view(self.change_view))
-    #     return [custom_url] + urls
 
     display_parcel = SimpleAdminField(lambda spot: spot.parcel, 'P', 'parcel')
     display_row    = SimpleAdminField(lambda spot: spot.row,    'R', 'row')
@@ -115,7 +105,7 @@ class SpotAdmin(CustomModelAdmin):
     def display_constructions(self, spot):
         return display_head_links(spot.constructions, 1)
 
-    @short(desc=_('Sharing Auth.'), tags=True)  # TODO order
+    @short(desc=_('Sharing Auth.'), tags=True)
     def display_shares_authorizations_with(self, spot):
         return display_head_links(spot.shares_authorization_with)
 
@@ -123,7 +113,7 @@ class SpotAdmin(CustomModelAdmin):
     def display_last_paid_year(self, spot):
         return spot.last_paid_year
 
-    @short(desc=_('Unkept Since'))  # TODO order
+    @short(desc=_('Unkept Since'))
     def display_unkept_since(self, spot):
         return spot.unkept_since
 
@@ -138,9 +128,6 @@ class DeedAdmin(CustomModelAdmin):
 
     list_display = ['display_repr', 'number', 'year', 'cancel_reason',
                     'display_spots', 'display_receipts', 'display_owners']
-
-    # TODO date hierarchy by date added?
-    # date_hierarchy = 'pseudo_date'
 
     list_filter = rev(['number', 'year', 'cancel_reason',
                        'spots', 'spots__parcel', 'spots__row', 'spots__column',
@@ -205,7 +192,7 @@ class OwnershipReceiptAdmin(CustomModelAdmin):
 
     @short(desc=pgettext_lazy('short', 'Deed'), order='deed', tags=True)
     def display_deed(self, receipt):
-        return display_change_link(receipt.deed)
+        return entity_tag(receipt.deed)
 
     @short(desc=_('Spots'), order='first_spot', tags=True)
     def display_spots(self, receipt):
@@ -290,14 +277,13 @@ class OperationAdmin(CustomModelAdmin):
                        'spot__parcel', 'spot__row', 'spot__column',
                        'spot__deeds__owners'])
 
-    # TODO search by month name?
     search_fields = ['type', 'date', 'deceased', 'note', 'exhumation_written_report', 'remains_brought_from',
                      'spot__parcel', 'spot__row', 'spot__column',
                      'spot__deeds__owners__name']
 
     def get_queryset(self, request):
         qs = super(OperationAdmin, self).get_queryset(request)
-        # TODO only active owners
+        # FIXME only active owners
         return qs.annotate(first_owner=Min('spot__deeds__owners'))
 
     @short(desc=_('Date'), order='date')
@@ -310,7 +296,8 @@ class OperationAdmin(CustomModelAdmin):
 
     @short(desc=_('Spot'), order='spot', tags=True)
     def display_spot(self, operation):
-        return display_change_link(operation.spot)
+        return entity_tag(operation.spot)
+
 
 """
 Constructions
@@ -336,7 +323,7 @@ class AuthorizationAdmin(CustomModelAdmin):
 
     @short(desc=_('Construction'), order='construction', tags=True)
     def display_construction(self, authorization):
-        return display_change_link(authorization.construction)
+        return entity_tag(authorization.construction)
 
 
 @register(Construction)
@@ -352,7 +339,6 @@ class ConstructionAdmin(CustomModelAdmin):
                      'spots__parcel', 'spots__row', 'spots__column'
                      'authorizations__number', 'authorizations__year']
 
-    # TODO! constructions for spots
     inlines = [AuthorizationInline]
 
     @short(desc=_('Authorizations'), order='authorizations', tags=True)
@@ -365,11 +351,11 @@ class ConstructionAdmin(CustomModelAdmin):
 
     @short(desc=_('Owner Builder'), order='owner_builder', tags=True)
     def display_company(self, construction):
-        return display_change_link(construction.company)
+        return entity_tag(construction.company)
 
     @short(desc=_('Company'), order='company', tags=True)
     def display_owner_builder(self, construction):
-        return display_change_link(construction.owner_builder)
+        return entity_tag(construction.owner_builder)
 
 
 @register(Company)
@@ -381,7 +367,6 @@ class CompanyAdmin(CustomModelAdmin):
                        'constructions__spots',
                        'constructions__spots__parcel', 'constructions__spots__row', 'constructions__spots__column',
                        'constructions__authorizations',
-                       # FIXME say "auth nr" instead of "number'
                        'constructions__authorizations__number', 'constructions__authorizations__year'])
 
     search_fields = ['name',
@@ -391,8 +376,7 @@ class CompanyAdmin(CustomModelAdmin):
 
     inlines = [ConstructionInline]
 
-    display_n_constructions = SimpleAdminField(lambda company: company.n_constructions,
-                                               _('#Constructions'))  # TODO order
+    display_n_constructions = SimpleAdminField(lambda company: company.n_constructions, _('#Constructions'))
 
     @short(desc=_('Constructions'), order='constructions', tags=True)
     def display_constructions(self, company):
@@ -425,11 +409,11 @@ class PaymentUnitAdmin(CustomModelAdmin):
 
     @short(desc=_('Spot'), order='spot', tags=True)
     def display_spot(self, payment):
-        return display_change_link(payment.spot)
+        return entity_tag(payment.spot)
 
     @short(desc=_('Receipt'), order='receipt', tags=True)
     def display_receipts(self, payment):
-        return display_change_link(payment.receipt)
+        return entity_tag(payment.receipt)
 
     @short(desc=_('Owners'), order='first_owner', tags=True)
     def display_owners(self, payment):
@@ -443,11 +427,11 @@ class PaymentReceiptAdmin(CustomModelAdmin):
                     'display_spots', 'display_payments_years',
                     'display_owners']
 
-    list_filter = rev(['number', 'year',  # 'total_value',
+    list_filter = rev(['number', 'year',
                        'payments__spot', 'payments__spot__parcel', 'payments__spot__row', 'payments__spot__column',
                        'payments__spot__deeds__owners'])
 
-    search_fields = ['number', 'year',  # 'total_value',
+    search_fields = ['number', 'year',
                      'payments__spot__parcel', 'payments__spot__row', 'payments__spot__column',
                      'payments__spot__deeds__owners__name']
 
@@ -493,7 +477,7 @@ class MaintenanceAdmin(CustomModelAdmin):
     list_display = ['__str__', 'year', 'display_spot', 'kept',
                     'display_owners']
 
-    list_filter = rev(['year', 'kept',  # TODO how to search by boolean (kept)?
+    list_filter = rev(['year', 'kept',
                        'spot', 'spot__parcel', 'spot__row', 'spot__column',
                        'spot__deeds__owners'])
 
@@ -508,23 +492,9 @@ class MaintenanceAdmin(CustomModelAdmin):
         qs = super(MaintenanceAdmin, self).get_queryset(request)
         return qs.annotate(first_owner=Min('spot__deeds__owners'))
 
-    def get_urls(self):
-        urls = super(MaintenanceAdmin, self).get_urls()
-        custom_url = url(r'^test_view/$',
-                         self.admin_site.admin_view(self.test_view),
-                         name='add_bulk')
-        return [custom_url] + urls
-
-    def test_view(self, request):
-        context = {
-            **self.admin_site.each_context(request),
-            'form': MaintenanceBulkForm
-        }
-        return TemplateResponse(request, 'admin/cemetery/maintenance/add_bulk.html', context)
-
     @short(desc=_('Spot'), order='spot')
     def display_spot(self, maintenance):
-        return display_change_link(maintenance.spot)
+        return entity_tag(maintenance.spot)
 
     @short(desc=_('Owners'), order='first_owner', tags=True)
     def display_owners(self, maintenance):

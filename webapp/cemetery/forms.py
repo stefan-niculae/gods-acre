@@ -1,9 +1,10 @@
-from django.forms import Form, ModelForm, ModelMultipleChoiceField, IntegerField, BooleanField, FileField
-from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.translation import ugettext_lazy as _
 
-from .models import Spot, Deed, PaymentUnit, Owner, Construction, Authorization, PaymentReceipt, Operation, NrYear
-from .utils import title_case, year_shorthand_to_full
+from django.forms import Form, ModelForm, ModelMultipleChoiceField, BooleanField, FileField
+from django.contrib.admin.widgets import FilteredSelectMultiple
+
+from .models import Spot, Deed,  Owner, Construction, Authorization, PaymentReceipt, Operation, NrYear
+from .display_helpers import title_case, year_shorthand_to_full
 
 
 class NrYearForm(ModelForm):
@@ -44,16 +45,13 @@ class SpotForm(ModelForm):
         )
     )
     # payments = ModelMultipleChoiceField(
-    #     queryset=Payment.objects.all(),
+    #     queryset=PaymentUnit.objects.all(),
     #     required=False,
     #     widget=FilteredSelectMultiple(
     #         verbose_name=_('Payments'),
     #         is_stacked=False
     #     )
     # )
-
-    # add_deed_button = add_link('deed')  # TODO add button
-    # add_deed_button.allow_tags = True
 
     class Meta:
         model = Spot
@@ -178,22 +176,6 @@ class PaymentReceiptForm(NrYearForm):
     class Meta:
         model = PaymentReceipt
         fields = '__all__'
-
-
-class MaintenanceBulkForm(Form):
-    year = IntegerField()
-    only_with_active_deed = BooleanField(initial=True)
-    unkept_spots = ModelMultipleChoiceField(
-        queryset=Spot.objects.all(),
-        required=False,
-        widget=FilteredSelectMultiple(
-            verbose_name=_('Spots'),
-            is_stacked=False
-        )
-    )
-
-    # TODO
-
 
 class ImportForm(Form):
     document = FileField(label=_('Document'))

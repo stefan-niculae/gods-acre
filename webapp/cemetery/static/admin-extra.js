@@ -18,15 +18,23 @@ document.addEventListener("DOMContentLoaded", function() {
                 contents[selectedIndex].classList.add('selected')
             }
         }(selectedIndex)
-
-    // TODO: toggle for sheet-wise fail, duplicate, add, selected
-    // TODO: line-through for row-wise selected
 })
 
-function askConfirmationIfWiping(e) {
+function askConfirmationIfWiping() {
     var wiping_checked = document.forms.import.wipe_beforehand.checked
     if (wiping_checked)
         // TODO: internationalization https://docs.djangoproject.com/en/1.11/topics/i18n/translation/#internationalization-in-javascript-code
         return confirm('Are you sure you want to delete everything from the database before importing?')
     return true
+}
+
+function toggleStatus(box, status) {
+    var checkboxes = document.querySelectorAll('.status-toggler.' + status + ' input[type="checkbox"]')
+    for (var i = 0; i < checkboxes.length; i++)
+        checkboxes[i].checked = box.checked
+
+    var rows = document.getElementsByClassName('toggleable-row ' + status)
+    var display = box.checked ? 'table-row' : 'none'
+    for (i = 0; i < rows.length; i++)
+        rows[i].style.display = display
 }

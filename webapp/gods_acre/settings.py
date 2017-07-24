@@ -218,6 +218,6 @@ JET_SIDE_MENU_ITEMS = [
     ]},
 
     {'label': _('Data'), 'items': [
-        {'label': _('Import'), 'url': '/import'}  # FIXME
+        {'label': _('Import'), 'url': '/import'}
     ]},
 ]

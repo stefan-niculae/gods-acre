@@ -18,7 +18,7 @@
     <form name="import" enctype="multipart/form-data" method="post" onsubmit="askConfirmationIfWiping()">
       {% csrf_token %}
       {{ form.as_p }}
-      <input type="submit" value="Submit">
+      <input type="submit" value="{% trans 'Submit' %}">
     </form>
 
     <section id="parsing-results">
@@ -39,8 +39,9 @@
           <fieldset class="module {% if forloop.first %}selected{% endif %}">
             {% with counts|get_item:sheet_name as sheet_counts %}
               {% for status, count in sheet_counts.items %}
-                <div class="status-toggler">
-{#                  <input type="checkbox" name="{{ sheet_name }}-{{ status }}" checked>#}
+                <div class="status-toggler {{ status }}">
+                  {# back-end front-end programming, yo!... :( #}
+                  <input type="checkbox" name="{{ sheet_name }}-{{ status }}" checked onclick="toggleStatus(this, '{{ status }}')">
                   <span class="status-{{ status }}"><span class="count">{{ count }}</span> {% trans status %}</span>
                 </div>
               {% endfor %}
@@ -58,7 +59,7 @@
               </thead>
               <tbody>
                 {% for feedback in row_feedbacks %}
-                  <tr>
+                  <tr class="toggleable-row {{ feedback.status }}">
                     <td>{{ forloop.counter|add:1}}</td>  {# first row is for headers, data starts at 2 #}
                     <td class="status-{{ feedback.status }}">{% trans feedback.status %}</td>
                     <td>{{ feedback.info }}</td>

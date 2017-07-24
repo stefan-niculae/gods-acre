@@ -1,5 +1,4 @@
 from django.contrib.admin import TabularInline
-from django.utils.translation import ugettext_lazy as _
 from jet.admin import CompactInline
 
 from .models import OwnershipReceipt, Maintenance, Operation,  PaymentUnit, Construction, Authorization

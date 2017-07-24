@@ -1,20 +1,22 @@
 from typing import Optional, Tuple, Dict, Callable, Any, List
+
 from copy import deepcopy
-import logging
 from collections import namedtuple
 from itertools import zip_longest
 from functools import partial
-
-from django.forms.models import model_to_dict
+from datetime import datetime
+import logging
 
 import numpy as np
 import pandas as pd
 from dateutil.parser import parse
-from datetime import datetime
+
+from django.forms.models import model_to_dict
 
 from .models import Spot, Operation, Deed, OwnershipReceipt, Owner, Construction, Authorization, Company
-from .utils import title_case, year_shorthand_to_full, reverse_dict, filter_dict, show_dict, map_dict, parse_nr_year, \
-    keep_only, display_change_link
+from .utils import reverse_dict, filter_dict, show_dict, map_dict
+from .display_helpers import title_case, year_shorthand_to_full, entity_tag
+from .parsing_helpers import parse_nr_year, keep_only
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -373,13 +375,13 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
         except Exception as error:
             info = f'Save after updating fields on found-duplicate {entity}'
             return 'fail', info, repr(error)
-        return 'duplicate', display_change_link(entity), entity2dict_str(entity)
+        return 'duplicate', entity_tag(entity), entity2dict_str(entity)
 
     # 4. save the entity
     try:
         entity.save()
     except Exception as error:
-        info = f'Save {model_name}: {entity}'  # TODO check if this provides enough info
+        info = f'Save {model_name}: {entity}'
         return 'fail', info, repr(error)
 
     # 5. set relational fields
@@ -396,7 +398,7 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
         return 'fail', info, repr(error)
 
     # finally success
-    return 'add', display_change_link(entity), entity2dict_str(entity)
+    return 'add', entity_tag(entity), entity2dict_str(entity)
 
 
 def parse_sheet(file, metadata) -> [RowFeedback]:

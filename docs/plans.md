@@ -45,15 +45,23 @@
 ## retrieval
 
 1. search for `spot.__str__` not just `.parcel`, `.row` and `.column` (same treatment for other fields as well)
-
 2. apply `RelatedOnlyFieldListFilter` to filters
-
 3. date range filter 
 
    - https://github.com/tzulberti/django-datefilterspec
-
-
-- http://jet.readthedocs.io/en/latest/filters.html#django-admin-rangefilter
+4. http://jet.readthedocs.io/en/latest/filters.html#django-admin-rangefilter
+5. sort and filter by computed columns
+   - eg: last_paid_year for Spot
+   - https://stackoverflow.com/questions/991926/custom-filter-in-django-admin-on-django-1-3-or-below
+   - total_value for payment receipts
+6. make a distinction between operation **type** and construction **type** when filtering spots
+   - also "auth number" not just "number" in companies filtering
+7. search for "burial" (field choice), not "b" (db value)
+   - also kept/unkept (which is a bool)
+8. order for computed fields
+   - Spot: sharing auth, unkept since, shares deed with
+   - companies: #constructions
+9. search by month name
 
 
 
@@ -61,11 +69,16 @@
 
 ## data entry
 
-1. handle missing
+1. !! clean in `forms.py`
+2. handle missing
    - whole nr/year: #pk
    - ?/year: -> #pk/year
-2. ! when adding a new payment receipt, make it so you can add select existing units from the inline
-3. warnings
+3. ! when adding a new payment receipt, make it so you can add select existing units from the inline
+4. widget or inline
+   - eg: `Spot` has both a field "Payments" where you can select existing `PaymentUnits` and a tab "Payments" where you can create payments only for this spot (or edit existing ones)
+5. add buttons for multi select widgets
+   - eg: `Spot` has a "Deeds" field (multiselect widget) — you can only select existing deeds, not create new ones
+6. warnings
    - any of construction's spots is not among the spots on the authorization
    - more than one deed is active for a spot
    - deed date too far away from receipt date
@@ -76,22 +89,25 @@
    - there is already another receipt for the same payment, and link to it
    - maintenance year too far from current
    - payment unit year: too far away from current year, or ASK how it relates to deed
-4. when the `name` of the `owner` is the one in a "burial" `operation`, suggest to modify the `cancel_reason` on the `deed`
-5. show how many there are currently burried when adding a new operation
-6. la introducerea unui act nou, pt chitante, numarul default sa fie aceeasi cu cel al actului
-7. la introducerea unei chitante noi, valoarea default = suma valorilor stabilite pt toate "platile" pt care este chitanta
-8. keep values when pressing 'save and add another'
-9. add some admin actions: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/
-  - set all kept/unkept?
-10. operations: dupa adaugare, cu titlu informativ: pe locul A-1-2 mai sunt inmormantati si: A, B, C
-11. upon adding a new deed for a spot, show info with all deeds previously active on each spot
-12. warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
+   - a spot with more than one construction of same type
+7. capitalize Ana-Maria and S.R.L properly
+8. when the `name` of the `owner` is the one in a "burial" `operation`, suggest to modify the `cancel_reason` on the `deed`
+9. show how many there are currently burried when adding a new operation
+10. la introducerea unui act nou, pt chitante, numarul default sa fie aceeasi cu cel al actului
+11. la introducerea unei chitante noi, valoarea default = suma valorilor stabilite pt toate "platile" pt care este chitanta
+12. keep values when pressing 'save and add another'
+13. add some admin actions: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/
+   - set all kept/unkept?
+14. operations: dupa adaugare, cu titlu informativ: pe locul A-1-2 mai sunt inmormantati si: A, B, C
+15. upon adding a new deed for a spot, show info with all deeds previously active on each spot
+16. warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
    - warning validation: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
-13. add help_text to model fields
-14. ? should every field be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view?
+17. add help_text to model fields
+18. ? should every field be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view?
     - owner: yes
     - others: ?
-15. ? whether the button should say "save and continue editing" or "save as new" `ModelAdmin.save_as`: if duplicating an entity is a frequent task
+19. ? whether the button should say "save and continue editing" or "save as new" `ModelAdmin.save_as`: if duplicating an entity is a frequent task
+20. checkboxes for importing to mark each row as solved
 
 
 
@@ -100,11 +116,9 @@
 ## UI
 
 - translation
-  - "Deeds", "Constructions", "Authorizations" in spot change, General tab
+  - "Deeds", "Constructions", "Authorizations" in spot change, General tab (`verbose_name` in `forms.py`, in `widget=...`?)
     - Owners in Deed change, general tab
   - url paths https://stackoverflow.com/questions/5680405/override-django-admin-urls-for-specific-model
-  - model properties? (if needed)
-  - model relationships? related_name?
   - js https://docs.djangoproject.com/en/1.11/topics/i18n/translation/#internationalization-in-javascript-code
 - semantic coloring:
   - red if `Spot#unkept_since > 7`
@@ -134,6 +148,6 @@
 ## extra features
 
 - model history: https://django-simple-history.readthedocs.io/en/latest/usage.html
-  - add date hierarchy `created at/modified at` to each model: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#django.contrib.admin.ModelAdmin.date_hierarchy or through `ModelAdmin.ordering
+  - add date hierarchy `created at/modified at` to each model: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#django.contrib.admin.ModelAdmin.date_hierarchy or through `ModelAdmin.ordering`
 - make every model annotable?
 - some charts?

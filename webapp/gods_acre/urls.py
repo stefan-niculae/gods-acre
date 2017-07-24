@@ -9,7 +9,6 @@ urlpatterns = [
     url(r'^translations',   include('rosetta.urls')),       # django-rosetta
 ]
 
-# TODO
 urlpatterns += i18n_patterns(
     url(r'^', include('cemetery.urls')),
     # we have to do it here because translatable patterns can't be included

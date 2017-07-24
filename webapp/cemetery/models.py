@@ -1,14 +1,17 @@
-from datetime import date
 from typing import Optional, Dict
+from datetime import date
+
+from django.utils.translation import ugettext_lazy as _
 
 from django.db.models import Model, ForeignKey, TextField, IntegerField, CharField, \
     ManyToManyField, FloatField, BooleanField, DateField, Sum, Max, Manager
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
 
 from .validators import number_validator, year_validators, parcel_validator, row_validator, column_validator, \
     payment_value_validator, name_validator, romanian_phone_validator, address_validator, city_validator, date_validators
-from .utils import display_head_tail_summary, parse_nr_year, title_case, initials, year_to_shorthand, NBSP
+from .utils import NBSP
+from .display_helpers import head_plus_more, title_case, initials, year_to_shorthand
+from .parsing_helpers import parse_nr_year
 
 # translations
 ON_TRANS  = _('on')
@@ -375,7 +378,6 @@ class Construction(Model):
 
     class Meta:
         default_related_name = 'constructions'
-        # TODO a spot can only have as many as one construction of each type
         # unique_together = ('type', 'spots')
         ordering = ['type']  # FIXME add spots to ordering (as it is in the str)
         verbose_name = _('Construction')
@@ -385,7 +387,7 @@ class Construction(Model):
         if not self.spots:
             first_spot, more = '?', ''
         else:
-            [first_spot], more = display_head_tail_summary(self.spots.all(), head_length=1)
+            [first_spot], more = head_plus_more(self.spots.all(), head_length=1)
         return f'{Construction.TYPE_SYMBOLS[self.type]}{NBSP}{ON_TRANS}{NBSP}{first_spot}{more}'
 
     @property
@@ -420,7 +422,6 @@ class PaymentReceipt(NrYear):
 
     @property
     def owners(self):
-        # TODO only the owner(s) at the time, not all past and future
         return Owner.objects.filter(deeds__spots__payments__in=self.payments.all())
 
     @property
@@ -456,7 +457,7 @@ class PaymentUnit(Model):
     @property
     def owners(self):
         # The payment-owners relation goes through a spot and a deed
-        # FIXME this should be the owner for THIS year, not all previous and future ones (same for Maintenance)
+        # FIXME this should be the owner for THIS year, not all previous and future ones (same for Maintenance and PaymentReceipt)
         return Owner.objects.filter(deeds__spots=self.spot)
 
 """
