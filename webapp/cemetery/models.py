@@ -6,7 +6,8 @@ from django.db.models import Model, ForeignKey, TextField, IntegerField, CharFie
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
-from .validators import name_validator
+from .validators import number_validator, year_validators, parcel_validator, row_validator, column_validator, \
+    payment_value_validator, name_validator, romanian_phone_validator, address_validator, city_validator, date_validators
 from .utils import display_head_tail_summary, parse_nr_year, title_case, initials, year_to_shorthand, NBSP
 
 # translations
@@ -15,6 +16,7 @@ FOR_TRANS = _('for')
 IN_TRANS  = _('in')
 
 optional = {'blank': True, 'null': True}  # to be passed in field definitions as additional kwargs
+
 
 """
 Mixins
@@ -40,8 +42,8 @@ class NrYear(Model):
     """
     For deeds, receipts and authorizations
     """
-    number = IntegerField(**optional, verbose_name=_('number'))
-    year   = IntegerField(default=date.today().year, **optional, verbose_name=_('year'))
+    number = IntegerField(**optional, validators=[number_validator], verbose_name=_('number'))
+    year   = IntegerField(default=date.today().year, **optional, validators=year_validators, verbose_name=_('year'))
 
     objects = NrYearManager()
 
@@ -72,9 +74,9 @@ class SpotManager(Manager):
         return self.get(parcel=parcel, row=row, column=column)
 
 class Spot(Model):
-    parcel  = CharField(max_length=5, verbose_name=_('parcel'))
-    row     = CharField(max_length=5, verbose_name=_('row'))
-    column  = CharField(max_length=5, verbose_name=_('column'))
+    parcel  = CharField(max_length=5, validators=[parcel_validator], verbose_name=_('parcel'))
+    row     = CharField(max_length=7, validators=[row_validator],    verbose_name=_('row'))
+    column  = CharField(max_length=4, validators=[column_validator], verbose_name=_('column'))
 
     objects = SpotManager()
 
@@ -102,6 +104,7 @@ class Spot(Model):
     @property
     def active_owners(self):
         # The owner-spot relation goes through a deed
+        # there is supposed to be only one active deed per spot
         deed = self.active_deeds.first()
         if not deed:
             return
@@ -218,7 +221,7 @@ class Deed(NrYear):
 
 class OwnershipReceipt(NrYear):
     deed  = ForeignKey(Deed, related_name='receipts', **optional, verbose_name=_('deed'))
-    value = FloatField(**optional, verbose_name=_('value'))
+    value = FloatField(**optional, validators=[payment_value_validator], verbose_name=_('value'))
 
     class Meta:
         verbose_name = _('Ownership Receipt')
@@ -238,6 +241,7 @@ class OwnershipReceipt(NrYear):
             return None
         return self.deed.owners
 
+
 class OwnerManager(Manager):
     @staticmethod
     def prepare_natural_key(identifier: str) -> Dict[str, str]:
@@ -248,10 +252,10 @@ class OwnerManager(Manager):
         return self.get(name=name)
 
 class Owner(Model):
-    name    = CharField(max_length=100, unique=True, validators=[name_validator], verbose_name=_('Name'))
-    phone   = CharField(max_length=15,  **optional, verbose_name=_('phone'))
-    address = CharField(max_length=250, **optional, verbose_name=_('address'))
-    city    = CharField(max_length=50,  **optional, verbose_name=_('city'))
+    name    = CharField(max_length=100, unique=True, validators=[name_validator],           verbose_name=_('name'))
+    phone   = CharField(max_length=15,  **optional,  validators=[romanian_phone_validator], verbose_name=_('phone'))
+    address = CharField(max_length=250, **optional,  validators=[address_validator],        verbose_name=_('address'))
+    city    = CharField(max_length=50,  **optional,  validators=[city_validator],           verbose_name=_('city'))
     deeds   = ManyToManyField(Deed, related_name='owners', blank=True, verbose_name=_('deeds'))
 
     objects = OwnerManager()
@@ -294,9 +298,9 @@ class Operation(Model):
         EXHUMATION: '↑',
     }
     type = CharField(max_length=1, choices=TYPE_CHOICES, default=BURIAL, verbose_name=_('type'))
-    deceased = CharField(max_length=100, validators=[name_validator], **optional, verbose_name=_('deceased'))
+    deceased = CharField(max_length=100,     validators=[name_validator], **optional, verbose_name=_('deceased'))
+    date     = DateField(default=date.today, validators=date_validators, verbose_name=_('date'))
     spot     = ForeignKey(Spot, related_name='operations', verbose_name=_('spot'))
-    date     = DateField(default=date.today, verbose_name=_('date'))
     exhumation_written_report = CharField(max_length=20, **optional, verbose_name=_('exhumation written report'))
     remains_brought_from      = CharField(max_length=50, **optional, verbose_name=_('remains brought from'))
 
@@ -329,7 +333,7 @@ class Company(Model):
     """
     # No title-casing or restricting characters,
     # this is not a person's name, a company can be written in any way
-    name = CharField(max_length=250, unique=True, verbose_name=_('name'))
+    name = CharField(max_length=250, unique=True, verbose_name=_('name'))  # no validator?
 
     objects = CompanyManager()
 
@@ -373,7 +377,7 @@ class Construction(Model):
         default_related_name = 'constructions'
         # TODO a spot can only have as many as one construction of each type
         # unique_together = ('type', 'spots')
-        ordering = ['type']  # TODO spots to ordering?
+        ordering = ['type']  # FIXME add spots to ordering (as it is in the str)
         verbose_name = _('Construction')
         verbose_name_plural = _('Constructions')
 
@@ -432,9 +436,10 @@ class PaymentReceipt(NrYear):
 
 class PaymentUnit(Model):
     """ one unit is for a single year-date combination. one receipt can have multiple units """
-    year    = IntegerField(verbose_name=_('year'))
+    year    = IntegerField(validators=year_validators, verbose_name=_('year'))
     spot    = ForeignKey(Spot, related_name='payments', verbose_name=_('spot'))
-    value   = FloatField(**optional, verbose_name=_('value'))  # expected value for this year, for this spot
+    # expected value for this year, for this spot
+    value   = FloatField(**optional, validators=[payment_value_validator], verbose_name=_('value'))
     receipt = ForeignKey(PaymentReceipt, related_name='payments', **optional, verbose_name=_('receipt'))
 
     class Meta:
@@ -451,7 +456,7 @@ class PaymentUnit(Model):
     @property
     def owners(self):
         # The payment-owners relation goes through a spot and a deed
-        # TODO this should be the owner for THIS year, not all previous and future ones
+        # FIXME this should be the owner for THIS year, not all previous and future ones (same for Maintenance)
         return Owner.objects.filter(deeds__spots=self.spot)
 
 """
@@ -459,7 +464,7 @@ Maintenance
 """
 
 class Maintenance(Model):
-    year = IntegerField(verbose_name=_('year'))
+    year = IntegerField(validators=year_validators, verbose_name=_('year'))
     spot = ForeignKey(Spot, related_name='maintenances', verbose_name=_('spot'))
     kept = BooleanField(verbose_name=_('kept'))
 
@@ -475,7 +480,6 @@ class Maintenance(Model):
     @property
     def owners(self):
         # The maintenance-owner relation goes through a spot and a deed
-        # TODO this should be the owner for THIS year, not all previous and future ones
         return Owner.objects.filter(deeds__spots__maintenances=self)
 
 

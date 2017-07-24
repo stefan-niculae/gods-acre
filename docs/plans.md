@@ -76,33 +76,22 @@
    - there is already another receipt for the same payment, and link to it
    - maintenance year too far from current
    - payment unit year: too far away from current year, or ASK how it relates to deed
-4. field validation
-   - dates: must be over 1900 and under 2100
-   - name: only letters & dashes
-   - phone: romanian phone format
-   - address: alphanum, dashes
-   - city: alpha, dashes
-   - parcel/row/column in the forms
-     - A-1-2
-     - A-1a-2
-     - A-1bis-2
-     - A2-2-3
-5. when the `name` of the `owner` is the one in a "burial" `operation`, suggest to modify the `cancel_reason` on the `deed`
-6. show how many there are currently burried when adding a new operation
-7. la introducerea unui act nou, pt chitante, numarul default sa fie aceeasi cu cel al actului
-8. la introducerea unei chitante noi, valoarea default = suma valorilor stabilite pt toate "platile" pt care este chitanta
-9. keep values when pressing 'save and add another'
-10. add some admin actions: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/
-   - set all kept/unkept?
-11. operations: dupa adaugare, cu titlu informativ: pe locul A-1-2 mai sunt inmormantati si: A, B, C
-12. upon adding a new deed for a spot, show info with all deeds previously active on each spot
-13. warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
+4. when the `name` of the `owner` is the one in a "burial" `operation`, suggest to modify the `cancel_reason` on the `deed`
+5. show how many there are currently burried when adding a new operation
+6. la introducerea unui act nou, pt chitante, numarul default sa fie aceeasi cu cel al actului
+7. la introducerea unei chitante noi, valoarea default = suma valorilor stabilite pt toate "platile" pt care este chitanta
+8. keep values when pressing 'save and add another'
+9. add some admin actions: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/
+  - set all kept/unkept?
+10. operations: dupa adaugare, cu titlu informativ: pe locul A-1-2 mai sunt inmormantati si: A, B, C
+11. upon adding a new deed for a spot, show info with all deeds previously active on each spot
+12. warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
    - warning validation: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
-14. add help_text to model fields
-15. ? should every field be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view?
+13. add help_text to model fields
+14. ? should every field be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view?
     - owner: yes
     - others: ?
-16. ? whether the button should say "save and continue editing" or "save as new" `ModelAdmin.save_as`: if duplicating an entity is a frequent task
+15. ? whether the button should say "save and continue editing" or "save as new" `ModelAdmin.save_as`: if duplicating an entity is a frequent task
 
 
 
@@ -120,10 +109,9 @@
 - semantic coloring:
   - red if `Spot#unkept_since > 7`
   - grey if `Deed#cancel_reason is not None`
-- replace spaces in name, address etc with nbsp
 - add link from payment units to payment receipts and vice-versa (and for other groupings as well)
 - things are not capitalized in romanian: eg [filtrare] "După Chitanță proprietate"
-- more spacing in import
+- spacing in import page
 - logo
 - direct urls `/spot` instead of `/cemetery/spot`
 - center things & more styling
