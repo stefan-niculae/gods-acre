@@ -3,8 +3,9 @@ from django.utils.translation import ugettext_lazy as _
 from django.forms import Form, ModelForm, ModelMultipleChoiceField, BooleanField, FileField
 from django.contrib.admin.widgets import FilteredSelectMultiple
 
-from .models import Spot, Deed,  Owner, Construction, Authorization, PaymentReceipt, Operation, NrYear
+from .models import Spot, Deed,  Owner, Construction, Authorization, PaymentReceipt, Operation, NrYear, Company
 from .display_helpers import title_case, year_shorthand_to_full
+from .parsing_helpers import keep_only
 
 
 class NrYearForm(ModelForm):
@@ -81,6 +82,15 @@ class SpotForm(ModelForm):
 
         return spot
 
+    def clean_parcel(self):
+        return self.cleaned_data['parcel'].upper()
+
+    def clean_row(self):
+        return self.cleaned_data['row'].upper()
+
+    def clean_column(self):
+        return self.cleaned_data['column'].upper()
+
 
 class DeedForm(NrYearForm):
     owners = ModelMultipleChoiceField(
@@ -156,15 +166,32 @@ class OwnerForm(ModelForm):
     def clean_name(self):
         return title_case(self.cleaned_data['name'])
 
+    def clean_address(self):
+        return title_case(self.cleaned_data['address'])
+
+    def clean_city(self):
+        return title_case(self.cleaned_data['city'])
+
+    def clean_phone(self):
+        return keep_only(self.cleaned_data['phone'], str.isdigit)
+
 
 class OperationForm(ModelForm):
     class Meta:
         model = Operation
         fields = '__all__'
 
+    def clean_deceased(self):
+        return title_case(self.cleaned_data['deceased'])
+
+
+class CompanyForm(ModelForm):
+    class Meta:
+        model = Company
+        fields = '__all__'
+
     def clean_name(self):
         return title_case(self.cleaned_data['name'])
-
 
 class AuthorizationForm(NrYearForm):
     class Meta:
@@ -176,6 +203,7 @@ class PaymentReceiptForm(NrYearForm):
     class Meta:
         model = PaymentReceipt
         fields = '__all__'
+
 
 class ImportForm(Form):
     document = FileField(label=_('Document'))

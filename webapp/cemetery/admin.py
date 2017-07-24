@@ -7,7 +7,7 @@ from easy import short, SimpleAdminField
 
 from .models import Spot, Deed, OwnershipReceipt, Owner, Maintenance, Operation, PaymentUnit, PaymentReceipt, \
     Construction, Authorization, Company
-from .forms import SpotForm, DeedForm, OwnerForm, AuthorizationForm, PaymentReceiptForm
+from .forms import SpotForm, DeedForm, OwnerForm, AuthorizationForm, PaymentReceiptForm, CompanyForm
 from .inlines import OwnershipReceiptInline, MaintenanceInline, OperationInline, ConstructionInline, \
     AuthorizationInline, PaymentUnitInline
 from .utils import rev
@@ -147,7 +147,7 @@ class DeedAdmin(CustomModelAdmin):
                            first_receipt=Min('receipts'),
                            first_owner=Min('owners'))
 
-    @short(desc=pgettext_lazy('short', 'Deed'), order='__str__')
+    @short(desc=pgettext_lazy('short', 'Deed'))
     def display_repr(self, deed):
         return str(deed)
 
@@ -186,7 +186,7 @@ class OwnershipReceiptAdmin(CustomModelAdmin):
         return qs.annotate(first_spot=Min('deed__spots'),
                            first_owner=Min('deed__owners'))
 
-    @short(desc=_('Receipt'), order='__str__')
+    @short(desc=_('Receipt'))
     def display_repr(self, receipt):
         return str(receipt)
 
@@ -374,6 +374,7 @@ class CompanyAdmin(CustomModelAdmin):
                      'constructions__spots__parcel', 'constructions__spots__row', 'constructions__spots__column',
                      'constructions__authorizations__number', 'constructions__authorizations__year']
 
+    form = CompanyForm
     inlines = [ConstructionInline]
 
     display_n_constructions = SimpleAdminField(lambda company: company.n_constructions, _('#Constructions'))
@@ -422,7 +423,7 @@ class PaymentUnitAdmin(CustomModelAdmin):
 
 @register(PaymentReceipt)
 class PaymentReceiptAdmin(CustomModelAdmin):
-    list_display = ['__str__', 'number', 'display_receipt_year',
+    list_display = ['display_repr', 'number', 'display_receipt_year',
                     'total_value', 'display_payments',
                     'display_spots', 'display_payments_years',
                     'display_owners']
@@ -446,6 +447,10 @@ class PaymentReceiptAdmin(CustomModelAdmin):
                            first_owner=Min('payments__spot__deeds__owners'),
                            # first payment-year not the year in which the first payment was made
                            first_payment_year=Min('payments__year'))
+
+    @short(desc=pgettext_lazy('short', 'Receipt'))
+    def display_repr(self, receipt):
+        return str(receipt)
 
     @short(desc=_('Payments'), order='first_payment', tags=True)
     def display_payments(self, receipt):
