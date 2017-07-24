@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-07-25 00:05+0300\n"
-"PO-Revision-Date: 2017-07-25 00:05+0144\n"
+"PO-Revision-Date: 2017-07-25 00:13+0144\n"
 "Last-Translator: b'  <>'\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: ro\n"
@@ -37,7 +37,7 @@ msgstr "Împart actul"
 
 #: cemetery/admin.py:96
 msgid "Active Owners"
-msgstr "Proprietari curenți"
+msgstr "Concesionari curenți"
 
 #: cemetery/admin.py:100 cemetery/models.py:313 gods_acre/settings.py:163
 #: gods_acre/settings.py:212
@@ -82,7 +82,7 @@ msgstr "Chitanțe"
 #: cemetery/admin.py:471 cemetery/admin.py:504 cemetery/forms.py:99
 #: cemetery/models.py:269 gods_acre/settings.py:158 gods_acre/settings.py:206
 msgid "Owners"
-msgstr "Proprietari"
+msgstr "Concesionari"
 
 #: cemetery/admin.py:189 cemetery/admin.py:415
 msgid "Receipt"
@@ -111,7 +111,7 @@ msgstr "Dată"
 
 #: cemetery/admin.py:293 cemetery/models.py:268
 msgid "Owner"
-msgstr "Proprietar"
+msgstr "Concesionar"
 
 #: cemetery/admin.py:297 cemetery/admin.py:411 cemetery/admin.py:500
 #: cemetery/models.py:89
@@ -129,7 +129,7 @@ msgstr "Autorizații"
 
 #: cemetery/admin.py:352
 msgid "Owner Builder"
-msgstr "Constructor proprietar"
+msgstr "Regie proprie"
 
 #: cemetery/admin.py:356 cemetery/models.py:344
 msgid "Company"
@@ -327,7 +327,7 @@ msgstr "companie"
 
 #: cemetery/models.py:373
 msgid "owner builder"
-msgstr "constructor proprietar"
+msgstr "regie proprie"
 
 #: cemetery/models.py:404
 msgid "construction"

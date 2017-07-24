@@ -54,6 +54,7 @@
    - eg: last_paid_year for Spot
    - https://stackoverflow.com/questions/991926/custom-filter-in-django-admin-on-django-1-3-or-below
    - total_value for payment receipts
+   - `__str__` or `display_repr`
 6. make a distinction between operation **type** and construction **type** when filtering spots
    - also "auth number" not just "number" in companies filtering
 7. search for "burial" (field choice), not "b" (db value)
@@ -66,19 +67,17 @@
 
 
 
-
 ## data entry
 
-1. !! clean in `forms.py`
+1. ! make it not fail violently when trying to add a deed with a nr/year already in the db (unique constraint failed)
 2. handle missing
    - whole nr/year: #pk
    - ?/year: -> #pk/year
-3. ! when adding a new payment receipt, make it so you can add select existing units from the inline
-4. widget or inline
+3. widget or inline
    - eg: `Spot` has both a field "Payments" where you can select existing `PaymentUnits` and a tab "Payments" where you can create payments only for this spot (or edit existing ones)
-5. add buttons for multi select widgets
+4. "add" button for multi select widgets
    - eg: `Spot` has a "Deeds" field (multiselect widget) — you can only select existing deeds, not create new ones
-6. warnings
+5. warnings
    - any of construction's spots is not among the spots on the authorization
    - more than one deed is active for a spot
    - deed date too far away from receipt date
@@ -90,24 +89,24 @@
    - maintenance year too far from current
    - payment unit year: too far away from current year, or ASK how it relates to deed
    - a spot with more than one construction of same type
-7. capitalize Ana-Maria and S.R.L properly
-8. when the `name` of the `owner` is the one in a "burial" `operation`, suggest to modify the `cancel_reason` on the `deed`
-9. show how many there are currently burried when adding a new operation
-10. la introducerea unui act nou, pt chitante, numarul default sa fie aceeasi cu cel al actului
-11. la introducerea unei chitante noi, valoarea default = suma valorilor stabilite pt toate "platile" pt care este chitanta
-12. keep values when pressing 'save and add another'
-13. add some admin actions: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/
+6. capitalize Ana-Maria and S.R.L properly
+7. when the `name` of the `owner` is the one in a "burial" `operation`, suggest to modify the `cancel_reason` on the `deed`
+8. show how many there are currently burried when adding a new operation
+9. la introducerea unui act nou, pt chitante, numarul default sa fie aceeasi cu cel al actului
+10. la introducerea unei chitante noi, valoarea default = suma valorilor stabilite pt toate "platile" pt care este chitanta
+11. keep values when pressing 'save and add another'
+12. add some admin actions: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/
    - set all kept/unkept?
-14. operations: dupa adaugare, cu titlu informativ: pe locul A-1-2 mai sunt inmormantati si: A, B, C
-15. upon adding a new deed for a spot, show info with all deeds previously active on each spot
-16. warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
+13. operations: dupa adaugare, cu titlu informativ: pe locul A-1-2 mai sunt inmormantati si: A, B, C
+14. upon adding a new deed for a spot, show info with all deeds previously active on each spot
+15. warn if dates or years are from far from current day https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
    - warning validation: https://docs.djangoproject.com/en/1.11/ref/contrib/admin/#admin-custom-validation
-17. add help_text to model fields
-18. ? should every field be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view?
+16. add help_text to model fields
+17. ? should every field be editable (`ModelAdmin.list_editable`) in the grid-view, or that is something rarely done and should be saved for the details-view?
     - owner: yes
     - others: ?
-19. ? whether the button should say "save and continue editing" or "save as new" `ModelAdmin.save_as`: if duplicating an entity is a frequent task
-20. checkboxes for importing to mark each row as solved
+18. ? whether the button should say "save and continue editing" or "save as new" `ModelAdmin.save_as`: if duplicating an entity is a frequent task
+19. checkboxes for importing to mark each row as solved
 
 
 
