@@ -82,7 +82,7 @@ def head_plus_more(entities, head_length: Optional[int] = None) -> (Optional[str
 
     Args:
         entities: iterable 
-        head_length: how many entities to be displayed fully
+        head_length: how many entities to be displayed fully (if zero then all)
 
     Returns:
         tuple of (list of head elements, tail summary string), or (None, None)
@@ -109,7 +109,11 @@ def head_plus_more(entities, head_length: Optional[int] = None) -> (Optional[str
     if not entities:
         return None, None  # not a single None in order to keep return count consistent
 
-    head_length = head_length or DEFAULT_HEAD_LENGTH
+    if head_length is None:
+        head_length = DEFAULT_HEAD_LENGTH
+
+    if head_length == 0:
+        head_length = len(entities)
 
     tail_length = len(entities) - head_length
     tail_summary = '' if tail_length <= 0 else f'{NBSP}(+{tail_length})'

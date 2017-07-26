@@ -221,6 +221,10 @@ class Deed(NrYear):
         verbose_name = _('Deed')
         verbose_name_plural = _('Deeds')
 
+    @property
+    def is_active(self) -> bool:
+        return self.cancel_reason is None
+
 
 class OwnershipReceipt(NrYear):
     deed  = ForeignKey(Deed, related_name='receipts', **optional, verbose_name=_('deed'))
@@ -434,7 +438,7 @@ class PaymentReceipt(NrYear):
 
 
 class PaymentUnit(Model):
-    """ one unit is for a single year-date combination. one receipt can have multiple units """
+    """ one unit is for a single year-spot combination. one receipt can have multiple units """
     year    = IntegerField(validators=year_validators, verbose_name=_('year'))
     spot    = ForeignKey(Spot, related_name='payments', verbose_name=_('spot'))
     # expected value for this year, for this spot

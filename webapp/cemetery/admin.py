@@ -1,8 +1,11 @@
+from datetime import date
+from math import fabs
+
 from django.utils.translation import pgettext_lazy, ugettext_lazy as _
 
 from django.contrib.admin import ModelAdmin, register, site
 from django.db.models import Min, Case, When, Max
-from django.contrib.messages import SUCCESS
+from django.contrib.messages import SUCCESS, WARNING
 from easy import short, SimpleAdminField as Field
 
 from .models import Spot, Deed, OwnershipReceipt, Owner, Maintenance, Operation, PaymentUnit, PaymentReceipt, \
@@ -13,6 +16,10 @@ from .inlines import OwnershipReceiptInline, MaintenanceInline, OperationInline,
     AuthorizationInline, PaymentUnitInline
 from .utils import rev, all_equal
 from .display_helpers import entity_tag, show_head_links, truncate, show_date, year_to_shorthand
+from django.utils.safestring import mark_safe
+
+
+DISTANT_DATE_THRESHOLD = 10  # year(s)
 
 """
 Site
@@ -24,12 +31,29 @@ site.index_title = _("Cemetery Administration")  # in the tab's title, for the h
 site.site_url = None  # remove the "View Site" link
 
 
+"""
+Composables
+"""
+
 class CustomModelAdmin(ModelAdmin):
     class Media:
         css = {
             # HACK
             'all': ['remove-second-breadcrumb.css']
         }
+
+
+class NrYearAdmin(CustomModelAdmin):
+    def save_model(self, request, entity, form, change):
+        # difference = entity.date - date.today()   # in days
+        # years = distance / 365.25
+        years = entity.year - date.today().year
+        distance = int(fabs(years))
+        if distance > DISTANT_DATE_THRESHOLD:
+            entity_link = entity_tag(entity)
+            message = _(f'For {entity_link}, the year ({entity.year}) is distant: {distance} years from today')
+            self.message_user(request, _(mark_safe(message)), WARNING)
+        entity.save()
 
 
 """
@@ -91,13 +115,21 @@ class SpotAdmin(CustomModelAdmin):
     show_unkept_since     = Field(lambda s: s.unkept_since,                      _('Unkept Since'))
     show_shares_authorizations_with = Field(lambda s: show_head_links(s.shares_authorization_with), _('Sharing Auth.'),      allow_tags=True)
 
+    def save_model(self, request, spot, form, change):
+        if spot.active_deeds.count() > 1:
+            spot_link = entity_tag(spot)
+            deeds_links = show_head_links(spot.active_deeds, head_length=0)
+            message = _(f'This spot ({spot_link}) has more than one active deed: {deeds_links}')
+            self.message_user(request, _(mark_safe(message)), WARNING)
+        spot.save()
+
 
 """
 Ownership
 """
 
 @register(Deed)
-class DeedAdmin(CustomModelAdmin):
+class DeedAdmin(NrYearAdmin):
     list_display = ['show_repr', 'number', 'year', 'cancel_reason',
                     'show_spots', 'show_receipts', 'show_owners']
 
@@ -125,9 +157,10 @@ class DeedAdmin(CustomModelAdmin):
     show_receipts = Field(lambda d: show_head_links(d.receipts), _('Receipts'),                 'first_receipt', True)
     show_owners   = Field(lambda d: show_head_links(d.owners),   _('Owners'),                   'first_owner',   True)
 
+    # TODO: check if any of the deed's spots have more than one active deed
 
 @register(OwnershipReceipt)
-class OwnershipReceiptAdmin(CustomModelAdmin):
+class OwnershipReceiptAdmin(NrYearAdmin):
     list_display = ['show_repr', 'number', 'year', 'value',
                     'show_deed', 'show_spots', 'show_owners']
 
@@ -231,13 +264,23 @@ class OperationAdmin(CustomModelAdmin):
     show_owner = Field(lambda o: show_head_links(o.spot.active_owners), _('Owner'), 'first_owner', True)
     show_spot  = Field(lambda o: entity_tag(o.spot),                    _('Spot'),  'spot',        True)
 
+    def save_model(self, request, entity, form, change):
+        difference = entity.date - date.today()
+        years = difference.days / 365.25
+        distance = fabs(years)
+        if distance > DISTANT_DATE_THRESHOLD:
+            entity_link = entity_tag(entity)
+            message = _(f'For {entity_link}, the date ({entity.date}) is distant: {distance:.1f} years from today')
+            self.message_user(request, _(mark_safe(message)), WARNING)
+        entity.save()
+
 
 """
 Constructions
 """
 
 @register(Authorization)
-class AuthorizationAdmin(CustomModelAdmin):
+class AuthorizationAdmin(NrYearAdmin):
     list_display = ['__str__', 'number', 'year', 'show_spots', 'show_construction']
 
     list_filter = rev(['number', 'year',
@@ -304,7 +347,7 @@ Payments
 """
 
 @register(PaymentUnit)
-class PaymentUnitAdmin(CustomModelAdmin):
+class PaymentUnitAdmin(NrYearAdmin):
     list_display = ['__str__', 'year', 'show_spot', 'value',
                     'show_receipts',
                     'show_owners']
@@ -331,7 +374,7 @@ class PaymentUnitAdmin(CustomModelAdmin):
 
 
 @register(PaymentReceipt)
-class PaymentReceiptAdmin(CustomModelAdmin):
+class PaymentReceiptAdmin(NrYearAdmin):
     list_display = ['show_repr', 'number', 'show_receipt_year',
                     'show_total_value', 'show_spots', 'show_units_years',
                     'show_units',
@@ -379,7 +422,7 @@ Maintenance
 """
 
 @register(Maintenance)
-class MaintenanceAdmin(CustomModelAdmin):
+class MaintenanceAdmin(NrYearAdmin):
     list_display = ['__str__', 'year', 'show_spot', 'kept',
                     'show_owners']
 
