@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional
 from datetime import datetime
 
 from django.core.urlresolvers import reverse
@@ -117,7 +117,7 @@ def head_plus_more(entities, head_length: Optional[int] = None) -> (Optional[str
     return entities[:head_length], tail_summary
 
 
-def display_head_links(query, head_length: Optional[int] = None) -> Optional[str]:
+def show_head_links(query, head_length: Optional[int] = None) -> Optional[str]:
     """
     Links the first item and shows the others.
 
@@ -193,49 +193,20 @@ def initials(names: str) -> str:
 Number manipulation
 """
 
-def year_shorthand_to_full(shorthand: Union[int, str], threshold: int = 50) -> int:
+def year_to_shorthand(year: int, leading_apostrophe=True) -> str:
     """
-
-    Args:
-        shorthand (int | str): last two digits in a year (eg: 99, 00, 15) 
-        threshold (int): after what year it is considered 2000s not 1900s  (eg: for 50: 51 -> 1951 but 49 -> 2049 
-
-    Returns:
-        year (int): full year (eg: 1999, 2000, 2015)
-
-    Examples:
-        >>> year_shorthand_to_full(99)
-        1999
-        >>> year_shorthand_to_full(0)
-        2000
-        >>> year_shorthand_to_full(15)
-        2015
-        >>> year_shorthand_to_full(1994)
-        1994
-        >>> year_shorthand_to_full(2017)
-        2017
-    """
-    shorthand = int(shorthand)
-
-    if shorthand >= 100:
-        return shorthand  # not actually a shorthand
-
-    if shorthand > threshold:
-        return 1900 + shorthand
-    else:
-        return 2000 + shorthand
-
-
-def year_to_shorthand(year: int) -> str:
-    """
-    >>> year_to_shorthand(1999)
+    >>> year_to_shorthand(1999, leading_apostrophe=True)
     '99'
-    >>> year_to_shorthand(2001)
+    >>> year_to_shorthand(2001, leading_apostrophe=True)
     '01'
+    >>> year_to_shorthand(2015, leading_apostrophe=True)
+    "'15"
     """
     as_str = str(year % 100)  # just the last two digits, eg: 1999 ~> 99
     if len(as_str) < 2:  # show 2001 as 01 instead of just 1
-        return '0' + as_str
+        as_str = '0' + as_str
+    if leading_apostrophe:
+        as_str = "'" + as_str
     return as_str
 
 
@@ -243,13 +214,13 @@ def year_to_shorthand(year: int) -> str:
 Date manipulation
 """
 
-def display_date(date):
+def show_date(date):
     """
     If only the year portion of the date was entered, show only that
-    >>> display_date(datetime(year=2017, month=7, day=18))
+    >>> show_date(datetime(year=2017, month=7, day=18))
     datetime.datetime(2017, 7, 18, 0, 0)
 
-    >>> display_date(datetime(year=2017, month=1, day=1))
+    >>> show_date(datetime(year=2017, month=1, day=1))
     2017
     """
     if date.month == date.day == 1:

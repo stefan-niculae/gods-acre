@@ -33,10 +33,8 @@
 ## behind the scenes
 
 1. make sure all unique constraints are entered
-2. make sure all models have `Meta#ordering` 
-3. add type hints
-4. check for unused imports
-5. if it impacts performance (too many values): load field autocompletes dynamically http://jet.readthedocs.io/en/latest/autocomplete.html#configuration
+2. add type hints
+3. if it impacts performance (too many values): load field autocompletes dynamically http://jet.readthedocs.io/en/latest/autocomplete.html#configuration
 
 
 
@@ -62,6 +60,7 @@
 8. order for computed fields
    - Spot: sharing auth, unkept since, shares deed with
    - companies: #constructions
+   - payment receipts: total value
 9. search by month name
 
 
@@ -114,6 +113,7 @@
 
 ## UI
 
+- ! hover table highlight row
 - translation
   - "Deeds", "Constructions", "Authorizations" in spot change, General tab (`verbose_name` in `forms.py`, in `widget=...`?)
     - Owners in Deed change, general tab

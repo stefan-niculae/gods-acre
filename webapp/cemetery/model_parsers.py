@@ -4,23 +4,26 @@ from copy import deepcopy
 from collections import namedtuple
 from itertools import zip_longest
 from functools import partial
-from datetime import datetime
 import logging
 
 import numpy as np
 import pandas as pd
-from dateutil.parser import parse
 
 from django.forms.models import model_to_dict
 
-from .models import Spot, Operation, Deed, OwnershipReceipt, Owner, Construction, Authorization, Company
-from .utils import reverse_dict, filter_dict, show_dict, map_dict
-from .display_helpers import title_case, year_shorthand_to_full, entity_tag
-from .parsing_helpers import parse_nr_year, keep_only
+from .models import Spot, Operation, Deed, OwnershipReceipt, Owner, Construction, Authorization, Company, PaymentUnit, \
+    PaymentReceipt, Maintenance
+from .utils import reverse_dict, filter_dict, show_dict, map_dict, identity
+from .display_helpers import title_case, entity_tag
+from .parsing_helpers import year_shorthand_to_full, parse_nr_year, keep_only, parse_date
 
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+"""
+Parsing logic components
+"""
 
 def natural_getsert(model) -> Callable:  # takes a django model
     """ getsert = get or insert; natural = using natural key """
@@ -43,12 +46,13 @@ def natural_getsert(model) -> Callable:  # takes a django model
     return handler
 
 
-def relational_get(model, fields: Dict, relational_keys: [str]):
+def relational_get(model, fields: Dict[str, Any], relational_keys: [str]):
+    """ find the entity that has the given `fields` (even for relational fields) """
     try:
         query_fields = {(k + '__in' if k in relational_keys else k): v for k, v in fields.items()}
         entities = model.objects.filter(**query_fields)
-    except Exception:
-        raise ValueError(f'Filter by {{{show_dict(fields)}}}')
+    except Exception as e:
+        raise ValueError(f'Filter by {{{show_dict(fields)}}}: {e}')
 
     if len(entities) != 1:  # don't use get as it throws an error on multiple matches, but it is in fact not an error
         return None
@@ -61,86 +65,29 @@ def relational_get(model, fields: Dict, relational_keys: [str]):
     return entity
 
 
-def multiple(single_parser: Callable, separator: str=',', required=False) -> Callable:
+def relational_get_or_create(model, fields: Dict[str, Any], relational_keys: [str], defaults=Dict[str, Any]):
+    entity = relational_get(model, fields, relational_keys)
+    if entity:
+        return entity
+
+    # create it now
+    entity = model(**filter_dict(fields, relational_keys, inverse=True), **defaults)
+    for key in relational_keys:
+        entity[key] = fields[key]
+    entity.save()
+    return entity
+
+
+def multiple(single_parser: Callable, separator: str=',', at_least_one=False) -> Callable:
     """ makes a parser that works on a single element work on a list of elements, split by a separator """
     def handler(inp: Optional[str]) -> Optional[List]:  # returns an entity
         if inp is None:
-            if required:
+            if at_least_one:
                 raise ValueError('Expected at least one element for multiple parsing')
             return []
         return [single_parser(elem) for elem in str(inp).split(separator)]
     return handler
 
-def parse_date(arg) -> Optional[datetime]:
-    """
-    Parse the date contained in the string
-    
-    Args:
-        arg (str | int | None): what to parse 
-
-    Returns:
-        datetime: parsed datetime object
-        
-    Examples:
-        >>> parse_date('1994')
-        datetime.datetime(1994, 1, 1, 0, 0)
-
-        >>> parse_date("'94")
-        datetime.datetime(1994, 1, 1, 0, 0)
-
-        >>> parse_date('94')
-        datetime.datetime(1994, 1, 1, 0, 0)
-
-        >>> parse_date("'17")
-        datetime.datetime(2017, 1, 1, 0, 0)
-        
-        >>> parse_date('17')  # ambiguous interpreted as year
-        datetime.datetime(2017, 1, 1, 0, 0)
-        
-        >>> parse_date('24.01.1994')  # infer day first
-        datetime.datetime(1994, 1, 24, 0, 0)
-
-        >>> parse_date('01.24.1994')  # infer month first
-        datetime.datetime(1994, 1, 24, 0, 0)
-
-        >>> parse_date('05.01.1994')  # ambiguous interpreted as month first
-        datetime.datetime(1994, 1, 5, 0, 0)
-
-        >>> parse_date('18 07 2017')  # different separator
-        datetime.datetime(2017, 7, 18, 0, 0)
-
-        >>> parse_date(None)
-
-        >>> parse_date(2017)  # ints work as well
-        datetime.datetime(2017, 1, 1, 0, 0)
-
-        >>> parse_date(94)  # ints work as well
-        datetime.datetime(1994, 1, 1, 0, 0)
-
-        >>> parse_date('06')
-        datetime.datetime(2006, 1, 1, 0, 0)
-
-        >>> parse_date('6')
-        datetime.datetime(2006, 1, 1, 0, 0)
-        
-        >>> parse_date('00')
-        datetime.datetime(2000, 1, 1, 0, 0)
-    """
-
-    if arg is None:
-        return None
-
-    str_arg = str(arg)  # convert ints
-    try:
-        int_arg = int(str_arg.replace("'", ""))    # to be able to convert '17
-        int_arg = year_shorthand_to_full(int_arg)  # to correctly assess 17 as the year 2017 instead of day 17
-        str_arg = str(int_arg)
-    except ValueError:
-        pass  # it's ok if it's not an int
-
-    return parse(str_arg,
-                 dayfirst=True,  # for ambiguities like `10.10.1994`
-                 default=datetime(year=2000, month=1, day=1))   # when only the year is given, set to Jan 1st
 
 def translate(dictionary: Dict[str, str], default=None):
     def handler(string: Optional[str]) -> str:
@@ -152,9 +99,17 @@ def translate(dictionary: Dict[str, str], default=None):
             raise ValueError(f'Wrong value: {string} is not one of {", ".join(dictionary.keys())}')
     return handler
 
-def as_is(x):
-    """ identity function """
-    return x
+
+def get_or_create_and_save(model, **kwargs):
+    entity, created_now = model.objects.get_or_create(**kwargs)
+    if created_now:
+        entity.save()
+    return entity
+
+
+"""
+Model-specific functions
+"""
 
 def prepare_deed_fields(parsed_fields: Dict[str, Any]) -> Dict[str, Any]:
         """ takes keys: deed_id, spots, receipts_ids, values, owners, cancel_reason 
@@ -177,6 +132,44 @@ def prepare_deed_fields(parsed_fields: Dict[str, Any]) -> Dict[str, Any]:
             'owners':        parsed_fields['owners'],
             'receipts':      receipts,
         }
+
+def prepare_payment_receipt_fields(parsed_fields: Dict[str, Any]) -> Dict[str, Any]:
+    """ takes keys: receipt_id, spots, years, values
+        returns keys: number, year, units """
+    number, year = parsed_fields['receipt_id']
+
+    spots  = parsed_fields['spots']
+    years  = parsed_fields['years']
+    values = parsed_fields['values']
+
+    if len(spots) != len(years):
+        # there can be a single spot mentioned and multiple years
+        # eg: a13 | 14,15 | 20,30 ~> a13,a13 | 14,15 | 20,30
+        if len(spots) != 1:
+            raise ValueError(f'More than one spot ({len(spots)}) entered, but only ({len(years)}) years')
+        [spot] = spots
+        spots = [spot] * len(years)
+
+    if len(values) != len(years):
+        # there can be a single value mentioned but multiple years
+        # a13,a13 | 14,15 | 30 ~> a13,a13 | 14,15 | 30,30
+        if len(values) != 1:
+            raise ValueError(f'More than one value ({len(spots)}) entered, but only ({len(years)}) years')
+        [value] = values
+        values = [value] * len(years)
+
+    units = [get_or_create_and_save(PaymentUnit, spot=s, year=y, defaults=dict(value=v))
+             for s, y, v in zip(spots, years, values)]
+    return {
+        'number': number,
+        'year':   year,
+        'units':  units,
+    }
+
+
+"""
+Composing parsing bits
+"""
 
 ModelMetadata = namedtuple('ModelMetadata',
                            'model sheet_name column_renames field_parsers prepare_fields '
@@ -228,10 +221,10 @@ MODELS_METADATA = [
           'deceased': title_case,
           'spot':     natural_getsert(Spot),
           'date':     parse_date,
-          'exhumation_written_report': as_is,
-          'remains_brought_from':      as_is
+          'exhumation_written_report': identity,
+          'remains_brought_from':      identity
         },
-        prepare_fields=as_is,
+        prepare_fields=identity,
         identifying_fields={'type', 'deceased', 'spot', 'date'},
         relational_fields=set(),
     ),
@@ -249,7 +242,7 @@ MODELS_METADATA = [
         },
         field_parsers={
             'deed_id':       parse_nr_year,
-            'spots':         multiple(natural_getsert(Spot), required=True),
+            'spots':         multiple(natural_getsert(Spot), at_least_one=True),
             'receipt_ids':   multiple(parse_nr_year),
             'values':        multiple(float),
             'owners':        multiple(natural_getsert(Owner)),
@@ -275,7 +268,7 @@ MODELS_METADATA = [
             'city':     title_case,
             'phone':    partial(keep_only, condition=str.isdigit),
         },
-        prepare_fields=as_is,
+        prepare_fields=identity,
         identifying_fields={'name'},
         relational_fields=set(),
     ),
@@ -292,14 +285,34 @@ MODELS_METADATA = [
         },
         field_parsers={
             'type':           translate(construction_type_translations),
-            'spots':          multiple(natural_getsert(Spot), required=True),
+            'spots':          multiple(natural_getsert(Spot), at_least_one=True),
             'authorizations': multiple(natural_getsert(Authorization)),
             'owner_builder':  natural_getsert(Owner),
             'company':        natural_getsert(Company),
         },
-        prepare_fields=as_is,
+        prepare_fields=identity,
         identifying_fields={'type', 'spots'},
-        relational_fields={'spots', 'authorizations', 'company', 'owner_builder'}
+        relational_fields={'spots', 'authorizations', 'company', 'owner_builder'},
+    ),
+
+    ModelMetadata(
+        model=PaymentReceipt,
+        sheet_name='Contributii',
+        column_renames={
+            'receipt_id': 'Chitanta',
+            'spots':      'Locuri veci',
+            'years':      'Ani',
+            'values':     'Sume platite',
+        },
+        field_parsers={
+            'receipt_id': parse_nr_year,
+            'spots':      multiple(natural_getsert(Spot), at_least_one=True),
+            'years':      multiple(year_shorthand_to_full, at_least_one=True),
+            'values':     multiple(float, at_least_one=True),
+        },
+        prepare_fields=prepare_payment_receipt_fields,
+        identifying_fields={'number', 'year'},
+        relational_fields={'units'},
     )
 
 ]

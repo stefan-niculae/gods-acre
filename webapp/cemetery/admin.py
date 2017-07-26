@@ -3,15 +3,16 @@ from django.utils.translation import pgettext_lazy, ugettext_lazy as _
 from django.contrib.admin import ModelAdmin, register, site
 from django.db.models import Min, Case, When, Max
 from django.contrib.messages import SUCCESS
-from easy import short, SimpleAdminField
+from easy import short, SimpleAdminField as Field
 
 from .models import Spot, Deed, OwnershipReceipt, Owner, Maintenance, Operation, PaymentUnit, PaymentReceipt, \
     Construction, Authorization, Company
-from .forms import SpotForm, DeedForm, OwnerForm, AuthorizationForm, PaymentReceiptForm, CompanyForm
+from .forms import SpotForm, DeedForm, OwnerForm, AuthorizationForm, PaymentReceiptForm, CompanyForm, OperationForm, \
+    PaymentUnitForm, MaintenanceForm, OwnershipReceiptForm
 from .inlines import OwnershipReceiptInline, MaintenanceInline, OperationInline, ConstructionInline, \
     AuthorizationInline, PaymentUnitInline
-from .utils import rev
-from .display_helpers import entity_tag, display_head_links, truncate, display_date, year_to_shorthand
+from .utils import rev, all_equal
+from .display_helpers import entity_tag, show_head_links, truncate, show_date, year_to_shorthand
 
 """
 Site
@@ -38,16 +39,15 @@ Spot
 @register(Spot)
 class SpotAdmin(CustomModelAdmin):
     # What columns the list-view has
-    list_display = ['__str__', 'display_parcel', 'display_row', 'display_column',
-                    'display_active_deed',
-                    'display_shares_deed_with',
-                    'display_owners',
-                    # 'display_ownership_receipts',  removed because TMI
-                    'display_operations',
-                    'display_constructions',
-                    'display_shares_authorizations_with',
-                    'display_last_paid_year',
-                    'display_unkept_since']
+    list_display = ['__str__', 'show_parcel', 'show_row', 'show_column',
+                    'show_active_deed',
+                    'show_shares_deed_with',
+                    'show_owners',
+                    'show_operations',
+                    'show_constructions',
+                    'show_shares_authorizations_with',
+                    'show_last_paid_year',
+                    'show_unkept_since']
 
     # What filters are available at the top of the list-view page: "by field" combo-box
     list_filter = rev(['parcel', 'row', 'column',
@@ -77,45 +77,19 @@ class SpotAdmin(CustomModelAdmin):
                            #     When(Q(deeds__spots__deeds=spot.deeds) & Q(~deeds__spots=spot)), then='deeds__spots'),
                            max_payments_year=Max('payments__year'))
 
-    display_parcel = SimpleAdminField(lambda spot: spot.parcel, 'P', 'parcel')
-    display_row    = SimpleAdminField(lambda spot: spot.row,    'R', 'row')
-    display_column = SimpleAdminField(lambda spot: spot.column, 'C', 'column')
+    show_parcel = Field(lambda s: s.parcel, 'P', admin_order_field='parcel')
+    show_row    = Field(lambda s: s.row,    'R', admin_order_field='row')
+    show_column = Field(lambda s: s.column, 'C', admin_order_field='column')
 
-    @short(desc=_('Active Deed'), order='first_active_deed', tags=True)
-    def display_active_deed(self, spot):
-        return display_head_links(spot.active_deeds, 1)
+    show_active_deed   = Field(lambda s: show_head_links(s.active_deeds, 1),     _('Active Deed'),   'first_active_deed',    True)
+    show_owners        = Field(lambda s: show_head_links(s.active_owners),       _('Active Owners'), 'first_active_owner',   True)
+    show_operations    = Field(lambda s: show_head_links(s.operations, 1),       _('Operations'),    'first_operation',      True)
+    show_constructions = Field(lambda s: show_head_links(s.constructions, 1),    _('Constructions'), 'first_construction',   True)
 
-    @short(desc=_('Sharing Deed'), tags=True)
-    def display_shares_deed_with(self, spot):
-        return display_head_links(spot.shares_deed_with)
-
-    # @short(desc=_('Deed Receipts'), order='deeds_receipts', tags=True)
-    # def display_ownership_receipts(self, spot):
-    #     return display_head_links(spot.ownership_receipts)
-
-    @short(desc=_('Active Owners'), order='first_active_owner', tags=True)
-    def display_owners(self, spot):
-        return display_head_links(spot.active_owners)
-
-    @short(desc=_('Operations'), order='first_operation', tags=True)
-    def display_operations(self, spot):
-        return display_head_links(spot.operations, 1)
-
-    @short(desc=_('Constructions'), order='first_construction', tags=True)
-    def display_constructions(self, spot):
-        return display_head_links(spot.constructions, 1)
-
-    @short(desc=_('Sharing Auth.'), tags=True)
-    def display_shares_authorizations_with(self, spot):
-        return display_head_links(spot.shares_authorization_with)
-
-    @short(desc=_('Last Paid'), order='max_payments_year')
-    def display_last_paid_year(self, spot):
-        return spot.last_paid_year
-
-    @short(desc=_('Unkept Since'))
-    def display_unkept_since(self, spot):
-        return spot.unkept_since
+    show_shares_deed_with = Field(lambda s: show_head_links(s.shares_deed_with), _('Sharing Deed'),                          allow_tags=True)
+    show_last_paid_year   = Field(lambda s: s.last_paid_year,                    _('Last Paid'),     'max_payments_year')
+    show_unkept_since     = Field(lambda s: s.unkept_since,                      _('Unkept Since'))
+    show_shares_authorizations_with = Field(lambda s: show_head_links(s.shares_authorization_with), _('Sharing Auth.'),      allow_tags=True)
 
 
 """
@@ -124,10 +98,8 @@ Ownership
 
 @register(Deed)
 class DeedAdmin(CustomModelAdmin):
-    form = DeedForm
-
-    list_display = ['display_repr', 'number', 'year', 'cancel_reason',
-                    'display_spots', 'display_receipts', 'display_owners']
+    list_display = ['show_repr', 'number', 'year', 'cancel_reason',
+                    'show_spots', 'show_receipts', 'show_owners']
 
     list_filter = rev(['number', 'year', 'cancel_reason',
                        'spots', 'spots__parcel', 'spots__row', 'spots__column',
@@ -139,6 +111,7 @@ class DeedAdmin(CustomModelAdmin):
                      'owners__name',
                      'receipts__number', 'receipts__year']
 
+    form = DeedForm
     inlines = [OwnershipReceiptInline]
 
     def get_queryset(self, request):
@@ -147,27 +120,16 @@ class DeedAdmin(CustomModelAdmin):
                            first_receipt=Min('receipts'),
                            first_owner=Min('owners'))
 
-    @short(desc=pgettext_lazy('short', 'Deed'))
-    def display_repr(self, deed):
-        return str(deed)
-
-    @short(desc=_('Spots'), order='first_spot', tags=True)
-    def display_spots(self, deed):
-        return display_head_links(deed.spots)
-
-    @short(desc=_('Receipts'), order='first_receipt', tags=True)
-    def display_receipts(self, deed):
-        return display_head_links(deed.receipts)
-
-    @short(desc=_('Owners'), order='first_owner', tags=True)
-    def display_owners(self, deed):
-        return display_head_links(deed.owners)
+    show_repr     = Field(lambda d: str(d),                      pgettext_lazy('short', 'Deed'))
+    show_spots    = Field(lambda d: show_head_links(d.spots),    _('Spots'),                    'first_spot',    True)
+    show_receipts = Field(lambda d: show_head_links(d.receipts), _('Receipts'),                 'first_receipt', True)
+    show_owners   = Field(lambda d: show_head_links(d.owners),   _('Owners'),                   'first_owner',   True)
 
 
 @register(OwnershipReceipt)
 class OwnershipReceiptAdmin(CustomModelAdmin):
-    list_display = ['display_repr', 'number', 'year', 'value',
-                    'display_deed', 'display_spots', 'display_owners']
+    list_display = ['show_repr', 'number', 'year', 'value',
+                    'show_deed', 'show_spots', 'show_owners']
 
     list_filter = rev(['number', 'year', 'value',
                        'deed',
@@ -176,6 +138,8 @@ class OwnershipReceiptAdmin(CustomModelAdmin):
     search_fields = ['number', 'year', 'value',
                      'deed__year', 'deed__number',
                      'deed__spots__parcel', 'deed__spots__row', 'deed__spots__column']
+
+    form = OwnershipReceiptForm
 
     def get_queryset(self, request):
         # http://stackoverflow.com/questions/2168475/django-admin-how-to-sort-by-one-of-the-custom-list-display-fields-that-has-no-d
@@ -186,28 +150,17 @@ class OwnershipReceiptAdmin(CustomModelAdmin):
         return qs.annotate(first_spot=Min('deed__spots'),
                            first_owner=Min('deed__owners'))
 
-    @short(desc=_('Receipt'))
-    def display_repr(self, receipt):
-        return str(receipt)
-
-    @short(desc=pgettext_lazy('short', 'Deed'), order='deed', tags=True)
-    def display_deed(self, receipt):
-        return entity_tag(receipt.deed)
-
-    @short(desc=_('Spots'), order='first_spot', tags=True)
-    def display_spots(self, receipt):
-        return display_head_links(receipt.spots)
-
-    @short(desc=_('Owners'), order='first_owner', tags=True)
-    def display_owners(self, receipt):
-        return display_head_links(receipt.owners)
+    show_repr   = Field(lambda r: str(r),                    _('Receipt'))
+    show_deed   = Field(lambda r: entity_tag(r.deed),        pgettext_lazy('short', 'Deed'), 'deed',        True)
+    show_spots  = Field(lambda r: show_head_links(r.spots),  _('Spots'),                     'first_spot',  True)
+    show_owners = Field(lambda r: show_head_links(r.owners), _('Owners'),                    'first_owner', True)
 
 
 @register(Owner)
 class OwnerAdmin(CustomModelAdmin):
-    list_display = ['name', 'display_phone', 'display_address', 'display_city',
-                    'display_spots', 'display_deeds', 'display_receipts',
-                    # 'display_constructions'
+    list_display = ['name', 'show_phone', 'show_address', 'show_city',
+                    'show_spots', 'show_deeds', 'show_receipts',
+                    # 'show_constructions'
                     ]
 
     list_filter = rev(['name', 'phone', 'address', 'city',
@@ -231,35 +184,21 @@ class OwnerAdmin(CustomModelAdmin):
                            # first_construction=Min('constructions_built')
                            )
 
+    show_address  = Field(lambda o: truncate(o.address),         _('Address'),                     'address')
+    show_city     = Field(lambda o: truncate(o.city),            _('City'),                        'city')
+    show_deeds    = Field(lambda o: show_head_links(o.deeds),    pgettext_lazy('short', 'Deeds'), 'first_deed',    True)
+    show_receipts = Field(lambda o: show_head_links(o.receipts), _('Receipts'),                   'first_receipt', True)
+    show_spots    = Field(lambda o: show_head_links(o.spots),    _('Spots'),                      'first_spot',    True)
+
     @short(desc=_('Phone'), order='phone')
-    def display_phone(self, owner):
+    def show_phone(self, owner):
         if not owner.phone:
             return
         return f'{owner.phone[0:3]} {owner.phone[3:6]} {owner.phone[6:9]}'
 
-    @short(desc=_('Address'), order='address')
-    def display_address(self, owner):
-        return truncate(owner.address)
-
-    @short(desc=_('City'), order='city')
-    def display_city(self, owner):
-        return truncate(owner.city)
-
-    @short(desc=pgettext_lazy('short', 'Deeds'), order='first_deed', tags=True)
-    def display_deeds(self, owner):
-        return display_head_links(owner.deeds)
-
-    @short(desc=_('Receipts'), order='first_receipt', tags=True)
-    def display_receipts(self, owner):
-        return display_head_links(owner.receipts)
-
-    @short(desc=_('Spots'), order='first_spot', tags=True)
-    def display_spots(self, owner):
-        return display_head_links(owner.spots)
-
     # @short(desc=_('Built'), order='first_construction', tags=True)
-    # def display_constructions(self, owner):
-    #     return display_head_links(owner.constructions_built)
+    # def show_constructions(self, owner):
+    #     return show_head_links(owner.constructions_built)
 
 
 """
@@ -268,8 +207,8 @@ Operations
 
 @register(Operation)
 class OperationAdmin(CustomModelAdmin):
-    list_display = ['__str__', 'type', 'display_date', 'deceased', 'display_owner',
-                    'display_spot', 'exhumation_written_report', 'remains_brought_from']
+    list_display = ['__str__', 'type', 'show_date', 'deceased', 'show_owner',
+                    'show_spot', 'exhumation_written_report', 'remains_brought_from']
 
     date_hierarchy = 'date'
 
@@ -281,22 +220,16 @@ class OperationAdmin(CustomModelAdmin):
                      'spot__parcel', 'spot__row', 'spot__column',
                      'spot__deeds__owners__name']
 
+    form = OperationForm
+
     def get_queryset(self, request):
         qs = super(OperationAdmin, self).get_queryset(request)
         # FIXME only active owners
         return qs.annotate(first_owner=Min('spot__deeds__owners'))
 
-    @short(desc=_('Date'), order='date')
-    def display_date(self, operation):
-        return display_date(operation.date)
-
-    @short(desc=_('Owner'), order='first_owner', tags=True)
-    def display_owner(self, operation):
-        return display_head_links(operation.spot.active_owners)
-
-    @short(desc=_('Spot'), order='spot', tags=True)
-    def display_spot(self, operation):
-        return entity_tag(operation.spot)
+    show_date  = Field(lambda o: show_date(o.date),                     _('Date'),  'date')
+    show_owner = Field(lambda o: show_head_links(o.spot.active_owners), _('Owner'), 'first_owner', True)
+    show_spot  = Field(lambda o: entity_tag(o.spot),                    _('Spot'),  'spot',        True)
 
 
 """
@@ -305,7 +238,7 @@ Constructions
 
 @register(Authorization)
 class AuthorizationAdmin(CustomModelAdmin):
-    list_display = ['__str__', 'number', 'year', 'display_spots', 'display_construction']
+    list_display = ['__str__', 'number', 'year', 'show_spots', 'show_construction']
 
     list_filter = rev(['number', 'year',
                        'construction', 'construction__type',
@@ -317,19 +250,14 @@ class AuthorizationAdmin(CustomModelAdmin):
 
     form = AuthorizationForm
 
-    @short(desc=_('Spots'), order='spots', tags=True)
-    def display_spots(self, authorization):
-        return display_head_links(authorization.spots)
-
-    @short(desc=_('Construction'), order='construction', tags=True)
-    def display_construction(self, authorization):
-        return entity_tag(authorization.construction)
+    show_spots        = Field(lambda authorization: show_head_links(authorization.spots),    _('Spots'),        'spots',        True)
+    show_construction = Field(lambda authorization: entity_tag(authorization.construction),  _('Construction'), 'construction', True)  # in case you were wondering: yes, this was developed on an ultra-wide
 
 
 @register(Construction)
 class ConstructionAdmin(CustomModelAdmin):
-    list_display = ['__str__', 'type', 'display_authorizations', 'display_spots',
-                    'display_owner_builder', 'display_company']
+    list_display = ['__str__', 'type', 'show_authorizations', 'show_spots',
+                    'show_owner_builder', 'show_company']
 
     list_filter = rev(['type', 'owner_builder', 'company',
                        'spots', 'spots__parcel', 'spots__row', 'spots__column',
@@ -339,28 +267,18 @@ class ConstructionAdmin(CustomModelAdmin):
                      'spots__parcel', 'spots__row', 'spots__column'
                      'authorizations__number', 'authorizations__year']
 
+    # no custom form
     inlines = [AuthorizationInline]
 
-    @short(desc=_('Authorizations'), order='authorizations', tags=True)
-    def display_authorizations(self, construction):
-        return display_head_links(construction.authorizations)
-
-    @short(desc=_('Spots'), order='authorizations__spots', tags=True)
-    def display_spots(self, construction):
-        return display_head_links(construction.spots)
-
-    @short(desc=_('Owner Builder'), order='owner_builder', tags=True)
-    def display_company(self, construction):
-        return entity_tag(construction.company)
-
-    @short(desc=_('Company'), order='company', tags=True)
-    def display_owner_builder(self, construction):
-        return entity_tag(construction.owner_builder)
+    show_authorizations = Field(lambda c: show_head_links(c.authorizations), _('Authorizations'), 'authorizations',        True)
+    show_spots          = Field(lambda c: show_head_links(c.spots),          _('Spots'),          'authorizations__spots', True)
+    show_company        = Field(lambda c: entity_tag(c.company),             _('Owner Builder'),  'owner_builder',         True)
+    show_owner_builder  = Field(lambda c: entity_tag(c.owner_builder),       _('Company'),        'company',               True)
 
 
 @register(Company)
 class CompanyAdmin(CustomModelAdmin):
-    list_display = ['__str__', 'display_n_constructions', 'display_constructions']
+    list_display = ['__str__', 'show_n_constructions', 'show_constructions']
 
     list_filter = rev(['name',
                        'constructions', 'constructions__type',
@@ -377,11 +295,8 @@ class CompanyAdmin(CustomModelAdmin):
     form = CompanyForm
     inlines = [ConstructionInline]
 
-    display_n_constructions = SimpleAdminField(lambda company: company.n_constructions, _('#Constructions'))
-
-    @short(desc=_('Constructions'), order='constructions', tags=True)
-    def display_constructions(self, company):
-        return display_head_links(company.constructions, 5)
+    show_n_constructions = Field(lambda c: c.n_constructions,                   _('#Constructions'))
+    show_constructions   = Field(lambda c: show_head_links(c.constructions, 5), _('Constructions'), 'constructions', True)
 
 
 """
@@ -390,9 +305,9 @@ Payments
 
 @register(PaymentUnit)
 class PaymentUnitAdmin(CustomModelAdmin):
-    list_display = ['__str__', 'year', 'display_spot', 'value',
-                    'display_receipts',
-                    'display_owners']
+    list_display = ['__str__', 'year', 'show_spot', 'value',
+                    'show_receipts',
+                    'show_owners']
 
     list_filter = rev(['year', 'value',
                        'spot', 'spot__parcel', 'spot__row', 'spot__column',
@@ -404,73 +319,59 @@ class PaymentUnitAdmin(CustomModelAdmin):
                      'receipt__number', 'receipt__year',
                      'spot__deeds__owners__name']
 
+    form = PaymentUnitForm
+
     def get_queryset(self, request):
         qs = super(PaymentUnitAdmin, self).get_queryset(request)
         return qs.annotate(first_owner=Min('spot__deeds__owners'))
 
-    @short(desc=_('Spot'), order='spot', tags=True)
-    def display_spot(self, payment):
-        return entity_tag(payment.spot)
-
-    @short(desc=_('Receipt'), order='receipt', tags=True)
-    def display_receipts(self, payment):
-        return entity_tag(payment.receipt)
-
-    @short(desc=_('Owners'), order='first_owner', tags=True)
-    def display_owners(self, payment):
-        return display_head_links(payment.owners)
+    show_spot     = Field(lambda p: entity_tag(p.spot),        _('Spot'),    'spot',        True)
+    show_receipts = Field(lambda p: entity_tag(p.receipt),     _('Receipt'), 'receipt',     True)
+    show_owners   = Field(lambda p: show_head_links(p.owners), _('Owners'),  'first_owner', True)
 
 
 @register(PaymentReceipt)
 class PaymentReceiptAdmin(CustomModelAdmin):
-    list_display = ['display_repr', 'number', 'display_receipt_year',
-                    'total_value', 'display_payments',
-                    'display_spots', 'display_payments_years',
-                    'display_owners']
+    list_display = ['show_repr', 'number', 'show_receipt_year',
+                    'show_total_value', 'show_spots', 'show_units_years',
+                    'show_units',
+                    'show_owners']
 
     list_filter = rev(['number', 'year',
-                       'payments__spot', 'payments__spot__parcel', 'payments__spot__row', 'payments__spot__column',
-                       'payments__spot__deeds__owners'])
+                       'units__spot', 'units__spot__parcel', 'units__spot__row', 'units__spot__column',
+                       'units__spot__deeds__owners'])
 
     search_fields = ['number', 'year',
-                     'payments__spot__parcel', 'payments__spot__row', 'payments__spot__column',
-                     'payments__spot__deeds__owners__name']
+                     'units__spot__parcel', 'units__spot__row', 'units__spot__column',
+                     'units__spot__deeds__owners__name']
 
     form = PaymentReceiptForm
-
     inlines = [PaymentUnitInline]
 
     def get_queryset(self, request):
         qs = super(PaymentReceiptAdmin, self).get_queryset(request)
-        return qs.annotate(first_payment=Min('payments'),
-                           first_spot=Min('payments__spot'),
-                           first_owner=Min('payments__spot__deeds__owners'),
-                           # first payment-year not the year in which the first payment was made
-                           first_payment_year=Min('payments__year'))
+        return qs.annotate(first_unit=Min('units'),
+                           first_spot=Min('units__spot'),
+                           first_owner=Min('units__spot__deeds__owners'),
+                           # first payment-year not the year in which the first unit was made
+                           first_unit_year=Min('units__year'))
 
-    @short(desc=pgettext_lazy('short', 'Receipt'))
-    def display_repr(self, receipt):
-        return str(receipt)
+    show_repr         = Field(str,              pgettext_lazy('short', 'Receipt'))
+    show_receipt_year = Field(lambda r: r.year, _('Receipt Year'), 'year')
 
-    @short(desc=_('Payments'), order='first_payment', tags=True)
-    def display_payments(self, receipt):
-        return display_head_links(receipt.payments)
+    show_total_value  = Field(lambda r: r.total_value,                         _('Total Value'))
+    show_spots        = Field(lambda r: show_head_links(r.spots.distinct()),  _('Spots'),     'first_spot',  True)
+    show_units        = Field(lambda r: show_head_links(r.units),             _('Units'),     'first_unit',  True)
+    show_owners       = Field(lambda r: show_head_links(r.owners.distinct()), _('Owners'),    'first_owner', True)
 
-    @short(desc=_('Receipt Year'), order='year')
-    def display_receipt_year(self, receipt):
-        return receipt.year
-
-    @short(desc=_('Spots'), order='first_spot', tags=True)
-    def display_spots(self, receipt):
-        return display_head_links(receipt.spots.distinct())
-
-    @short(desc=_('Payments Years'), order='first_payment_year')
-    def display_payments_years(self, receipt):
-        return ', '.join(map(lambda y: "'" + year_to_shorthand(y), receipt.payments_years.all()))
-
-    @short(desc=_('Owners'), order='first_owner', tags=True)
-    def display_owners(self, receipt):
-        return display_head_links(receipt.owners.distinct())
+    @short(desc=_('Payment Year(s)'), order='first_unit_year')
+    def show_units_years(self, receipt):
+        years = receipt.units_years.all()
+        if not years:
+            return
+        if all_equal(years):
+            return year_to_shorthand(years[0])
+        return ', '.join(map(year_to_shorthand, years))
 
 
 """
@@ -479,8 +380,8 @@ Maintenance
 
 @register(Maintenance)
 class MaintenanceAdmin(CustomModelAdmin):
-    list_display = ['__str__', 'year', 'display_spot', 'kept',
-                    'display_owners']
+    list_display = ['__str__', 'year', 'show_spot', 'kept',
+                    'show_owners']
 
     list_filter = rev(['year', 'kept',
                        'spot', 'spot__parcel', 'spot__row', 'spot__column',
@@ -491,19 +392,15 @@ class MaintenanceAdmin(CustomModelAdmin):
                      # FIXME DisallowedModelAdminLookup: Filtering by spot__deeds__owners__isnull not allowed
                      'spot__deeds__owners__name']
 
+    form = MaintenanceForm
     actions = ['mark_kept', 'mark_unkept']
 
     def get_queryset(self, request):
         qs = super(MaintenanceAdmin, self).get_queryset(request)
         return qs.annotate(first_owner=Min('spot__deeds__owners'))
 
-    @short(desc=_('Spot'), order='spot')
-    def display_spot(self, maintenance):
-        return entity_tag(maintenance.spot)
-
-    @short(desc=_('Owners'), order='first_owner', tags=True)
-    def display_owners(self, maintenance):
-        return display_head_links(maintenance.owners)
+    show_spot   = Field(lambda m: entity_tag(m.spot),        _('Spot'),   'spot')
+    show_owners = Field(lambda m: show_head_links(m.owners), _('Owners'), 'first_owner', True)
 
     @short(desc=_('Mark selected entries as kept'))
     def mark_kept(self, request, queryset):

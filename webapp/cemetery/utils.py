@@ -27,6 +27,15 @@ def show_dict(d):
     return ', '.join(f'{k}: {v}' for k, v in d.items())
 
 
+def identity(x):
+    return x
+
+def all_equal(l: list) -> bool:
+    """ https://stackoverflow.com/a/3844832 """
+    l = list(l)
+    return not l or l.count(l[0]) == len(l)
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()

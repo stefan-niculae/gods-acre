@@ -3,9 +3,10 @@ from django.utils.translation import ugettext_lazy as _
 from django.forms import Form, ModelForm, ModelMultipleChoiceField, BooleanField, FileField
 from django.contrib.admin.widgets import FilteredSelectMultiple
 
-from .models import Spot, Deed,  Owner, Construction, Authorization, PaymentReceipt, Operation, NrYear, Company
-from .display_helpers import title_case, year_shorthand_to_full
-from .parsing_helpers import keep_only
+from .models import Spot, NrYear, Deed,  Owner, OwnershipReceipt, Construction, Authorization, Company, Operation, \
+    PaymentReceipt, PaymentUnit, Maintenance
+from .display_helpers import title_case
+from .parsing_helpers import keep_only, year_shorthand_to_full
 
 
 class NrYearForm(ModelForm):
@@ -125,39 +126,6 @@ class DeedForm(NrYearForm):
         return deed
 
 
-# class PaymentForm(ModelForm):
-#     receipts = ModelMultipleChoiceField(
-#         queryset=PaymentReceipt.objects.all(),
-#         required=False,
-#         widget=FilteredSelectMultiple(
-#             verbose_name=_('Receipts'),
-#             is_stacked=False
-#         )
-#     )
-# 
-#     class Meta:
-#         model = Payment
-#         fields = '__all__'
-# 
-#     def __init__(self, *args, **kwargs):
-#         super(PaymentForm, self).__init__(*args, **kwargs)
-# 
-#         if self.instance and self.instance.pk:
-#             self.fields['receipts'].initial = self.instance.receipts.all()
-# 
-#     def save(self, commit=True):
-#         payment = super(PaymentForm, self).save(commit=False)
-# 
-#         if commit:
-#             payment.save()
-# 
-#         if payment.pk:
-#             payment.receipts = self.cleaned_data['receipts']
-#             self.save_m2m()
-# 
-#         return payment
-
-
 class OwnerForm(ModelForm):
     class Meta:
         model = Owner
@@ -175,6 +143,10 @@ class OwnerForm(ModelForm):
     def clean_phone(self):
         return keep_only(self.cleaned_data['phone'], str.isdigit)
 
+class OwnershipReceiptForm(NrYearForm):
+    class Meta:
+        model = OwnershipReceipt
+        fields = '__all__'
 
 class OperationForm(ModelForm):
     class Meta:
@@ -203,6 +175,23 @@ class PaymentReceiptForm(NrYearForm):
     class Meta:
         model = PaymentReceipt
         fields = '__all__'
+
+class PaymentUnitForm(ModelForm):
+    class Meta:
+        model = PaymentUnit
+        fields = '__all__'
+
+    def clean_year(self):
+        return year_shorthand_to_full(self.cleaned_data['year'])
+
+
+class MaintenanceForm(ModelForm):
+    class Meta:
+        model = Maintenance
+        fields = '__all__'
+
+    def clean_year(self):
+        return year_shorthand_to_full(self.cleaned_data['year'])
 
 
 class ImportForm(Form):

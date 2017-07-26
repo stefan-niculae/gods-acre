@@ -59,7 +59,7 @@ class NrYear(Model):
         return self.number, self.year
 
     def __str__(self):
-        return f'{self.number}/{year_to_shorthand(self.year)}'
+        return f'{self.number}/{year_to_shorthand(self.year, leading_apostrophe=False)}'
 
 
 """
@@ -248,8 +248,7 @@ class OwnershipReceipt(NrYear):
 class OwnerManager(Manager):
     @staticmethod
     def prepare_natural_key(identifier: str) -> Dict[str, str]:
-        name = title_case(identifier)
-        return {'name': name}
+        return {'name': title_case(identifier)}
 
     def get_by_natural_key(self, name):
         return self.get(name=name)
@@ -324,8 +323,7 @@ Constructions
 class CompanyManager(Manager):
     @staticmethod
     def prepare_natural_key(identifier: str) -> Dict[str, str]:
-        name = title_case(identifier)
-        return {'name': name}
+        return {'name': title_case(identifier)}
 
     def get_by_natural_key(self, name):
         return self.get(name=name)
@@ -418,20 +416,20 @@ class PaymentReceipt(NrYear):
 
     @property
     def spots(self):
-        return Spot.objects.filter(payments__in=self.payments.all())
+        return Spot.objects.filter(payments__in=self.units.all())
 
     @property
     def owners(self):
-        return Owner.objects.filter(deeds__spots__payments__in=self.payments.all())
+        return Owner.objects.filter(deeds__spots__payments__in=self.units.all())
 
     @property
-    def payments_years(self):
+    def units_years(self):
         # .order_by is required to make .distinct work correctly since Meta::ordering is defined for Payments
-        return self.payments.order_by().values_list('year', flat=True).distinct()
+        return self.units.order_by().values_list('year', flat=True).distinct()
 
     @property
     def total_value(self):
-        aggregation = self.payments.aggregate(Sum('value'))
+        aggregation = self.units.aggregate(Sum('value'))
         return aggregation['value__sum']
 
 
@@ -441,7 +439,7 @@ class PaymentUnit(Model):
     spot    = ForeignKey(Spot, related_name='payments', verbose_name=_('spot'))
     # expected value for this year, for this spot
     value   = FloatField(**optional, validators=[payment_value_validator], verbose_name=_('value'))
-    receipt = ForeignKey(PaymentReceipt, related_name='payments', **optional, verbose_name=_('receipt'))
+    receipt = ForeignKey(PaymentReceipt, related_name='units', **optional, verbose_name=_('receipt'))
 
     class Meta:
         # there cannot be multiple payments in the same year for a spot
@@ -452,7 +450,7 @@ class PaymentUnit(Model):
         verbose_name_plural = _('Payment Units')
 
     def __str__(self):
-        return f"{self.spot}{NBSP}{FOR_TRANS}{NBSP}'{year_to_shorthand(self.year)}"
+        return f'{self.spot}{NBSP}{FOR_TRANS}{NBSP}{year_to_shorthand(self.year)}'
 
     @property
     def owners(self):
@@ -476,7 +474,7 @@ class Maintenance(Model):
         verbose_name_plural = _('Maintenances')
 
     def __str__(self):
-        return f"{self.spot}{NBSP}{IN_TRANS}{NBSP}'{year_to_shorthand(self.year)}"
+        return f'{self.spot}{NBSP}{IN_TRANS}{NBSP}{year_to_shorthand(self.year)}'
 
     @property
     def owners(self):
