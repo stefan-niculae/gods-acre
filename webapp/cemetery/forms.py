@@ -7,6 +7,21 @@ from .models import Spot, NrYear, Deed,  Owner, OwnershipReceipt, Construction, 
     PaymentReceipt, PaymentUnit, Maintenance
 from .display_helpers import title_case
 from .parsing_helpers import keep_only, year_shorthand_to_full
+from .widgets import AddAnotherWidgetWrapper
+
+
+def many_to_many_field(model, required=False, name=None, is_stacked=False):
+    if name is None:
+        name = _(model.__name__ + 's')
+    return ModelMultipleChoiceField(
+        queryset=model.objects.all(),
+        required=required,
+        label=name,
+        widget=AddAnotherWidgetWrapper(
+            widget=FilteredSelectMultiple(is_stacked=is_stacked, verbose_name=name),
+            model=model
+        )
+    )
 
 
 class NrYearForm(ModelForm):
@@ -18,42 +33,10 @@ class NrYearForm(ModelForm):
         return year_shorthand_to_full(self.cleaned_data['year'])
 
 
-# workaround for https://code.djangoproject.com/ticket/897
-# based on https://gist.github.com/Grokzen/a64321dd69339c42a184
-# which is based on https://snipt.net/chrisdpratt/symmetrical-manytomany-filter-horizontal-in-django-admin/#L-26
 class SpotForm(ModelForm):
-    deeds = ModelMultipleChoiceField(
-        queryset=Deed.objects.all(),
-        required=False,
-        widget=FilteredSelectMultiple(
-            verbose_name=_('Deeds'),
-            is_stacked=False
-        )
-    )
-    constructions = ModelMultipleChoiceField(
-        queryset=Construction.objects.all(),
-        required=False,
-        widget=FilteredSelectMultiple(
-            verbose_name=_('Constructions'),
-            is_stacked=False
-        )
-    )
-    authorizations = ModelMultipleChoiceField(
-        queryset=Authorization.objects.all(),
-        required=False,
-        widget=FilteredSelectMultiple(
-            verbose_name=_('Authorizations'),
-            is_stacked=False
-        )
-    )
-    # payments = ModelMultipleChoiceField(
-    #     queryset=PaymentUnit.objects.all(),
-    #     required=False,
-    #     widget=FilteredSelectMultiple(
-    #         verbose_name=_('Payments'),
-    #         is_stacked=False
-    #     )
-    # )
+    deeds          = many_to_many_field(Deed)
+    constructions  = many_to_many_field(Construction)
+    authorizations = many_to_many_field(Authorization)
 
     class Meta:
         model = Spot
@@ -62,11 +45,13 @@ class SpotForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super(SpotForm, self).__init__(*args, **kwargs)
 
+        # workaround for https://code.djangoproject.com/ticket/897
+        # based on https://gist.github.com/Grokzen/a64321dd69339c42a184
+        # which is based on https://snipt.net/chrisdpratt/symmetrical-manytomany-filter-horizontal-in-django-admin/#L-26
         if self.instance and self.instance.pk:
             self.fields['deeds'].initial          = self.instance.deeds.all()
             self.fields['constructions'].initial  = self.instance.constructions.all()
             self.fields['authorizations'].initial = self.instance.authorizations.all()
-            # self.fields['payments'].initial       = self.instance.payments.all()
 
     def save(self, commit=True):
         spot = super(SpotForm, self).save(commit=False)
@@ -78,7 +63,6 @@ class SpotForm(ModelForm):
             spot.deeds          = self.cleaned_data['deeds']
             spot.constructions  = self.cleaned_data['constructions']
             spot.authorizations = self.cleaned_data['authorizations']
-            # spot.payments       = self.cleaned_data['payments']
             self.save_m2m()
 
         return spot
@@ -94,14 +78,7 @@ class SpotForm(ModelForm):
 
 
 class DeedForm(NrYearForm):
-    owners = ModelMultipleChoiceField(
-        queryset=Owner.objects.all(),
-        required=False,
-        widget=FilteredSelectMultiple(
-            verbose_name=_('Owners'),
-            is_stacked=False
-        )
-    )
+    owners = many_to_many_field(Owner)
 
     class Meta:
         model = Deed
@@ -125,7 +102,6 @@ class DeedForm(NrYearForm):
 
         return deed
 
-
 class OwnerForm(ModelForm):
     class Meta:
         model = Owner
@@ -147,6 +123,7 @@ class OwnershipReceiptForm(NrYearForm):
     class Meta:
         model = OwnershipReceipt
         fields = '__all__'
+
 
 class OperationForm(ModelForm):
     class Meta:

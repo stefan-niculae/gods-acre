@@ -68,14 +68,13 @@
 
 ## data entry
 
-1. ! make it not fail violently when trying to add a deed with a nr/year already in the db (unique constraint failed)
-2. handle missing
+1. !! import maintenance
+2. ! make it not fail violently when trying to add a deed with a nr/year already in the db (unique constraint failed)
+3. handle missing
    - whole nr/year: #pk
    - ?/year: -> #pk/year
-3. widget or inline
+4. widget or inline
    - eg: `Spot` has both a field "Payments" where you can select existing `PaymentUnits` and a tab "Payments" where you can create payments only for this spot (or edit existing ones)
-4. "add" button for multi select widgets
-   - eg: `Spot` has a "Deeds" field (multiselect widget) — you can only select existing deeds, not create new ones
 5. warnings
    - any of construction's spots is not among the spots on the authorization
    - more than one deed is active for a spot
@@ -115,8 +114,6 @@
 
 - ! hover table highlight row
 - translation
-  - "Deeds", "Constructions", "Authorizations" in spot change, General tab (`verbose_name` in `forms.py`, in `widget=...`?)
-    - Owners in Deed change, general tab
   - url paths https://stackoverflow.com/questions/5680405/override-django-admin-urls-for-specific-model
   - js https://docs.djangoproject.com/en/1.11/topics/i18n/translation/#internationalization-in-javascript-code
 - semantic coloring:
