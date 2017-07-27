@@ -12,8 +12,8 @@ MAX_DATE = date(day=1, month=1, year=MAX_YEAR)
 # NrYear
 number_validator = MinValueValidator(0)
 year_validators  = [
-    MinValueValidator(MIN_YEAR, _(f'The year cannot come before {MIN_YEAR}')),
-    MaxValueValidator(MAX_YEAR, _(f'The year cannot come after {MAX_YEAR}')),
+    MinValueValidator(MIN_YEAR, _(f'Must be after {MIN_YEAR}')),
+    MaxValueValidator(MAX_YEAR, _(f'Must be before {MAX_YEAR}')),
 ]
 
 
@@ -26,28 +26,28 @@ Spot possibilities:
 numbers are assumed to be up to 4 digits length (ie: 0-9999) 
 """
 parcel_validator = RegexValidator(r'^[A-Z]\d{,4}?$',
-                                  _('A parcel can be a capital letter followed by an optional number'))
-row_validator    = RegexValidator(r'^\d{,4}([a-z]|bis)?$',
-                                  _('A row can be a number optionally followed by a lowercase letter or "bis"'))
+                                  _('A letter followed by an optional number'))
+row_validator    = RegexValidator('^\d{,4}([A-Z]|bis)?$',
+                                  _('A number optionally followed by a letter or "bis"'))
 column_validator = RegexValidator(r'^\d{,4}$',
-                                  _('A column can be a number up to 4 digits long'))
+                                  _('A number up to 4 digits long'))
 
 # Receipt
 payment_value_validator = MinValueValidator(0, _('A payment value cannot be negative'))
 
 # FIXME: for now, (?u)\w is substituted for [a-zA-Z- ] with re.U to handle diacritics
-name_validator = RegexValidator(r'^(((?u)\w)|[ -])+$',
-                                _('A name can contain only letters, spaces or dashes (-)'))
+name_validator = RegexValidator(r'^(((?u)\w)|[ -]){2,}$',
+                                _('At least two letters, spaces or dashes (-)'))
 
 # eg: 0712345678
 romanian_phone_validator = RegexValidator(r'^0?7\d{8}$',
-                                          _('A phone number must start with 07 or 7, followed by eight digits'))
-address_validator = RegexValidator(r'^(((?u)\w)|[ -\.])+$',
-                                   _('An address can contain letters, digits, spaces, periods (.) or dashes (-)'))
-city_validator = RegexValidator(r'^(((?u)\w)|[ -])+$',
-                                _('A city can contain letters, spaces or dashes (-)'))
+                                          _('Start with 07 or 7, followed by eight digits'))
+address_validator = RegexValidator(r'^(((?u)\w)|[ -\.]){2,}$',
+                                   _('At least two letters, digits, spaces, periods (.) or dashes (-)'))
+city_validator = RegexValidator(r'^(((?u)\w)|[ -]){2,}$',
+                                _('At least two letters, spaces or dashes (-)'))
 
 date_validators = [
-    MinValueValidator(MIN_DATE, _(f'The year cannot come before {MIN_YEAR}')),
-    MaxValueValidator(MAX_DATE, _(f'The year cannot come after {MAX_YEAR}')),
+    MinValueValidator(MIN_DATE, _(f'Must be after {MIN_YEAR}')),
+    MaxValueValidator(MAX_DATE, _(f'Must be before {MAX_YEAR}')),
 ]

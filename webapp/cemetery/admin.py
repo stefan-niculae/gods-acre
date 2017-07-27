@@ -10,8 +10,7 @@ from easy import short, SimpleAdminField as Field
 
 from .models import Spot, Deed, OwnershipReceipt, Owner, Maintenance, Operation, PaymentUnit, PaymentReceipt, \
     Construction, Authorization, Company
-from .forms import SpotForm, DeedForm, OwnerForm, AuthorizationForm, PaymentReceiptForm, CompanyForm, OperationForm, \
-    PaymentUnitForm, MaintenanceForm, OwnershipReceiptForm
+from .forms import SpotForm, DeedForm
 from .inlines import OwnershipReceiptInline, MaintenanceInline, OperationInline, ConstructionInline, \
     AuthorizationInline, PaymentUnitInline
 from .utils import rev, all_equal
@@ -115,13 +114,14 @@ class SpotAdmin(CustomModelAdmin):
     show_unkept_since     = Field(lambda s: s.unkept_since,                      _('Unkept Since'))
     show_shares_authorizations_with = Field(lambda s: show_head_links(s.shares_authorization_with), _('Sharing Auth.'),      allow_tags=True)
 
-    def save_model(self, request, spot, form, change):
-        if spot.active_deeds.count() > 1:
-            spot_link = entity_tag(spot)
-            deeds_links = show_head_links(spot.active_deeds, head_length=0)
-            message = _(f'This spot ({spot_link}) has more than one active deed: {deeds_links}')
-            self.message_user(request, _(mark_safe(message)), WARNING)
-        spot.save()
+    # def save_model(self, request, spot, form, change):
+    #     # TODO this can only be applied after the model is saved (needs pk to access m2m)
+    #     if spot.active_deeds.count() > 1:
+    #         spot_link = entity_tag(spot)
+    #         deeds_links = show_head_links(spot.active_deeds, head_length=0)
+    #         message = _(f'This spot ({spot_link}) has more than one active deed: {deeds_links}')
+    #         self.message_user(request, _(mark_safe(message)), WARNING)
+    #     spot.save()
 
 
 """
@@ -172,8 +172,6 @@ class OwnershipReceiptAdmin(NrYearAdmin):
                      'deed__year', 'deed__number',
                      'deed__spots__parcel', 'deed__spots__row', 'deed__spots__column']
 
-    form = OwnershipReceiptForm
-
     def get_queryset(self, request):
         # http://stackoverflow.com/questions/2168475/django-admin-how-to-sort-by-one-of-the-custom-list-display-fields-that-has-no-d
         qs = super(OwnershipReceiptAdmin, self).get_queryset(request)
@@ -206,7 +204,7 @@ class OwnerAdmin(CustomModelAdmin):
                      'deeds__spots__parcel', 'deeds__spots__row', 'deeds__spots__column',
                      'constructions_built__type']
 
-    form = OwnerForm
+    # form = OwnerForm
     inlines = [ConstructionInline]
 
     def get_queryset(self, request):
@@ -253,8 +251,6 @@ class OperationAdmin(CustomModelAdmin):
                      'spot__parcel', 'spot__row', 'spot__column',
                      'spot__deeds__owners__name']
 
-    form = OperationForm
-
     def get_queryset(self, request):
         qs = super(OperationAdmin, self).get_queryset(request)
         # FIXME only active owners
@@ -290,8 +286,6 @@ class AuthorizationAdmin(NrYearAdmin):
     search_fields = ['number', 'year',
                      'construction__type',
                      'spots__parcel', 'spots__row', 'spots__column']
-
-    form = AuthorizationForm
 
     show_spots        = Field(lambda authorization: show_head_links(authorization.spots),    _('Spots'),        'spots',        True)
     show_construction = Field(lambda authorization: entity_tag(authorization.construction),  _('Construction'), 'construction', True)  # in case you were wondering: yes, this was developed on an ultra-wide
@@ -335,7 +329,6 @@ class CompanyAdmin(CustomModelAdmin):
                      'constructions__spots__parcel', 'constructions__spots__row', 'constructions__spots__column',
                      'constructions__authorizations__number', 'constructions__authorizations__year']
 
-    form = CompanyForm
     inlines = [ConstructionInline]
 
     show_n_constructions = Field(lambda c: c.n_constructions,                   _('#Constructions'))
@@ -362,8 +355,6 @@ class PaymentUnitAdmin(NrYearAdmin):
                      'receipt__number', 'receipt__year',
                      'spot__deeds__owners__name']
 
-    form = PaymentUnitForm
-
     def get_queryset(self, request):
         qs = super(PaymentUnitAdmin, self).get_queryset(request)
         return qs.annotate(first_owner=Min('spot__deeds__owners'))
@@ -388,7 +379,6 @@ class PaymentReceiptAdmin(NrYearAdmin):
                      'units__spot__parcel', 'units__spot__row', 'units__spot__column',
                      'units__spot__deeds__owners__name']
 
-    form = PaymentReceiptForm
     inlines = [PaymentUnitInline]
 
     def get_queryset(self, request):
@@ -435,7 +425,6 @@ class MaintenanceAdmin(NrYearAdmin):
                      # FIXME DisallowedModelAdminLookup: Filtering by spot__deeds__owners__isnull not allowed
                      'spot__deeds__owners__name']
 
-    form = MaintenanceForm
     actions = ['mark_kept', 'mark_unkept']
 
     def get_queryset(self, request):

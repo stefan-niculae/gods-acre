@@ -14,7 +14,7 @@ from django.forms.models import model_to_dict
 from .models import Spot, Operation, Deed, OwnershipReceipt, Owner, Construction, Authorization, Company, PaymentUnit, \
     PaymentReceipt, Maintenance
 from .utils import reverse_dict, filter_dict, show_dict, map_dict, identity
-from .display_helpers import title_case, entity_tag
+from .display_helpers import entity_tag, title_case
 from .parsing_helpers import year_shorthand_to_full, parse_nr_year, keep_only, parse_date
 
 
@@ -218,9 +218,9 @@ MODELS_METADATA = [
         },
         field_parsers={
           'type':     translate(operation_type_translations, default=Operation.BURIAL),
-          'deceased': title_case,
+          'deceased': title_case,  # clean it because it's identifying and will be used for querying
           'spot':     natural_getsert(Spot),
-          'date':     parse_date,
+          'date':     parse_date,  # clean it because it's identifying and will be used for querying
           'exhumation_written_report': identity,
           'remains_brought_from':      identity
         },
@@ -263,9 +263,9 @@ MODELS_METADATA = [
             'phone':    'Telefon',
         },
         field_parsers={
-            'name':     title_case,
-            'address':  title_case,
-            'city':     title_case,
+            'name':     title_case,  # clean it because it's identifying and will be used for querying
+            'address':  identity,
+            'city':     identity,
             'phone':    partial(keep_only, condition=str.isdigit),
         },
         prepare_fields=identity,

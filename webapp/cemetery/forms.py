@@ -1,12 +1,8 @@
 from django.utils.translation import ugettext_lazy as _
-
 from django.forms import Form, ModelForm, ModelMultipleChoiceField, BooleanField, FileField
 from django.contrib.admin.widgets import FilteredSelectMultiple
 
-from .models import Spot, NrYear, Deed,  Owner, OwnershipReceipt, Construction, Authorization, Company, Operation, \
-    PaymentReceipt, PaymentUnit, Maintenance
-from .display_helpers import title_case
-from .parsing_helpers import keep_only, year_shorthand_to_full
+from .models import Spot, Deed,  Owner, Construction, Authorization
 from .widgets import AddAnotherWidgetWrapper
 
 
@@ -22,15 +18,6 @@ def many_to_many_field(model, required=False, name=None, is_stacked=False):
             model=model
         )
     )
-
-
-class NrYearForm(ModelForm):
-    class Meta:
-        model = NrYear
-        fields = '__all__'
-
-    def clean_year(self):
-        return year_shorthand_to_full(self.cleaned_data['year'])
 
 
 class SpotForm(ModelForm):
@@ -58,7 +45,6 @@ class SpotForm(ModelForm):
 
         if commit:
             spot.save()
-
         if spot.pk:
             spot.deeds          = self.cleaned_data['deeds']
             spot.constructions  = self.cleaned_data['constructions']
@@ -67,17 +53,8 @@ class SpotForm(ModelForm):
 
         return spot
 
-    def clean_parcel(self):
-        return self.cleaned_data['parcel'].upper()
 
-    def clean_row(self):
-        return self.cleaned_data['row'].upper()
-
-    def clean_column(self):
-        return self.cleaned_data['column'].upper()
-
-
-class DeedForm(NrYearForm):
+class DeedForm(ModelForm):
     owners = many_to_many_field(Owner)
 
     class Meta:
@@ -95,80 +72,11 @@ class DeedForm(NrYearForm):
 
         if commit:
             deed.save()
-
         if deed.pk:
             deed.owners = self.cleaned_data['owners']
             self.save_m2m()
 
         return deed
-
-class OwnerForm(ModelForm):
-    class Meta:
-        model = Owner
-        fields = '__all__'
-
-    def clean_name(self):
-        return title_case(self.cleaned_data['name'])
-
-    def clean_address(self):
-        return title_case(self.cleaned_data['address'])
-
-    def clean_city(self):
-        return title_case(self.cleaned_data['city'])
-
-    def clean_phone(self):
-        return keep_only(self.cleaned_data['phone'], str.isdigit)
-
-class OwnershipReceiptForm(NrYearForm):
-    class Meta:
-        model = OwnershipReceipt
-        fields = '__all__'
-
-
-class OperationForm(ModelForm):
-    class Meta:
-        model = Operation
-        fields = '__all__'
-
-    def clean_deceased(self):
-        return title_case(self.cleaned_data['deceased'])
-
-
-class CompanyForm(ModelForm):
-    class Meta:
-        model = Company
-        fields = '__all__'
-
-    def clean_name(self):
-        return title_case(self.cleaned_data['name'])
-
-class AuthorizationForm(NrYearForm):
-    class Meta:
-        model = Authorization
-        fields = '__all__'
-
-
-class PaymentReceiptForm(NrYearForm):
-    class Meta:
-        model = PaymentReceipt
-        fields = '__all__'
-
-class PaymentUnitForm(ModelForm):
-    class Meta:
-        model = PaymentUnit
-        fields = '__all__'
-
-    def clean_year(self):
-        return year_shorthand_to_full(self.cleaned_data['year'])
-
-
-class MaintenanceForm(ModelForm):
-    class Meta:
-        model = Maintenance
-        fields = '__all__'
-
-    def clean_year(self):
-        return year_shorthand_to_full(self.cleaned_data['year'])
 
 
 class ImportForm(Form):

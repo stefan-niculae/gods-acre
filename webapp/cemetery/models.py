@@ -2,16 +2,16 @@ from typing import Optional, Dict
 from datetime import date
 
 from django.utils.translation import ugettext_lazy as _
-
 from django.db.models import Model, ForeignKey, TextField, IntegerField, CharField, \
     ManyToManyField, FloatField, BooleanField, DateField, Sum, Max, Manager
-from django.core.exceptions import ValidationError
+from django.db.models.signals import pre_save
 
 from .validators import number_validator, year_validators, parcel_validator, row_validator, column_validator, \
     payment_value_validator, name_validator, romanian_phone_validator, address_validator, city_validator, date_validators
 from .utils import NBSP
-from .display_helpers import head_plus_more, title_case, initials, year_to_shorthand
-from .parsing_helpers import parse_nr_year
+from .display_helpers import head_plus_more, initials, year_to_shorthand, title_case
+from .parsing_helpers import parse_nr_year, keep_only, year_shorthand_to_full, parse_date
+
 
 # translations
 ON_TRANS  = _('on')
@@ -19,6 +19,14 @@ FOR_TRANS = _('for')
 IN_TRANS  = _('in')
 
 optional = {'blank': True, 'null': True}  # to be passed in field definitions as additional kwargs
+
+
+def validate_model(sender, **kwargs):
+    """ https://djangosnippets.org/snippets/2319/ """
+    if 'raw' in kwargs and not kwargs['raw']:
+        kwargs['instance'].full_clean()
+pre_save.connect(validate_model, dispatch_uid='validate_models')
+
 
 
 """
@@ -45,8 +53,8 @@ class NrYear(Model):
     """
     For deeds, receipts and authorizations
     """
-    number = IntegerField(**optional, validators=[number_validator], verbose_name=_('number'))
-    year   = IntegerField(default=date.today().year, **optional, validators=year_validators, verbose_name=_('year'))
+    number = IntegerField(validators=[number_validator], verbose_name=_('number'))
+    year   = IntegerField(default=date.today().year, validators=year_validators, verbose_name=_('year'))
 
     objects = NrYearManager()
 
@@ -60,6 +68,10 @@ class NrYear(Model):
 
     def __str__(self):
         return f'{self.number}/{year_to_shorthand(self.year, leading_apostrophe=False)}'
+
+    def clean_fields(self, exclude=None):
+        self.year = year_shorthand_to_full(self.year)
+        super(NrYear, self).clean_fields(exclude)
 
 
 """
@@ -198,6 +210,16 @@ class Spot(Model):
         return aggregation['year__max']
     _last_paid_year = last_paid_year
 
+    def clean_fields(self, exclude=None):
+        self.parcel = self.parcel.upper()
+        self.row = self.row.upper()
+        if 'BIS' in self.row:
+            self.row = self.row.lower()
+        # called last because the regex patterns expect uppercase numbers
+        # but lowercase may be entered before calling .upper()
+        super(Spot, self).clean_fields(exclude)
+
+
 
 """
 Ownership
@@ -287,6 +309,13 @@ class Owner(Model):
         # The spot-receipt relation goes through a deed
         return OwnershipReceipt.objects.filter(deed__owners=self)
 
+    def clean_fields(self, exclude=None):
+        self.name    = title_case(self.name)
+        self.address = title_case(self.address)
+        self.city    = title_case(self.city)
+        self.phone = keep_only(self.phone, str.isdigit)
+        super(Owner, self).clean_fields(exclude)
+
 
 """
 Operations
@@ -319,6 +348,11 @@ class Operation(Model):
         display_initials = initials(self.deceased) if self.deceased else ''
         return f"'{self.date:%y}:{NBSP}{self.spot}{NBSP}{Operation.TYPE_SYMBOLS[self.type]}{NBSP}{display_initials}"
 
+    def clean_fields(self, exclude=None):
+        self.deceased = title_case(self.deceased)
+        self.date = parse_date(self.date)
+        super(Operation, self).clean_fields(exclude)
+        
 
 """
 Constructions
@@ -356,6 +390,10 @@ class Company(Model):
     def n_constructions(self):
         return self.constructions.count()
 
+    def clean_fields(self, exclude=None):
+        self.name = title_case(self.name)
+        super(Company, self).clean_fields(exclude)
+
 
 class Construction(Model):
     TOMB   = 't'
@@ -373,10 +411,6 @@ class Construction(Model):
     spots         = ManyToManyField(Spot, verbose_name=_('spots'))
     company       = ForeignKey(Company, **optional, verbose_name=_('company'))
     owner_builder = ForeignKey(Owner,   **optional, related_name='constructions_built', verbose_name=_('owner builder'))
-
-    def clean(self):
-        if not self.company and not self.owner_builder:
-            raise ValidationError('You must specify at least one of company or owner builder')
 
     class Meta:
         default_related_name = 'constructions'
@@ -439,7 +473,7 @@ class PaymentReceipt(NrYear):
 
 class PaymentUnit(Model):
     """ one unit is for a single year-spot combination. one receipt can have multiple units """
-    year    = IntegerField(validators=year_validators, verbose_name=_('year'))
+    year    = IntegerField(default=date.today().year, validators=year_validators, verbose_name=_('year'))
     spot    = ForeignKey(Spot, related_name='payments', verbose_name=_('spot'))
     # expected value for this year, for this spot
     value   = FloatField(**optional, validators=[payment_value_validator], verbose_name=_('value'))
@@ -462,12 +496,17 @@ class PaymentUnit(Model):
         # FIXME this should be the owner for THIS year, not all previous and future ones (same for Maintenance and PaymentReceipt)
         return Owner.objects.filter(deeds__spots=self.spot)
 
+    def clean_fields(self, exclude=None):
+        self.year = year_shorthand_to_full(self.year)
+        super(PaymentUnit, self).clean_fields(exclude)
+
+
 """
 Maintenance
 """
 
 class Maintenance(Model):
-    year = IntegerField(validators=year_validators, verbose_name=_('year'))
+    year = IntegerField(default=date.today().year, validators=year_validators, verbose_name=_('year'))
     spot = ForeignKey(Spot, related_name='maintenances', verbose_name=_('spot'))
     kept = BooleanField(verbose_name=_('kept'))
 
@@ -484,6 +523,10 @@ class Maintenance(Model):
     def owners(self):
         # The maintenance-owner relation goes through a spot and a deed
         return Owner.objects.filter(deeds__spots__maintenances=self)
+
+    def clean_fields(self, exclude=None):
+        self.year = year_shorthand_to_full(self.year)
+        super(Maintenance, self).clean_fields(exclude)
 
 
 ALL_MODELS = [

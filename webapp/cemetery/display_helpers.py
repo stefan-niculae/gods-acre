@@ -3,6 +3,7 @@ from datetime import datetime
 
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
+from titlecase import titlecase as titlecase_external
 
 from .utils import NBSP
 
@@ -172,21 +173,9 @@ def truncate(string: Optional[str], max_len: int = 20) -> Optional[str]:
 
 
 def title_case(string: Optional[str]) -> Optional[str]:
-    """
-    Convert into Title Case
-
-    Examples:
-        >>> title_case('abc  dEf')
-        'Abc Def'
-        >>> title_case(None)
-        >>> title_case('mary-jane')
-        'Mary-Jane'
-        >>> title_case('s.r.l')
-        'S.R.L'
-    """
     if string is None:
-        return None
-    return ' '.join(word.capitalize() for word in string.split())
+        return
+    return titlecase_external(string)
 
 
 def initials(names: str) -> str:
