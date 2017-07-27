@@ -5,10 +5,10 @@ from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 from titlecase import titlecase as titlecase_external
 
-from .utils import NBSP
-
 
 DEFAULT_HEAD_LENGTH = 2
+NB_HYPHEN = '‑'
+NBSP = '\u00A0'  # non-breaking white-space
 
 
 """ 
@@ -74,10 +74,13 @@ def entity_tag(entity) -> Optional[str]:
     if not entity:
         return
     link = entity_link(entity.__class__.__name__, entity.pk)
-    return mark_safe(f'<a href="{link}">{entity}</a>')
+    # do the conversion from regular hyphen to non-breaking hyphen here instead of putting it in __str__ directly
+    # because then searching for A-1-2 in multi-select box would not work (because they would not be regular hyphens)
+    entity_str = str(entity).replace(' ', NBSP).replace('-', NB_HYPHEN)
+    return mark_safe(f'<a href="{link}">{entity_str}</a>')
 
 
-def head_plus_more(entities, head_length: Optional[int] = None) -> (Optional[str], Optional[str]):
+def head_plus_more(entities, head_length=None) -> (Optional[str], Optional[str]):
     """
     Show the first item. Others are shown as (+n) more
 
@@ -113,7 +116,7 @@ def head_plus_more(entities, head_length: Optional[int] = None) -> (Optional[str
     if head_length is None:
         head_length = DEFAULT_HEAD_LENGTH
 
-    if head_length == 0:
+    if head_length == 'all':
         head_length = len(entities)
 
     tail_length = len(entities) - head_length
@@ -122,7 +125,7 @@ def head_plus_more(entities, head_length: Optional[int] = None) -> (Optional[str
     return entities[:head_length], tail_summary
 
 
-def show_head_links(query, head_length: Optional[int] = None) -> Optional[str]:
+def show_head_links(query, head_length=None) -> Optional[str]:
     """
     Links the first item and shows the others.
 

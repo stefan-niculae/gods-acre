@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from django.forms.models import model_to_dict
+from django.utils.safestring import mark_safe
 
 from .models import Spot, Operation, Deed, OwnershipReceipt, Owner, Construction, Authorization, Company, PaymentUnit, \
     PaymentReceipt, Maintenance
@@ -388,6 +389,7 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
         except Exception as error:
             info = f'Save after updating fields on found-duplicate {entity}'
             return 'fail', info, repr(error)
+        # TODO: nicely formatted warnings, like: .admin.CustomBaseModelAdmin#save_model
         return 'duplicate', entity_tag(entity), entity2dict_str(entity)
 
     # 4. save the entity
@@ -411,6 +413,7 @@ def parse_row(row, metadata) -> Tuple[str, str, str]:
         return 'fail', info, repr(error)
 
     # finally success
+    # TODO: like 'duplicate' but dry
     return 'add', entity_tag(entity), entity2dict_str(entity)
 
 

@@ -1,11 +1,8 @@
-from datetime import date
-from math import fabs
-
 from django.utils.translation import pgettext_lazy, ugettext_lazy as _
-
 from django.contrib.admin import ModelAdmin, register, site
 from django.db.models import Min, Case, When, Max
 from django.contrib.messages import SUCCESS, WARNING
+from django.utils.safestring import mark_safe
 from easy import short, SimpleAdminField as Field
 
 from .models import Spot, Deed, OwnershipReceipt, Owner, Maintenance, Operation, PaymentUnit, PaymentReceipt, \
@@ -13,12 +10,9 @@ from .models import Spot, Deed, OwnershipReceipt, Owner, Maintenance, Operation,
 from .forms import SpotForm, DeedForm
 from .inlines import OwnershipReceiptInline, MaintenanceInline, OperationInline, ConstructionInline, \
     AuthorizationInline, PaymentUnitInline
-from .utils import rev, all_equal
+from .utils import rev, all_equal, class_name
 from .display_helpers import entity_tag, show_head_links, truncate, show_date, year_to_shorthand
-from django.utils.safestring import mark_safe
 
-
-DISTANT_DATE_THRESHOLD = 10  # year(s)
 
 """
 Site
@@ -34,35 +28,28 @@ site.site_url = None  # remove the "View Site" link
 Composables
 """
 
-class CustomModelAdmin(ModelAdmin):
+class CustomBaseModelAdmin(ModelAdmin):
     class Media:
         css = {
             # HACK
             'all': ['remove-second-breadcrumb.css']
         }
 
-
-class NrYearAdmin(CustomModelAdmin):
     def save_model(self, request, entity, form, change):
-        # difference = entity.date - date.today()   # in days
-        # years = distance / 365.25
-        years = entity.year - date.today().year
-        distance = int(fabs(years))
-        if distance > DISTANT_DATE_THRESHOLD:
-            entity_link = entity_tag(entity)
-            message = _(f'For {entity_link}, the year ({entity.year}) is distant: {distance} years from today')
-            self.message_user(request, _(mark_safe(message)), WARNING)
         entity.save()
-
+        for message, emitting_entity in entity.diagnose_warnings():
+            prefix = _('Warning')
+            emitter_info = f'{_(class_name(emitting_entity))} {_(entity_tag(emitting_entity))}'
+            self.message_user(request, mark_safe(f'{prefix}! {emitter_info}: {message}'), WARNING)
 
 """
 Spot
 """
 
 @register(Spot)
-class SpotAdmin(CustomModelAdmin):
+class SpotAdmin(CustomBaseModelAdmin):
     # What columns the list-view has
-    list_display = ['__str__', 'show_parcel', 'show_row', 'show_column',
+    list_display = ['show_repr', 'show_parcel', 'show_row', 'show_column',
                     'show_active_deed',
                     'show_shares_deed_with',
                     'show_owners',
@@ -100,6 +87,9 @@ class SpotAdmin(CustomModelAdmin):
                            #     When(Q(deeds__spots__deeds=spot.deeds) & Q(~deeds__spots=spot)), then='deeds__spots'),
                            max_payments_year=Max('payments__year'))
 
+    # put show_repr instead of just __str__ in list_display
+    # because we want the non-breaking hyphens added by `entity_tag` but not from regular __str__
+    show_repr   = Field(entity_tag, _('Spot'))
     show_parcel = Field(lambda s: s.parcel, 'P', admin_order_field='parcel')
     show_row    = Field(lambda s: s.row,    'R', admin_order_field='row')
     show_column = Field(lambda s: s.column, 'C', admin_order_field='column')
@@ -129,7 +119,7 @@ Ownership
 """
 
 @register(Deed)
-class DeedAdmin(NrYearAdmin):
+class DeedAdmin(CustomBaseModelAdmin):
     list_display = ['show_repr', 'number', 'year', 'cancel_reason',
                     'show_spots', 'show_receipts', 'show_owners']
 
@@ -160,7 +150,7 @@ class DeedAdmin(NrYearAdmin):
     # TODO: check if any of the deed's spots have more than one active deed
 
 @register(OwnershipReceipt)
-class OwnershipReceiptAdmin(NrYearAdmin):
+class OwnershipReceiptAdmin(CustomBaseModelAdmin):
     list_display = ['show_repr', 'number', 'year', 'value',
                     'show_deed', 'show_spots', 'show_owners']
 
@@ -188,7 +178,7 @@ class OwnershipReceiptAdmin(NrYearAdmin):
 
 
 @register(Owner)
-class OwnerAdmin(CustomModelAdmin):
+class OwnerAdmin(CustomBaseModelAdmin):
     list_display = ['name', 'show_phone', 'show_address', 'show_city',
                     'show_spots', 'show_deeds', 'show_receipts',
                     # 'show_constructions'
@@ -237,8 +227,8 @@ Operations
 """
 
 @register(Operation)
-class OperationAdmin(CustomModelAdmin):
-    list_display = ['__str__', 'type', 'show_date', 'deceased', 'show_owner',
+class OperationAdmin(CustomBaseModelAdmin):
+    list_display = ['show_repr', 'type', 'show_date', 'deceased', 'show_owner',
                     'show_spot', 'exhumation_written_report', 'remains_brought_from']
 
     date_hierarchy = 'date'
@@ -256,19 +246,10 @@ class OperationAdmin(CustomModelAdmin):
         # FIXME only active owners
         return qs.annotate(first_owner=Min('spot__deeds__owners'))
 
+    show_repr  = Field(entity_tag, _('Operation'))  # for non-breaking separators
     show_date  = Field(lambda o: show_date(o.date),                     _('Date'),  'date')
     show_owner = Field(lambda o: show_head_links(o.spot.active_owners), _('Owner'), 'first_owner', True)
     show_spot  = Field(lambda o: entity_tag(o.spot),                    _('Spot'),  'spot',        True)
-
-    def save_model(self, request, entity, form, change):
-        difference = entity.date - date.today()
-        years = difference.days / 365.25
-        distance = fabs(years)
-        if distance > DISTANT_DATE_THRESHOLD:
-            entity_link = entity_tag(entity)
-            message = _(f'For {entity_link}, the date ({entity.date}) is distant: {distance:.1f} years from today')
-            self.message_user(request, _(mark_safe(message)), WARNING)
-        entity.save()
 
 
 """
@@ -276,7 +257,7 @@ Constructions
 """
 
 @register(Authorization)
-class AuthorizationAdmin(NrYearAdmin):
+class AuthorizationAdmin(CustomBaseModelAdmin):
     list_display = ['__str__', 'number', 'year', 'show_spots', 'show_construction']
 
     list_filter = rev(['number', 'year',
@@ -292,7 +273,7 @@ class AuthorizationAdmin(NrYearAdmin):
 
 
 @register(Construction)
-class ConstructionAdmin(CustomModelAdmin):
+class ConstructionAdmin(CustomBaseModelAdmin):
     list_display = ['__str__', 'type', 'show_authorizations', 'show_spots',
                     'show_owner_builder', 'show_company']
 
@@ -314,7 +295,7 @@ class ConstructionAdmin(CustomModelAdmin):
 
 
 @register(Company)
-class CompanyAdmin(CustomModelAdmin):
+class CompanyAdmin(CustomBaseModelAdmin):
     list_display = ['__str__', 'show_n_constructions', 'show_constructions']
 
     list_filter = rev(['name',
@@ -340,8 +321,8 @@ Payments
 """
 
 @register(PaymentUnit)
-class PaymentUnitAdmin(NrYearAdmin):
-    list_display = ['__str__', 'year', 'show_spot', 'value',
+class PaymentUnitAdmin(CustomBaseModelAdmin):
+    list_display = ['show_repr', 'year', 'show_spot', 'value',
                     'show_receipts',
                     'show_owners']
 
@@ -359,13 +340,14 @@ class PaymentUnitAdmin(NrYearAdmin):
         qs = super(PaymentUnitAdmin, self).get_queryset(request)
         return qs.annotate(first_owner=Min('spot__deeds__owners'))
 
+    show_repr     = Field(entity_tag, _('PaymentUnit'))  # for non-breaking separators
     show_spot     = Field(lambda p: entity_tag(p.spot),        _('Spot'),    'spot',        True)
     show_receipts = Field(lambda p: entity_tag(p.receipt),     _('Receipt'), 'receipt',     True)
     show_owners   = Field(lambda p: show_head_links(p.owners), _('Owners'),  'first_owner', True)
 
 
 @register(PaymentReceipt)
-class PaymentReceiptAdmin(NrYearAdmin):
+class PaymentReceiptAdmin(CustomBaseModelAdmin):
     list_display = ['show_repr', 'number', 'show_receipt_year',
                     'show_total_value', 'show_spots', 'show_units_years',
                     'show_units',
@@ -412,8 +394,8 @@ Maintenance
 """
 
 @register(Maintenance)
-class MaintenanceAdmin(NrYearAdmin):
-    list_display = ['__str__', 'year', 'show_spot', 'kept',
+class MaintenanceAdmin(CustomBaseModelAdmin):
+    list_display = ['show_repr', 'year', 'show_spot', 'kept',
                     'show_owners']
 
     list_filter = rev(['year', 'kept',
@@ -431,6 +413,7 @@ class MaintenanceAdmin(NrYearAdmin):
         qs = super(MaintenanceAdmin, self).get_queryset(request)
         return qs.annotate(first_owner=Min('spot__deeds__owners'))
 
+    show_repr     = Field(entity_tag, _('Maintenance'))  # for non-breaking separators
     show_spot   = Field(lambda m: entity_tag(m.spot),        _('Spot'),   'spot')
     show_owners = Field(lambda m: show_head_links(m.owners), _('Owners'), 'first_owner', True)
 

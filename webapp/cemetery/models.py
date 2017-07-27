@@ -1,16 +1,20 @@
 from typing import Optional, Dict
 from datetime import date
+from math import fabs
 
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Model, ForeignKey, TextField, IntegerField, CharField, \
     ManyToManyField, FloatField, BooleanField, DateField, Sum, Max, Manager
 from django.db.models.signals import pre_save
 
+from .display_helpers import head_plus_more, initials, year_to_shorthand, title_case, entity_tag, show_head_links, NBSP
+from .parsing_helpers import parse_nr_year, keep_only, year_shorthand_to_full, parse_date
 from .validators import number_validator, year_validators, parcel_validator, row_validator, column_validator, \
     payment_value_validator, name_validator, romanian_phone_validator, address_validator, city_validator, date_validators
-from .utils import NBSP
-from .display_helpers import head_plus_more, initials, year_to_shorthand, title_case
-from .parsing_helpers import parse_nr_year, keep_only, year_shorthand_to_full, parse_date
+from .utils import class_name
+
+
+DISTANT_DATE_THRESHOLD = 10  # year(s)
 
 
 # translations
@@ -21,6 +25,7 @@ IN_TRANS  = _('in')
 optional = {'blank': True, 'null': True}  # to be passed in field definitions as additional kwargs
 
 
+# make .save() automatically call .full_clean()
 def validate_model(sender, **kwargs):
     """ https://djangosnippets.org/snippets/2319/ """
     if 'raw' in kwargs and not kwargs['raw']:
@@ -28,9 +33,8 @@ def validate_model(sender, **kwargs):
 pre_save.connect(validate_model, dispatch_uid='validate_models')
 
 
-
 """
-Mixins
+Abstract models
 """
 
 class Annotatable(Model):
@@ -38,6 +42,35 @@ class Annotatable(Model):
 
     class Meta:
         abstract = True
+
+class WarningModel(Model):
+    """ model that can self-diagnose warnings """
+    def diagnose_warnings(self, only_related_to=None):
+        """ should be called after the model is saved. 
+            yields tuples of message (str), emitting entity (django.db.Model).
+            watch out for circular warnings! """
+        yield from []  # ie: nothing
+
+    class Meta:
+        abstract = True
+
+
+class ModelWithYear(WarningModel):
+    year   = IntegerField(default=date.today().year, validators=year_validators, verbose_name=_('year'))
+
+    class Meta:
+        abstract = True
+    
+    def clean_fields(self, exclude=None):
+        self.year = year_shorthand_to_full(self.year)
+        super(ModelWithYear, self).clean_fields(exclude)
+
+    def diagnose_warnings(self, only_related_to=None):
+        years = self.year - date.today().year
+        distance = int(fabs(years))
+        if distance > DISTANT_DATE_THRESHOLD:
+            yield _(f'the year {self.year} is {distance} years from today'), self
+
 
 class NrYearManager(Manager):
     @staticmethod
@@ -49,12 +82,11 @@ class NrYearManager(Manager):
     def get_by_natural_key(self, number, year):
         return self.get(number=number, year=year)
 
-class NrYear(Model):
+class NrYear(ModelWithYear):
     """
     For deeds, receipts and authorizations
     """
     number = IntegerField(validators=[number_validator], verbose_name=_('number'))
-    year   = IntegerField(default=date.today().year, validators=year_validators, verbose_name=_('year'))
 
     objects = NrYearManager()
 
@@ -68,10 +100,6 @@ class NrYear(Model):
 
     def __str__(self):
         return f'{self.number}/{year_to_shorthand(self.year, leading_apostrophe=False)}'
-
-    def clean_fields(self, exclude=None):
-        self.year = year_shorthand_to_full(self.year)
-        super(NrYear, self).clean_fields(exclude)
 
 
 """
@@ -88,7 +116,7 @@ class SpotManager(Manager):
     def get_by_natural_key(self, parcel, row, column):
         return self.get(parcel=parcel, row=row, column=column)
 
-class Spot(Model):
+class Spot(WarningModel):
     parcel  = CharField(max_length=5, validators=[parcel_validator], verbose_name=_('parcel'))
     row     = CharField(max_length=7, validators=[row_validator],    verbose_name=_('row'))
     column  = CharField(max_length=4, validators=[column_validator], verbose_name=_('column'))
@@ -105,7 +133,7 @@ class Spot(Model):
         return self.parcel, self.row, self.column
 
     def __str__(self):
-        return f'{self.parcel}‑{self.row}‑{self.column}'  # non-breaking space
+        return f'{self.parcel}-{self.row}-{self.column}'  # non-breaking space
 
     @property
     def active_deeds(self):
@@ -219,6 +247,19 @@ class Spot(Model):
         # but lowercase may be entered before calling .upper()
         super(Spot, self).clean_fields(exclude)
 
+    def diagnose_warnings(self, only_related_to=None):
+        if not only_related_to or class_name(only_related_to) == 'Deed':
+            if self.active_deeds.count() > 1:
+                deeds_links = show_head_links(self.active_deeds, head_length='all')
+                yield _(f'more than one active deed: {deeds_links}'), self
+
+        if not only_related_to or class_name(only_related_to) == 'Construction':
+            constructions = self.constructions.all()
+            constructions_links = show_head_links(constructions, head_length='all')
+            if len(constructions) > 2:
+                yield _(f'more than two constructions: {constructions_links}'), self
+            if len(constructions) == 2 and constructions[0].type == constructions[1].type:
+                yield _(f'two  constructions of the same type: {constructions_links}'), self
 
 
 """
@@ -246,6 +287,11 @@ class Deed(NrYear):
     @property
     def is_active(self) -> bool:
         return self.cancel_reason is None
+
+    def diagnose_warnings(self, only_related_to=None):
+        if only_related_to is None:
+            for spot in self.spots.all():
+                yield from spot.diagnose_warnings(only_related_to=self)
 
 
 class OwnershipReceipt(NrYear):
@@ -279,7 +325,7 @@ class OwnerManager(Manager):
     def get_by_natural_key(self, name):
         return self.get(name=name)
 
-class Owner(Model):
+class Owner(WarningModel):
     name    = CharField(max_length=100, unique=True, validators=[name_validator],           verbose_name=_('name'))
     phone   = CharField(max_length=15,  **optional,  validators=[romanian_phone_validator], verbose_name=_('phone'))
     address = CharField(max_length=250, **optional,  validators=[address_validator],        verbose_name=_('address'))
@@ -321,7 +367,7 @@ class Owner(Model):
 Operations
 """
 
-class Operation(Model):
+class Operation(WarningModel):
     BURIAL     = 'b'
     EXHUMATION = 'e'
     TYPE_CHOICES = [
@@ -346,13 +392,13 @@ class Operation(Model):
 
     def __str__(self):
         display_initials = initials(self.deceased) if self.deceased else ''
-        return f"'{self.date:%y}:{NBSP}{self.spot}{NBSP}{Operation.TYPE_SYMBOLS[self.type]}{NBSP}{display_initials}"
+        return f"'{self.date:%y}: {self.spot} {Operation.TYPE_SYMBOLS[self.type]} {display_initials}"
 
     def clean_fields(self, exclude=None):
         self.deceased = title_case(self.deceased)
         self.date = parse_date(self.date)
         super(Operation, self).clean_fields(exclude)
-        
+
 
 """
 Constructions
@@ -366,7 +412,7 @@ class CompanyManager(Manager):
     def get_by_natural_key(self, name):
         return self.get(name=name)
 
-class Company(Model):
+class Company(WarningModel):
     """
     Construction company
     """
@@ -395,7 +441,7 @@ class Company(Model):
         super(Company, self).clean_fields(exclude)
 
 
-class Construction(Model):
+class Construction(WarningModel):
     TOMB   = 't'
     BORDER = 'b'
     TYPE_CHOICES = [
@@ -414,7 +460,7 @@ class Construction(Model):
 
     class Meta:
         default_related_name = 'constructions'
-        # unique_together = ('type', 'spots')
+        # unique_together = ('type', 'spots')  # can't unique m2m
         ordering = ['type']  # FIXME add spots to ordering (as it is in the str)
         verbose_name = _('Construction')
         verbose_name_plural = _('Constructions')
@@ -424,7 +470,7 @@ class Construction(Model):
             first_spot, more = '?', ''
         else:
             [first_spot], more = head_plus_more(self.spots.all(), head_length=1)
-        return f'{Construction.TYPE_SYMBOLS[self.type]}{NBSP}{ON_TRANS}{NBSP}{first_spot}{more}'
+        return f'{Construction.TYPE_SYMBOLS[self.type]} {ON_TRANS} {first_spot}{more}'
 
     @property
     def authorization_spots(self):
@@ -432,6 +478,32 @@ class Construction(Model):
         if not self.authorizations:
             return
         return Spot.objects.filter(authorizations__in=self.authorizations.all())
+
+    def diagnose_warnings(self, only_related_to=None):
+        if (only_related_to is None or only_related_to == Owner) and self.owner_builder:
+            active_owners = Owner.objects.filter(deeds__isnull=False, deeds__cancel_reason__isnull=True)
+            if not active_owners.filter(id=self.owner_builder.id).exists():
+                # owners_links = show_head_links(active_owners, "all")  # FIXME django.core.exceptions.ValidationError: {'session_key': ['Session with this Session key already exists.']} when including it in the message
+                yield _(f'owner builder {entity_tag(self.owner_builder)} is not one of the owners'), self
+
+        if only_related_to is None or class_name(only_related_to) == 'Authorization':
+            if not self.authorizations:
+                yield _(f'no authorizations'), self
+            else:
+                spots_without_authorization = self.spots.exclude(id__in=self.authorization_spots)
+                if spots_without_authorization:
+                    links = show_head_links(spots_without_authorization, 'all')
+                    yield _(f'spots without authorization: {links}'), self
+
+        if only_related_to is None or only_related_to == Owner or class_name(only_related_to) == 'Authorization':
+            if self.owner_builder and self.company:
+                yield _(f'both owner builder {entity_tag(self.owner_builder)} and company {entity_tag(self.company)}'), self
+            if not self.owner_builder and not self.company:
+                yield _('neither owner builder nor company')
+
+        if only_related_to is None:
+            for spot in self.spots.all():
+                yield from spot.diagnose_warnings(only_related_to=self)
 
 
 class Authorization(NrYear):
@@ -471,9 +543,8 @@ class PaymentReceipt(NrYear):
         return aggregation['value__sum']
 
 
-class PaymentUnit(Model):
+class PaymentUnit(ModelWithYear):
     """ one unit is for a single year-spot combination. one receipt can have multiple units """
-    year    = IntegerField(default=date.today().year, validators=year_validators, verbose_name=_('year'))
     spot    = ForeignKey(Spot, related_name='payments', verbose_name=_('spot'))
     # expected value for this year, for this spot
     value   = FloatField(**optional, validators=[payment_value_validator], verbose_name=_('value'))
@@ -488,7 +559,7 @@ class PaymentUnit(Model):
         verbose_name_plural = _('Payment Units')
 
     def __str__(self):
-        return f'{self.spot}{NBSP}{FOR_TRANS}{NBSP}{year_to_shorthand(self.year)}'
+        return f'{self.spot} {FOR_TRANS} {year_to_shorthand(self.year)}'
 
     @property
     def owners(self):
@@ -496,17 +567,12 @@ class PaymentUnit(Model):
         # FIXME this should be the owner for THIS year, not all previous and future ones (same for Maintenance and PaymentReceipt)
         return Owner.objects.filter(deeds__spots=self.spot)
 
-    def clean_fields(self, exclude=None):
-        self.year = year_shorthand_to_full(self.year)
-        super(PaymentUnit, self).clean_fields(exclude)
-
 
 """
 Maintenance
 """
 
-class Maintenance(Model):
-    year = IntegerField(default=date.today().year, validators=year_validators, verbose_name=_('year'))
+class Maintenance(ModelWithYear):
     spot = ForeignKey(Spot, related_name='maintenances', verbose_name=_('spot'))
     kept = BooleanField(verbose_name=_('kept'))
 
@@ -517,16 +583,12 @@ class Maintenance(Model):
         verbose_name_plural = _('Maintenances')
 
     def __str__(self):
-        return f'{self.spot}{NBSP}{IN_TRANS}{NBSP}{year_to_shorthand(self.year)}'
+        return f'{self.spot} {IN_TRANS} {year_to_shorthand(self.year)}'
 
     @property
     def owners(self):
         # The maintenance-owner relation goes through a spot and a deed
         return Owner.objects.filter(deeds__spots__maintenances=self)
-
-    def clean_fields(self, exclude=None):
-        self.year = year_shorthand_to_full(self.year)
-        super(Maintenance, self).clean_fields(exclude)
 
 
 ALL_MODELS = [

@@ -1,6 +1,3 @@
-NBSP = '\u00A0'  # non-breaking white-space
-
-
 def rev(l: list) -> list:
     """
     >>> rev([1, 2, 3])
@@ -35,6 +32,8 @@ def all_equal(l: list) -> bool:
     l = list(l)
     return not l or l.count(l[0]) == len(l)
 
+def class_name(obj: ...) -> str:
+    return type(obj).__name__
 
 if __name__ == '__main__':
     import doctest
