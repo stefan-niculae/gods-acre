@@ -1,7 +1,7 @@
 appdirs==1.4.3
 certifi==2017.4.17
 chardet==3.0.4
-Django==1.11.1
+Django==1.11.29
 django-admin-easy==0.3.2
 django-jet==1.0.6
 django-modeladmin-reorder==0.2
