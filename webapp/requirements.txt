@@ -19,5 +19,5 @@ PyYAML==3.12
 requests==2.18.1
 six==1.10.0
 titlecase==0.11.0
-urllib3==1.21.1
+urllib3==1.26.5
 xlrd==1.0.0
